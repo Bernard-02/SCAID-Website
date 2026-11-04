@@ -1,0 +1,53 @@
+/* 內頁版型（user 2026-11-03，參考圖＝degree show 站 about）：桌面 col 1 段落導覽、col 2 起內文由上往下、右邊圖片。
+   標題跟內文同字級，靠粗體＋間距分層；標題不 sticky。手機先只排內文（導覽、圖片 md 才出）。
+   段落導覽行為 js/modules/ui/section-nav.js */
+
+@layer components {
+  /* 頁標題、段落標題（h2.section-title）、小標（h3）、內文全同字級。:where 不加權重 → 個別 text-* utility 還蓋得過 */
+  .page-body { @apply text-md; }
+  .page-body :where(h1, h2, h3, p, li) { font-size: inherit; line-height: inherit; }
+  .page-lead { margin-top: var(--spacing-md); font-weight: var(--font-weight-bold); }
+  .page-section { margin-top: var(--spacing-2xl); }
+  .page-section h3 { margin-top: var(--spacing-md); }
+
+  /* 段落導覽：sticky 在 col 1 畫面垂直置中（在 #page-content 裡 → 選單開時跟內容一起右推）。
+     字級同底列 → 矩形跟 menu 鈕同一套 em；寬＝矩形寬、chevron 置中往兩側溢出 → 矩形左緣對齊 menu 鈕 */
+  .section-nav {
+    @apply text-s md:text-md;
+    position: sticky;
+    top: 50%;
+    transform: translateY(-50%);
+    align-self: start;
+    width: 0.45em;
+    flex-direction: column;
+    align-items: center;
+  }
+  .section-nav button { flex: none; color: inherit; }
+  .section-nav-step { padding: 0.5em 0.25em; }
+  .section-nav-step:disabled { opacity: 0.3; }
+  /* 矩形畫在 ::before，按鈕本身留內距＝好點 */
+  .section-nav-dot { padding: 0.25em 0.6em; opacity: 0.3; }
+  .section-nav-dot::before { content: ''; display: block; width: 0.45em; height: 1.6em; background: currentColor; }
+  .section-nav-dot[aria-current] { opacity: 1; }
+  @media (hover: hover) {
+    .section-nav-dot:hover, .section-nav-step:not(:disabled):hover { opacity: 0.6; }
+  }
+
+  /* 右邊圖片：sticky 畫面垂直置中。TODO 圖片待 user 給，現在是灰底佔位 */
+  .page-figure {
+    @apply text-s;
+    position: sticky;
+    top: 50%;
+    transform: translateY(-50%);
+    align-self: start;
+    aspect-ratio: 1;
+    align-items: center;
+    justify-content: center;
+    background: var(--light-gray);
+  }
+
+  /* 點導覽＝把該段標題捲到「第一段標題在頁頂時的位置」（--section-y0，section-nav.js 量）→ 最後一段至少要高到捲得到那條線 */
+  @media (min-width: 768px) {
+    .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
+  }
+}

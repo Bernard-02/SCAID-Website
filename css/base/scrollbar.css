@@ -1,0 +1,25 @@
+/* 自製 scrollbar（同 SCCD 作法，js/modules/ui/custom-scrollbar.js）：藏原生、JS 畫固定在右側的 thumb；手機 <768 不顯示 */
+
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+
+#custom-scrollbar-thumb {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 0;
+  background: var(--theme-fg);
+  z-index: 35;            /* 蓋內容與 logo（30），在選單（40）／footer（45）／底列（60）下 */
+  touch-action: none;
+  user-select: none;
+  will-change: transform, height;
+  display: none;          /* JS 偵測到可捲才顯示 */
+}
+@media (max-width: 767px) {
+  #custom-scrollbar-thumb { display: none !important; }
+}
+
+/* 內部捲動容器（選單／footer 覆蓋層）：藏捲軸、功能照舊 */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

@@ -1,0 +1,133 @@
+/* ========================================
+   CSS Variables — Design System（手機優先：:root＝手機值，≥768 在下方放大）
+   token 架構沿用 SCCD（7 階字級／間距／motion／theme）；品牌黑白
+   ⚠️ 改完任何 token 都要 `npm run build:css`（頁面吃的是 output.css）
+   ======================================== */
+
+:root {
+  /* Custom Cursors：--cursor-* 由 js/utils/helpers.js setCursorVars() 開機寫在 :root。CSS 與 JS 一律寫 var(--cursor-X) */
+
+  /* ===== Colors：黑白品牌 ===== */
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+
+  --gray-0: #000000;
+  --gray-1: #1A1A1A;
+  --gray-2: #333333;
+  --gray-3: #4D4D4D;
+  --gray-4: #666666;
+  --gray-5: #808080;
+  --gray-6: #999999;
+  --gray-7: #B3B3B3;
+  --gray-8: #CCCCCC;
+  --gray-9: #E6E6E6;
+  --gray-10: #FFFFFF;
+
+  /* 淺灰／深灰底：灰底元件一律用這兩個（Tailwind bg-light-gray／bg-dark-gray），勿散用 gray-N */
+  --light-gray: #f2f2f2;
+  --dark-gray: #333333;
+
+  /* ===== Typography ===== */
+  /* 英文 JetBrains Mono、中文 Noto Sans TC（Google Fonts 的 Noto Sans CJK TC 版）；字串堆疊在 tailwind.config.js fontFamily.sans */
+  --font-mono: 'JetBrains Mono';
+  --font-zh: 'Noto Sans TC';
+
+  /* 7 階字級（rem，base 16px）：Tailwind text-* 與 CSS var 都吃這裡 */
+  --font-size-3xl: 3.5rem;    /* 56px */
+  --font-size-2xl: 2.5rem;    /* 40px */
+  --font-size-xl: 1.5rem;     /* 24px */
+  --font-size-lg: 1.2rem;     /* 19.2px */
+  --font-size-md: 1rem;       /* 16px */
+  --font-size-s: 0.875rem;    /* 14px；表單元件另保 16px 免 iOS focus 放大（typography.css） */
+  --font-size-xs: 0.8rem;     /* 12.8px */
+
+  /* 字重唯一來源（Google Fonts link 載 400..700） */
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+
+  /* 行距綁字級：Tailwind fontSize 用 [size, line-height] tuple → .text-* 自帶該階行距 */
+  --line-height-3xl: 1.1;
+  --line-height-2xl: 1;
+  --line-height-xl: 1.2;
+  --line-height-lg: 1.3;
+  --line-height-md: 1.4;
+  --line-height-s: 1.5;
+  --line-height-xs: 1.4;
+  --line-height-base: 1.5;    /* <body> 預設 */
+
+  /* ===== Spacing ===== */
+  --spacing-xs: 0.5rem;   /* 8px */
+  --spacing-sm: 1rem;     /* 16px */
+  --spacing-md: 1.5rem;   /* 24px */
+  --spacing-lg: 2rem;     /* 32px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-2xl: 3rem;    /* 48px */
+  --spacing-3xl: 4rem;    /* 64px */
+  --spacing-4xl: 5rem;    /* 80px */
+  --spacing-5xl: 6rem;    /* 96px */
+  --spacing-6xl: 8rem;    /* 128px */
+  --spacing-7xl: 10rem;   /* 160px */
+  --spacing-8xl: 12rem;   /* 192px */
+
+  /* ===== Layout ===== */
+  --spacing-gutter: 1rem;       /* .site-grid gap（Tailwind gap-gutter） */
+  --container-padding: 1rem;    /* .site-container 左右 */
+  --top-h: 6rem;                /* 頂部 logo 鎖定版區高（chrome.css .site-logo，頂到最頂）：#page-content padding-top */
+  --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
+  --bar-pad: 2rem;              /* 底列那條線離視窗底的距離；footer 內容也貼這條 */
+  --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊 */
+  --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
+
+  /* ===== Motion tokens（全站單一來源）=====
+     duration：GSAP 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS transition 與 GSAP tween 同步
+     階梯：micro hover · fast chevron／overlay · base 切換 fade · medium 手風琴／面板 · slow 大 layout · reveal 進場 */
+  --dur-micro: 0.2s;
+  --dur-fast: 0.3s;
+  --dur-base: 0.4s;
+  --dur-medium: 0.5s;
+  --dur-slow: 0.6s;
+  --dur-reveal: 1s;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-wipe: cubic-bezier(0.25, 0, 0, 1);   /* GSAP 端 'wipe' 由 helpers.js CustomEase 註冊同一組，改要同步 */
+
+  /* 網站 transition＝fade in／fade out（user 2026-11-03）：換頁用（router.js 淡出等 DUR.fade、淡入走 CSS），
+     之後其他進出場也吃這組。改時長只改 --dur-fade，JS 經 motion.js 讀同一個值 */
+  --dur-fade: var(--dur-base);
+  --transition-fade: opacity var(--dur-fade) var(--ease-standard);
+
+  /* ===== Theme tokens：元件一律用 var(--theme-fg)／var(--theme-bg)，之後要做反白 mode 只換這組 ===== */
+  --theme-fg: var(--color-black);
+  --theme-bg: var(--color-white);
+  --theme-fg-rgb: 0, 0, 0;
+  --theme-bg-rgb: 255, 255, 255;
+}
+
+/* ===== 桌面 ≥768 ===== */
+@media (min-width: 768px) {
+  :root {
+    --font-size-3xl: 8rem;      /* 128px */
+    --font-size-2xl: 6rem;      /* 96px */
+    --font-size-xl: 2rem;       /* 32px */
+    --font-size-lg: 1.4rem;     /* 22.4px */
+    --font-size-md: 1.25rem;    /* 20px */
+    --font-size-s: 1rem;        /* 16px */
+    --font-size-xs: 0.85rem;    /* 13.6px */
+
+    --spacing-xl: 3rem;
+    --spacing-2xl: 4rem;
+    --spacing-3xl: 6rem;
+    --spacing-4xl: 8rem;
+    --spacing-5xl: 10rem;
+    --spacing-6xl: 12rem;
+    --spacing-7xl: 14rem;
+    --spacing-8xl: 16rem;
+
+    --spacing-gutter: 1.5rem;     /* 24px */
+    --container-padding: 3.75rem; /* 60px */
+    --top-h: 7rem;
+    --bar-h: 6rem;
+    --bar-pad: 3rem;
+    --menu-w: 18rem;
+    --col-w: min(60vw, 32rem);
+  }
+}

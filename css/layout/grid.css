@@ -1,0 +1,25 @@
+/* Container 與版面 grid（手機優先） */
+
+@layer components {
+  /* 左右 --container-padding（手機 16 / 桌面 60） */
+  .site-container {
+    @apply w-full px-container-padding mx-auto;
+  }
+
+  /* 一般 grid：手機 4 欄 → ≥768 12 欄；gap＝--spacing-gutter。
+     子元素手機先寫 col-span-4（或 col-span-full），桌面再加 md:col-span-N */
+  .site-grid {
+    @apply grid grid-cols-4 gap-gutter md:grid-cols-12;
+  }
+}
+
+/* ===== 開發用 grid 疊圖（user 2026-11-03）：按 G 開關（js/modules/ui/grid-overlay.js），同 .site-container＋.site-grid 的欄位 ===== */
+@layer components {
+  .grid-overlay { position: fixed; inset: 0; z-index: 100; pointer-events: none; display: none; }
+  html.show-grid .grid-overlay { display: block; }
+  .grid-overlay .site-grid { height: 100%; }
+  .grid-overlay span { background: rgba(255, 0, 0, 0.08); outline: 1px solid rgba(255, 0, 0, 0.35); outline-offset: -1px; }
+  @media (max-width: 767px) {
+    .grid-overlay span:nth-child(n+5) { display: none; }   /* 手機 4 欄 */
+  }
+}

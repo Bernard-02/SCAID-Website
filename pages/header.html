@@ -1,0 +1,70 @@
+<header class="site-chrome">
+  <!-- 無障礙：鍵盤 Tab 第一站，跳過導航直達主內容（#page-content 跨 SPA 換頁恆在） -->
+  <a href="#page-content" class="skip-link">跳到主要內容</a>
+
+  <!-- Logo（全站固定、頂到最頂、置中；首頁未展開時 home.css 放到畫面正中央、transition 位移）。TODO 佔位，拿到 SVG 換 -->
+  <a href="../index.html" class="site-logo">
+    <span class="sr-only" data-en="Home">回首頁</span>
+    <!-- 名字跟語言走：中文一行／英文兩行（看 <html lang>，chrome.css），寬度跟著變 -->
+    <span class="logo-lockup" aria-hidden="true">
+      <span class="logo-cap"></span>
+      <span class="logo-lockup-name">
+        <span class="logo-name-zh">實踐大學AI設計職人學位學程</span>
+        <span class="logo-name-en"><span class="block">Bachelor Program in Advanced Integrated Design</span><span class="block">Shih Chien University</span></span>
+      </span>
+      <span class="logo-cap"></span>
+    </span>
+  </a>
+
+  <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->
+  <div class="site-menu no-scrollbar" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單">
+    <nav class="site-menu-nav">
+      <ul class="menu-main">
+        <li><a href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
+        <li><a href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
+        <li><a href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
+        <li><a href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
+        <li><a href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
+        <li><a href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+      </ul>
+      <ul class="menu-sub">
+        <li><a href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
+        <li><a href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
+        <li><a href="regulations.html" class="nav-link" data-zh="規章" data-en="Regulations">規章</a></li>
+        <li><a href="terms.html" class="nav-link" data-zh="條款" data-en="Terms">條款</a></li>
+        <li><a href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
+      </ul>
+      <!-- 語言切換（所有 section 鈕最下方）：顯示「要切過去」的語言，文字由 lang.js 填 -->
+      <button type="button" class="lang-btn" aria-label="切換為英文">EN</button>
+    </nav>
+  </div>
+
+  <!-- 底列（全站固定、貼底）：左 menu／intro，中 最新動態＋（畫面正中），右 footer。矩形鈕 hover／鍵盤聚焦才在旁邊多出名字（跟語言走；
+       平常視覺隱藏但仍是報讀名稱，所以不另掛 aria-label）；menu／footer 鈕打開時矩形中央白圓點。行為 js/modules/ui/chrome.js -->
+  <div class="site-bar">
+    <div class="bar-left">
+      <button type="button" class="bar-btn menu-btn" aria-expanded="false" aria-controls="site-menu">
+        <span class="bar-rect"></span><span class="bar-label" data-zh="選單" data-en="menu">選單</span>
+      </button>
+      <!-- TODO intro 影片：data-video 填網址才會開 dialog 播 -->
+      <button type="button" class="bar-btn play-btn" data-video="">
+        <span class="icon icon-play"></span><span class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
+      </button>
+    </div>
+    <!-- MOCK 最新一則動態（接 Directus 後填），永遠在畫面正中、寬＝--col-w（首頁動態圖片寬）。
+         首頁：點了原地展開清單、標題退掉、＋滑到右端放大變－（chrome.js 攔）；內頁：連到動態頁。選單開著時收成只剩＋。
+         hover 別的鈕名字出來、側邊放不下才縮這塊（中心不動）；文字放不下就跑馬燈（fitBar） -->
+    <a href="news.html" class="bar-news">
+      <span class="bar-news-track"><span class="bar-news-copy" data-en="Placeholder: latest news title">示意：最新動態標題</span></span><span class="bar-plus" aria-hidden="true"></span>
+    </a>
+    <button type="button" class="bar-btn footer-btn" aria-expanded="false" aria-controls="site-footer">
+      <span class="bar-label" data-zh="頁尾" data-en="footer">頁尾</span><span class="bar-rect"></span>
+    </button>
+  </div>
+
+  <!-- intro 影片：原生 <dialog>，Esc／右上鈕關 -->
+  <dialog class="intro-dialog" id="intro-dialog" aria-label="intro">
+    <video controls playsinline></video>
+    <button type="button" class="bar-btn intro-close"><span class="bar-label" data-zh="關閉" data-en="close">關閉</span><span class="bar-rect"></span></button>
+  </dialog>
+</header>

@@ -1,0 +1,26 @@
+/* 首頁（index.html）：未展開＝一屏只有畫面正中央的 logo（同全站鎖定版）；點底列動態「+」→ html.news-open：logo 上移到頂，
+   清單在畫面中間展開、頁面可捲；底列＋滑到右端放大變－（chrome.css）。切 class 在 chrome.js */
+
+@layer components {
+  /* 未展開：logo 在畫面正中央（變數由 chrome.css .site-logo 吃，位移走 transition） */
+  html:not(.news-open) body[data-page="index"] {
+    --logo-top: 50%;
+    --logo-tf: translate(-50%, -50%);
+  }
+  /* 首頁 main 撐滿一屏（未展開時是空的，頁面不捲） */
+  body[data-page="index"] #page-content { min-height: 100svh; }
+
+  /* 展開的動態清單：畫面中間一欄（手機滿版；桌面寬＝--col-w，跟底列動態欄同寬） */
+  .home-news-list { display: none; }
+  html.news-open .home-news-list { display: block; }
+  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); }
+  @media (min-width: 768px) {
+    .home-news-list > ul { width: var(--col-w); margin: 0 auto; }
+  }
+  .home-news-box {
+    aspect-ratio: 3 / 1;
+    margin-top: var(--spacing-sm);
+    background: var(--light-gray);
+    border: 1px solid currentColor;
+  }
+}

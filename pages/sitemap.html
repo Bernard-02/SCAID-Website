@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+  <title>網站地圖 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/sitemap.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染 -->
+  <main id="page-content">
+    <section class="site-container py-2xl">
+      <h1 class="text-2xl" data-zh="網站地圖" data-en="Site Map">網站地圖</h1>
+      <!-- 文字依語言切換（data-zh／data-en，lang.js），中英不混排 -->
+      <nav class="site-grid gap-y-lg mt-xl" aria-label="網站地圖">
+        <ul class="col-span-4 md:col-span-6 flex flex-col gap-xs">
+          <li><a href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
+          <li><a href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
+          <li><a href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
+          <li><a href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
+          <li><a href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
+          <li><a href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+        </ul>
+        <ul class="col-span-4 md:col-span-6 flex flex-col gap-xs">
+          <li><a href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
+          <li><a href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
+          <li><a href="regulations.html" class="nav-link" data-zh="規章" data-en="Regulations">規章</a></li>
+          <li><a href="terms.html" class="nav-link" data-zh="條款" data-en="Terms">條款</a></li>
+          <li><a href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
+        </ul>
+      </nav>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>

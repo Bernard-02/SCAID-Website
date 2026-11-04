@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+  <title>規章 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/regulations.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
+       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <main id="page-content">
+    <section class="site-container py-2xl">
+      <h1 class="text-2xl" data-en="Regulations">規章</h1>
+      <ul class="mt-xl flex flex-col divide-y divide-current">
+        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
+        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
+        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
+      </ul>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+/* Typography：字體、標題、段落基礎樣式（7 階字級 xs → 3xl，值在 variables.css；手機值預設、≥768 放大） */
+
+@layer base {
+  html {
+    @apply text-base;
+    background-color: var(--theme-bg);
+    /* 字重只有 400／700（都有真字檔）：擋瀏覽器描粗假粗體 */
+    font-synthesis-weight: none;
+    /* 站內錨點（首頁 footer 鈕 #site-footer）平滑捲；reduce-motion 時下方 blanket 關回 auto */
+    scroll-behavior: smooth;
+  }
+
+  b, strong { font-weight: var(--font-weight-bold); }
+
+  body {
+    @apply font-sans leading-base;
+    color: var(--theme-fg);
+    background-color: var(--theme-bg);
+    /* 中文標點避頭（kinsoku） */
+    line-break: strict;
+    word-break: normal;
+  }
+
+  /* 行距不寫 leading-*：字級行距綁在 fontSize tuple，@apply text-* 就帶對應 line-height */
+  h1 { @apply text-3xl font-bold; }
+  h2 { @apply text-2xl font-bold; }
+  h3, h4 { @apply text-xl font-bold; }
+  h5 { @apply text-lg font-bold; }
+  h6 { @apply text-md font-bold; }
+  p  { @apply text-s font-regular; }
+
+  /* 鍵盤焦點外框（WCAG 2.4.7）；觸控 tap 後 WebKit 仍命中 :focus-visible → helpers.js 標 html.input-touch 關掉 */
+  :focus-visible { outline: 2px solid var(--theme-fg); outline-offset: 2px; }
+  html.input-touch :focus-visible { outline: none; }
+
+  /* 跳到主要內容（header.html 第一個可聚焦元素）：平時藏畫面外、Tab 到才現 */
+  .skip-link {
+    position: absolute;
+    left: var(--spacing-sm);
+    top: -100px;
+    z-index: 100;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--theme-fg);
+    color: var(--theme-bg);
+  }
+  .skip-link:focus { top: var(--spacing-sm); }
+
+  /* 手機 text-s 是 14px，表單元件另保 16px：iOS Safari 對 <16px 的輸入框 focus 會整頁放大 */
+  input, textarea, select { font-size: max(1em, 16px); }
+
+  /* 系統「減少動態效果」：CSS transition／animation 一律瞬間到終態（GSAP 端見 js/modules/ui/reduce-motion.js） */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

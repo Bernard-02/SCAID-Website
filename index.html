@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">   <!-- iOS Safari 會自動把電話／email 變成底線連結 -->
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">   <!-- 先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
+  <meta name="description" content="實踐大學AI設計職人學位學程（Bachelor Program in Advanced Integrated Design, Shih Chien University）官方網站">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="實踐大學AI設計職人學位學程 SCAID">
+  <meta property="og:description" content="Bachelor Program in Advanced Integrated Design, Shih Chien University">
+  <title>實踐大學AI設計職人學位學程 SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="css/output.css">
+</head>
+<!-- data-page 靜態先標：home.css 的首頁規則（logo 置中）在 JS 跑前就生效，不閃 -->
+<body data-page="index">
+
+  <!-- 全站殼（pages/header.html，main.js 注入）：logo、全屏選單、底列、intro dialog -->
+  <div id="site-header"></div>
+
+  <!-- Main：SPA router 只換這裡面 -->
+  <main id="page-content">
+    <h1 class="sr-only" data-en="Bachelor Program in Advanced Integrated Design, Shih Chien University">實踐大學AI設計職人學位學程</h1>
+    <!-- 未展開＝空一屏（logo 是全站殼，置中由 home.css 控）。點底列動態「+」→ html.news-open 展開這份清單
+         （MOCK 示意；接 Directus 後由 news 模組填）。背景先白底黑字（user 2026-11-03） -->
+    <section class="home-news-list site-container" aria-label="最新動態">
+      <ul>
+        <li><p class="text-md" data-en="Placeholder: news title one">示意：動態標題一</p><div class="home-news-box"></div></li>
+        <li><p class="text-md"><span class="block" data-en="Placeholder: news title two">示意：動態標題二</span><span class="block" data-en="Placeholder: second line of description">示意：第二行說明文字</span></p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Placeholder: news title three">示意：動態標題三</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Placeholder: news title four">示意：動態標題四</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Placeholder: news title five">示意：動態標題五</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Placeholder: news title six">示意：動態標題六</p><div class="home-news-box"></div></li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- footer 覆蓋層（pages/footer.html，main.js 注入；底列 footer 鈕開） -->
+  <div id="site-footer"></div>
+
+  <!-- JavaScript：GSAP CDN → helpers（classic，註冊 plugin）→ main（module） -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>

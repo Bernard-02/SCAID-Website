@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# 拋棄式 probe / 截圖（_ 前綴，診斷用完即丟，不入庫）
+scripts/_*
+
+# Media / Large files
+*.mp4
+*.mov

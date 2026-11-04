@@ -1,0 +1,256 @@
+/* 全站殼（結構 pages/header.html／footer.html，行為 js/modules/ui/chrome.js）：
+   logo 固定頂部置中、透明左欄全屏選單（內容往右推、logo 不動）、固定底列、footer 覆蓋層、intro 影片 dialog。
+   狀態全掛 <html> class：menu-open／footer-open／news-open（首頁，home.css） */
+
+@layer components {
+  /* 內容讓出頂部 logo 區與底列；選單開著時右推 --shift（logo 不跟著動，user 2026-11-03） */
+  #page-content {
+    padding-top: var(--top-h);
+    padding-bottom: var(--bar-h);
+    transform: translateX(var(--shift, 0px));
+    transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade);
+  }
+  /* 換頁 transition＝fade out → 換內容 → fade in（router.js：換頁前加 html.page-leaving 淡出、換完拿掉＝淡入） */
+  html.page-leaving #page-content { opacity: 0; }
+  /* 選單開著：內容左緣推到選單右緣（＝play 鈕那條線）。內容自己帶左內距 → 推「選單寬 − 內距」，不重複算 padding（user 2026-11-03） */
+  html.menu-open { --shift: calc(var(--menu-w) - var(--container-padding)); overflow: hidden; }
+
+  /* ── Logo：兩端矩形夾名字，全站同一種（首頁也是，user 2026-11-03）。頂到最頂、置中；首頁未展開時 home.css 用變數放到畫面正中央、
+     transition 位移。footer 另一版（長條＋英中名在下）見下方 .footer-logo ── */
+  .site-logo {
+    position: fixed;
+    z-index: 30;
+    left: 50%;
+    top: var(--logo-top, 0);
+    width: max-content;   /* 不用 auto：left:50% 下 auto 只拿到右半邊可用寬，手機鎖定版會被擠成半寬 */
+    max-width: calc(100% - 2 * var(--container-padding));
+    transform: var(--logo-tf, translateX(-50%));
+    display: block;
+    color: var(--theme-fg);
+    transition: top var(--dur-slow) var(--ease-standard), transform var(--dur-slow) var(--ease-standard);
+  }
+  /* 長條（footer 鎖定版用） */
+  .logo-strip {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 1;
+    background: currentColor;
+  }
+  .logo-lockup {
+    @apply text-xs md:text-s font-bold uppercase;
+    display: flex;
+    align-items: stretch;
+    gap: 0.5em;
+    line-height: 1.2;
+  }
+  /* 鎖定版名字跟語言走（user 2026-11-03）：中文一行、英文兩行，寬度跟著變；看 <html lang>（lang.js 設） */
+  .logo-lockup-name { align-self: center; }
+  html[lang="en"] .logo-name-zh,
+  html:not([lang="en"]) .logo-name-en { display: none; }
+  .logo-cap {
+    position: relative;
+    flex: none;
+    width: 1.1em;
+    min-height: 2.4em;
+    background: currentColor;
+  }
+  /* 矩形中央白圓點：logo 兩端常駐；底列 menu／footer 鈕在各自打開時才現 */
+  .logo-cap::after, .bar-rect::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.35em;
+    height: 0.35em;
+    margin: -0.175em 0 0 -0.175em;
+    border-radius: 50%;
+    background: var(--theme-bg);
+  }
+  .bar-rect::after { opacity: 0; }
+  html.menu-open .menu-btn .bar-rect::after,
+  html.footer-open .footer-btn .bar-rect::after { opacity: 1; }
+
+  /* ── 選單：透明、固定寬 --menu-w；預設滑出左側。照 user 截圖：主選單在上、次選單＋語言鈕推到底，字級同底列 ── */
+  .site-menu {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: var(--menu-w);
+    padding: var(--top-h) var(--container-padding) var(--bar-h);
+    overflow-y: auto;
+    color: var(--theme-fg);
+    transform: translateX(-100%);
+    transition: transform var(--dur-medium) var(--ease-wipe);
+  }
+  html.menu-open .site-menu { transform: none; }
+  .site-menu-nav {
+    @apply text-s md:text-md;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  .menu-main, .menu-sub { display: flex; flex-direction: column; }
+  .menu-sub { margin-top: auto; }
+  .lang-btn { align-self: flex-start; }
+  .nav-link.active { text-decoration: underline; text-underline-offset: 0.25em; }
+  @media (hover: hover) {
+    .nav-link:hover, .lang-btn:hover { opacity: 0.6; }
+  }
+
+  /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 footer]；整列貼底 --bar-pad（跟 footer 內容底線同一條）。
+     兩側等寬（--side-min＝左右內容較寬者，chrome.js fitBar 量）＝動態永遠畫面正中；
+     中欄最寬 --col-w（＝首頁動態圖片寬），側邊名字出來放不下時才縮中欄 ── */
+  .site-bar {
+    @apply text-s md:text-md;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    height: var(--bar-h);
+    padding: 0 var(--container-padding) var(--bar-pad);
+    display: grid;
+    grid-template-columns: minmax(var(--side-min, 4em), 1fr) minmax(0, var(--col-w)) minmax(var(--side-min, 4em), 1fr);
+    gap: var(--spacing-gutter);
+    --bar-gap: var(--spacing-sm);   /* 左欄 menu／intro 間距 */
+    align-content: end;
+    align-items: center;
+    color: var(--theme-fg);
+  }
+  .bar-left { justify-self: start; display: flex; align-items: center; gap: var(--bar-gap); }
+  .footer-btn { justify-self: end; }
+  @media (min-width: 768px) {
+    .site-bar { --bar-gap: var(--spacing-md); }
+  }
+
+  /* 矩形鈕＝矩形＋名字。名字平常視覺隱藏（仍是無障礙名稱、跟語言走，lang.js），hover／鍵盤聚焦才排進版面 */
+  .bar-btn { display: inline-flex; align-items: center; gap: 0.5em; flex: none; color: inherit; }
+  .bar-rect { position: relative; display: block; width: 0.75em; height: 1.25em; background: currentColor; }
+  .bar-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* 選單開著 menu 名字常駐；其餘照常 hover 才出 */
+  .bar-btn:hover .bar-label,
+  .bar-btn:focus-visible .bar-label,
+  html.menu-open .menu-btn .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  /* footer 開著：底列只剩 footer 鈕（白圓點），照一開始的排法（user 2026-11-03） */
+  html.footer-open :is(.bar-left, .bar-news) { opacity: 0; visibility: hidden; }
+  /* footer 開關時 menu／play／動態走網站 transition 淡出淡入（user 2026-11-03）：淡出時 visibility 等淡完才 hidden
+     （之後點不到、不報讀）；淡入時 visibility 立刻回來。.bar-news 的同款寫在它自己的規則 */
+  .bar-left { transition: var(--transition-fade), visibility 0s; }
+  html.footer-open .bar-left { transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  .play-btn .icon { font-size: 1.25em; }
+  /* 選單開著：menu 鈕撐成選單欄那一格（名字算在格子裡），play 自然排在格子後面＝選單右緣——
+     名字中英怎麼換都不影響 play（user 2026-11-03）。min-width 過場＝play 滑過去。
+     ⚠️ 起點要寫明 0：flex 子項 min-width 預設 auto，auto→長度不能過場＝play 直接跳過去 */
+  .menu-btn { justify-content: flex-start; min-width: 0; transition: min-width var(--dur-medium) var(--ease-wipe); }
+  html.menu-open .menu-btn { min-width: calc(var(--menu-w) - var(--container-padding) - var(--bar-gap)); }
+
+  /* 動態：中欄滿寬。內容＝[左墊][標題][＋][右墊]，兩墊等分剩餘＝置中。
+     選單開著／首頁展開：標題退掉（只剩＋）；首頁展開再加：右墊收 0（＋滑到右端）再推出欄外一個 gutter（不擋動態圖片）、
+     豎線收掉變－，大小同＋。
+     標題放不下時 chrome.js 標 .is-marquee 跑馬燈（兩份 copy 接力） */
+  .bar-news { min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
+  html.footer-open .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
+  /* 首頁展開＋選單開著（桌面）：動態跟清單一起右推，－才會繼續在圖片右邊。手機清單滿版、推了－會出畫面 → 不推 */
+  @media (min-width: 768px) {
+    html.news-open.menu-open .bar-news { transform: translateX(var(--shift)); }
+  }
+  .bar-news::before, .bar-news::after {
+    content: '';
+    flex: 1 1 0;
+    transition: flex-grow var(--dur-medium) var(--ease-standard);
+  }
+  .bar-news-track {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    transition: max-width var(--dur-medium) var(--ease-standard), opacity var(--dur-base) var(--ease-standard);
+  }
+  .bar-news-copy { flex: none; }
+  .bar-news-track.is-marquee .bar-news-copy { padding-right: 2em; animation: bar-marquee 10s linear infinite; }
+  .bar-plus {
+    position: relative;
+    flex: none;
+    width: 1.5em;
+    height: 1.5em;
+    margin-left: 0.5em;
+    transition: transform var(--dur-medium) var(--ease-standard), margin-left var(--dur-medium) var(--ease-standard);
+  }
+  .bar-plus::before, .bar-plus::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+    transition: transform var(--dur-medium) var(--ease-standard);
+  }
+  .bar-plus::before { left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; }
+  .bar-plus::after { top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; }
+  html:is(.menu-open, .news-open) .bar-news-track { max-width: 0; opacity: 0; }
+  html:is(.menu-open, .news-open) .bar-plus { margin-left: 0; }
+  html.news-open .bar-news::after { flex-grow: 0; }
+  html.news-open .bar-plus { transform: translateX(calc(100% + var(--spacing-gutter))); }
+  html.news-open .bar-plus::after { transform: scaleY(0); }
+  @media (hover: hover) {
+    .bar-news:hover { filter: opacity(0.6); }   /* 用 filter 不用 opacity：opacity 有 fade 過場，hover 會變成慢慢淡 */
+  }
+
+  /* ── footer 覆蓋層：白底、可內捲；版面照截圖（logo 鎖定版置中頂、左欄資訊） ── */
+  .site-footer {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0 var(--container-padding) var(--bar-pad);   /* 頂到最頂；底＝底列那條線（底列只剩右下 footer 鈕，左欄內容不會打架） */
+    background: var(--theme-bg);
+    color: var(--theme-fg);
+  }
+  html.footer-open { overflow: hidden; }
+  html.footer-open .site-footer { display: flex; }
+  html.footer-open .site-logo { visibility: hidden; }   /* footer 自帶鎖定版（長條＋英中名在下，跟全站 logo 不同形） */
+  .footer-logo { @apply text-xs md:text-s font-bold; flex: none; width: min(60vw, 32rem); margin: 0 auto; }
+  .footer-logo .logo-strip { margin-bottom: var(--spacing-xs); }
+  .footer-body {
+    @apply text-s md:text-md;
+    margin-top: auto;              /* 內容貼底，copyright 對齊底列那條線 */
+    padding-top: var(--spacing-3xl);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xl);
+  }
+  .footer-social { display: flex; gap: var(--spacing-lg); }
+  .footer-social-box { display: block; width: 1em; height: 1em; border: 1px solid currentColor; }
+  .footer-contact { display: flex; flex-direction: column; gap: var(--spacing-md); }
+  .footer-links { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+  .footer-badge { width: 9.5rem; height: 3.75rem; background: var(--light-gray); }
+  @media (hover: hover) {
+    .footer-links a:hover, .footer-contact a:hover, .footer-social-box:hover { opacity: 0.6; }
+  }
+
+  /* ── intro 影片 dialog：滿版黑底 ── */
+  .intro-dialog {
+    width: 100vw;
+    height: 100svh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--theme-fg);
+    color: var(--theme-bg);
+  }
+  .intro-dialog::backdrop { background: var(--theme-fg); }
+  .intro-dialog video { width: 100%; height: 100%; object-fit: contain; }
+  .intro-close { position: absolute; top: var(--spacing-md); right: var(--container-padding); }
+}
+
+/* 跑馬燈：兩份 copy 各走自己的寬（含 padding-right 當間距）＝無縫接力 */
+@keyframes bar-marquee {
+  to { transform: translateX(-100%); }
+}

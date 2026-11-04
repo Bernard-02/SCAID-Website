@@ -1,0 +1,31 @@
+/* CSS mask icon 系統（沿用 SCCD）：<span class="icon icon-X">
+   mask + background-color: currentColor → 顏色繼承文字色；尺寸走 font-size（1em）。新 icon＝丟 SVG 進 website-icons/ 加一行 */
+
+@layer components {
+  .icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+            mask: var(--icon) center / contain no-repeat;
+    flex-shrink: 0;
+  }
+
+  /* size tier：XL 32 強調主操作；L 24 主控按鈕；M 20 箭頭／chevron；S 16 inline；XS 14 輔助 */
+  .icon-xl { font-size: 2rem; }
+  .icon-l  { font-size: 1.5rem; }
+  .icon-m  { font-size: 1.25rem; }
+  .icon-s  { font-size: 1rem; }
+  .icon-xs { font-size: 0.875rem; }
+
+  .icon-menu        { --icon: url('../website-icons/menu.svg'); }
+  .icon-arrow-left  { --icon: url('../website-icons/arrow_left.svg'); }
+  .icon-arrow-right { --icon: url('../website-icons/arrow_right.svg'); }
+  .icon-arrow-up    { --icon: url('../website-icons/arrow_up.svg'); }
+  .icon-arrow-down  { --icon: url('../website-icons/arrow_down.svg'); }
+  .icon-play        { --icon: url('../website-icons/play.svg'); }
+  /* chevron base 朝左，方向用 Tailwind rotate：rotate-180＝右、rotate-90＝上、-rotate-90＝下 */
+  .icon-chevron     { --icon: url('../website-icons/chevron_left_list.svg'); }
+}

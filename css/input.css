@@ -1,0 +1,19 @@
+/* Tailwind 入口：@import 順序＝cascade 順序（後者勝）。build：npm run build:css → css/output.css */
+
+/* 1. Global（必須最先） */
+@import 'variables.css';
+/* 字型不在這 @import（會卡到 output.css 下載完才開抓）：各頁 head 直接 link Google Fonts */
+
+/* 2. Layers */
+@import './base/typography.css';
+@import './base/scrollbar.css';      /* 藏原生捲軸、自製 thumb（js/modules/ui/custom-scrollbar.js） */
+@import './layout/grid.css';
+@import './components/icon.css';
+@import './components/chrome.css';   /* 全站殼：logo／選單／底列／footer 覆蓋層／intro dialog */
+@import './components/home.css';     /* 首頁：logo 置中、動態展開 */
+@import './components/page.css';     /* 內頁版型：段落導覽、內文、右圖 */
+
+/* 3. Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
