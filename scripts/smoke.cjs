@@ -50,7 +50,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await m.waitForSelector('#site-footer .site-footer', { state: 'attached' });
   assert((await m.textContent('main h1')) === '實踐大學AI設計職人學位學程', 'index h1（sr-only）zh');
   assert((await css(m, 'body', 'fontFamily')).includes('JetBrains Mono'), 'font JetBrains Mono');
-  assert(await m.$('link[rel="icon"][href$="favicon.svg"]') !== null, 'favicon link');
+  assert(await m.$('link[rel="icon"][href*="favicon.svg"]') !== null, 'favicon link');
   assert(await css(m, '#page-content', 'paddingTop') === '96px' && await css(m, '#page-content', 'paddingBottom') === '64px', 'mobile main 頂距 top-h／底距 bar-h');
   // 首頁未展開：logo 置中、放大、名字藏
   let lr = await rect(m, '.site-logo');
