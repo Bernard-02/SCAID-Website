@@ -15,21 +15,68 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/partners.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/partners.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Partners">合作企業</h1>
-      <p class="mt-md" data-en="Placeholder: companies and organizations partnering with the program.">示意文字：與學程合作的企業與單位。</p>
-      <ul class="site-grid mt-xl">
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-        <li class="col-span-2 md:col-span-3 aspect-square bg-light-gray p-sm flex items-end text-s" data-en="Company name (placeholder)">企業名稱（示意）</li>
-      </ul>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Partners">合作企業</h1>
+        <p class="page-lead" data-en="Placeholder: companies and organizations partnering with the program.">示意：與學程合作的企業與單位。</p>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Company List">企業名單</h2>
+          <ul class="item-list">
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+            <li class="item-row">
+              <div class="item-thumb"></div>
+              <div>
+                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
+                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

@@ -15,14 +15,31 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/donate.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/donate.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Donate">捐款</h1>
-      <p class="mt-md" data-en="Placeholder: how donations are used and how to give.">示意文字：捐款用途說明與方式。</p>
-      <a href="#" class="inline-block mt-lg px-md py-sm bg-black text-white" data-en="Placeholder: donate now">示意：前往捐款</a>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Donate">捐款</h1>
+        <p class="page-lead" data-en="Placeholder: about giving to the program.">示意：捐款說明。</p>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="How Donations Are Used">捐款用途</h2>
+          <p class="mt-md" data-en="Placeholder: how donations are used.">示意：捐款用途說明。</p>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="How to Give">捐款方式</h2>
+          <p class="mt-md" data-en="Placeholder: how to give.">示意：捐款方式說明。</p>
+          <a href="#" class="inline-block mt-lg px-md py-sm bg-black text-white" data-en="Placeholder: donate now">示意：前往捐款</a>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

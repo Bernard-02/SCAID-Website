@@ -284,9 +284,10 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(await css(d, '#page-content', 'paddingTop') === '112px', 'desktop 頂距 7rem');
   assert(await css(d, '.site-container', 'paddingLeft') === '60px', 'desktop container padding 60');
   assert((await css(d, '.site-grid', 'gridTemplateColumns')).split(' ').length === 12, 'desktop grid 12 欄');
-  // about 內頁版型：標題跟內文同字級、粗體分層；內文從 col 2 起；col 1 段落導覽（矩形左緣對齊 menu 鈕）
-  assert(await d.$$eval('main :is(h1, h2, h3, p.page-lead)', els => els.every(e => getComputedStyle(e).fontSize === '20px' && getComputedStyle(e).fontWeight === '700')) && await css(d, 'main li', 'fontWeight') === '400',
-    'about 標題／內文同 20px、標題粗體');
+  // about 內頁版型：標題 text-md 粗體、內文小一階 text-s；內文從 col 2 起；col 1 段落導覽（矩形左緣對齊 menu 鈕）
+  assert(await d.$$eval('main :is(h1, h2, h3, p.page-lead)', els => els.every(e => getComputedStyle(e).fontSize === '20px' && getComputedStyle(e).fontWeight === '700'))
+    && await d.$$eval('main .page-section :is(p:not(.text-xs), li)', els => els.every(e => getComputedStyle(e).fontSize === '16px' && getComputedStyle(e).fontWeight === '400')),
+    'about 標題 20px 粗體、內文 16px');
   const col2 = 60 + (1280 - 120 - 11 * 24) / 12 + 24;   // 內距＋一欄＋gutter
   assert(Math.abs((await rect(d, 'main h1')).left - col2) < 1, `about 內文從 col 2 起（h1 ${(await rect(d, 'main h1')).left} vs ${col2}）`);
   const dotL = async () => (await rect(d, '.section-nav-dot')).left + 12;   // 矩形畫在 ::before、按鈕左右內距 0.6em
@@ -305,6 +306,19 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(ns.cur === i && Math.abs(ns.tops[i] - alignY) < 1.5, `段落導覽：點第 ${i + 1} 段 → 對齊第一段標題位置（${ns.tops[i]} vs ${alignY}）`);
   }
   assert(ns.dis[1] && !ns.dis[0], '段落導覽：最後一段時下一段停用');
+  // 右圖、段落導覽永遠在畫面正中：頂／底都量，矮視窗（圖高 > 畫面一半 − 底列）也不能被頂走（user 2026-11-10）
+  for (const [vw, vh] of [[1280, 800], [1280, 560]]) {
+    await d.setViewportSize({ width: vw, height: vh });
+    for (const y of [0, 1e6]) {
+      await d.evaluate(t => window.scrollTo({ top: t, behavior: 'instant' }), y);
+      await d.waitForTimeout(100);
+      const fy = (await rect(d, '.page-figure > *')).cy, ny = (await rect(d, '.section-nav')).cy;
+      assert(Math.abs(fy - vh / 2) < 1 && Math.abs(ny - vh / 2) < 1, `${vw}x${vh} 捲到${y ? '底' : '頂'}：右圖／導覽在畫面正中（圖 ${fy} 導覽 ${ny}）`);
+    }
+  }
+  await d.setViewportSize({ width: 1280, height: 800 });
+  await d.click('.section-nav-dot[data-i="2"]');
+  await settle();
   await d.click('.section-nav-step[data-step="-1"]');
   await settle();
   ns = await navState();
@@ -389,6 +403,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await d.waitForSelector('.grid-overlay');
   assert(await css(d, '.grid-overlay', 'display') === 'block', 'grid 開關記住（reload 後還開著）');
   await d.setViewportSize({ width: 390, height: 844 });
+  await d.waitForTimeout(100);   // resize 後 media query 偶爾還沒套上
   assert(await d.$$eval('.grid-overlay span', s => s.filter(e => getComputedStyle(e).display !== 'none').length) === 4, '手機 4 欄');
   await d.keyboard.press('g');
   assert(await css(d, '.grid-overlay', 'display') === 'none', '再按 G 關');

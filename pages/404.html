@@ -16,14 +16,19 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/404.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/404.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container min-h-[calc(100svh-var(--top-h)-var(--bar-h))] flex flex-col justify-end gap-sm">
-      <h1>404</h1>
-      <p class="text-md" data-en="Page not found">找不到這一頁</p>
-      <a href="../index.html" class="nav-link inline-flex items-center gap-xs"><span class="icon icon-arrow-left icon-m"></span><span data-en="Back to home">回首頁</span></a>
-    </section>
+    <div class="site-container site-grid">
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1>404</h1>
+        <p class="page-lead" data-en="Page not found">找不到這一頁</p>
+        <a href="../index.html" class="nav-link inline-flex items-center gap-xs mt-md"><span class="icon icon-arrow-left icon-m"></span><span data-en="Back to home">回首頁</span></a>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

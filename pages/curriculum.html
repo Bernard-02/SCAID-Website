@@ -15,18 +15,139 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/curriculum.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/curriculum.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Curriculum">課程</h1>
-      <div class="site-grid gap-y-lg mt-xl">
-        <div class="col-span-4 md:col-span-3"><h2 class="text-md" data-en="Year 1">一年級</h2><ul class="mt-sm text-s flex flex-col gap-xs"><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li></ul></div>
-        <div class="col-span-4 md:col-span-3"><h2 class="text-md" data-en="Year 2">二年級</h2><ul class="mt-sm text-s flex flex-col gap-xs"><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li></ul></div>
-        <div class="col-span-4 md:col-span-3"><h2 class="text-md" data-en="Year 3">三年級</h2><ul class="mt-sm text-s flex flex-col gap-xs"><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li></ul></div>
-        <div class="col-span-4 md:col-span-3"><h2 class="text-md" data-en="Year 4">四年級</h2><ul class="mt-sm text-s flex flex-col gap-xs"><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li><li data-en="Course name (placeholder)">課程名稱（示意）</li></ul></div>
-      </div>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Curriculum">課程</h1>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Year 1">一年級</h2>
+          <ul class="item-list text-md">
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Year 2">二年級</h2>
+          <ul class="item-list text-md">
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Year 3">三年級</h2>
+          <ul class="item-list text-md">
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Year 4">四年級</h2>
+          <ul class="item-list text-md">
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Required">必修</div>
+            </li>
+            <li>
+              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
+              <div data-en="Elective">選修</div>
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

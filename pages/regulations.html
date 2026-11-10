@@ -15,17 +15,36 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/regulations.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/regulations.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Regulations">規章</h1>
-      <ul class="mt-xl flex flex-col divide-y divide-current">
-        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
-        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
-        <li class="py-md" data-en="Regulation title (placeholder)">規章名稱（示意）</li>
-      </ul>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Regulations">規章</h1>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Placeholder: category one">示意：規章分類一</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Regulation title (placeholder)">規章名稱（示意）</h3></li>
+            <li><h3 data-en="Regulation title (placeholder)">規章名稱（示意）</h3></li>
+            <li><h3 data-en="Regulation title (placeholder)">規章名稱（示意）</h3></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Placeholder: category two">示意：規章分類二</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Regulation title (placeholder)">規章名稱（示意）</h3></li>
+            <li><h3 data-en="Regulation title (placeholder)">規章名稱（示意）</h3></li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

@@ -15,18 +15,123 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/faculty.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/faculty.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。名字／單位中英兩行都顯示（user 2026-11-10 草圖）；其他文字中文寫內文、英文寫 data-en（lang.js）。
+       段落名稱與順序是示意，待學程確認 -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Faculty">師資</h1>
-      <ul class="site-grid gap-y-lg mt-xl">
-        <li class="col-span-2 md:col-span-3"><div class="aspect-[3/4] bg-light-gray"></div><h2 class="text-md mt-sm" data-en="Faculty name (placeholder)">教師姓名（示意）</h2><p class="text-xs" data-en="Title / expertise (placeholder)">職稱／專長（示意）</p></li>
-        <li class="col-span-2 md:col-span-3"><div class="aspect-[3/4] bg-light-gray"></div><h2 class="text-md mt-sm" data-en="Faculty name (placeholder)">教師姓名（示意）</h2><p class="text-xs" data-en="Title / expertise (placeholder)">職稱／專長（示意）</p></li>
-        <li class="col-span-2 md:col-span-3"><div class="aspect-[3/4] bg-light-gray"></div><h2 class="text-md mt-sm" data-en="Faculty name (placeholder)">教師姓名（示意）</h2><p class="text-xs" data-en="Title / expertise (placeholder)">職稱／專長（示意）</p></li>
-        <li class="col-span-2 md:col-span-3"><div class="aspect-[3/4] bg-light-gray"></div><h2 class="text-md mt-sm" data-en="Faculty name (placeholder)">教師姓名（示意）</h2><p class="text-xs" data-en="Title / expertise (placeholder)">職稱／專長（示意）</p></li>
-      </ul>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Faculty">師資</h1>
+        <p class="page-lead font-regular" data-en="Placeholder: introduction to the faculty">示意：師資介紹</p>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Part-time Faculty">兼任教師</h2>
+          <ul class="item-list">
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Full-time Faculty">專任教師</h2>
+          <ul class="item-list">
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Industry Mentors">業界導師</h2>
+          <ul class="item-list">
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          <li class="item-row">
+            <div class="item-thumb"></div>
+            <div>
+              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
+              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+            </div>
+          </li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

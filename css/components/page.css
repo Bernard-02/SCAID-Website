@@ -3,12 +3,16 @@
    段落導覽行為 js/modules/ui/section-nav.js */
 
 @layer components {
-  /* 頁標題、段落標題（h2.section-title）、小標（h3）、內文全同字級。:where 不加權重 → 個別 text-* utility 還蓋得過 */
-  .page-body { @apply text-md; }
-  .page-body :where(h1, h2, h3, p, li) { font-size: inherit; line-height: inherit; }
+  /* 頁標題、段落標題（h2.section-title）、小標（h3）、說明段落同字級 text-md；內文小一階 text-s（user 2026-11-04）。
+     :where 不加權重 → 個別 text-* utility 還蓋得過 */
+  .page-body { @apply text-s; }
+  .page-body :where(h1, h2, h3, .page-lead) { @apply text-md; }
   .page-lead { margin-top: var(--spacing-md); font-weight: var(--font-weight-bold); }
   .page-section { margin-top: var(--spacing-2xl); }
   .page-section h3 { margin-top: var(--spacing-md); }
+
+  /* 導覽、右圖的「永遠在畫面正中」（user 2026-11-10）：sticky 本身高 0 停在畫面中線、內容往上下各溢出一半。
+     sticky 會把自己的框留在內容格子裡，捲到底時格子底只到「畫面底 − 底列高」→ 有高度的框會被頂上去；高 0 就不會 */
 
   /* 段落導覽：sticky 在 col 1 畫面垂直置中（在 #page-content 裡 → 選單開時跟內容一起右推）。
      字級同底列 → 矩形跟 menu 鈕同一套 em；寬＝矩形寬、chevron 置中往兩側溢出 → 矩形左緣對齊 menu 鈕 */
@@ -16,11 +20,12 @@
     @apply text-s md:text-md;
     position: sticky;
     top: 50%;
-    transform: translateY(-50%);
+    height: 0;
     align-self: start;
     width: 0.45em;
     flex-direction: column;
     align-items: center;
+    justify-content: center;   /* 高 0 → 按鈕往上下各溢出一半 */
   }
   .section-nav button { flex: none; color: inherit; }
   .section-nav-step { padding: 0.5em 0.25em; }
@@ -33,14 +38,23 @@
     .section-nav-dot:hover, .section-nav-step:not(:disabled):hover { opacity: 0.6; }
   }
 
-  /* 右邊圖片：sticky 畫面垂直置中。TODO 圖片待 user 給，現在是灰底佔位 */
-  .page-figure {
+  /* 段落裡的條列（faculty／curriculum／news…，user 2026-11-10 草圖）：一項一塊、項目間空一行；項目標題 h3 不粗體。
+     .item-row＝左方形縮圖＋右文字：內文欄手機 4 欄／桌面 6 欄 → 切同樣欄數，縮圖佔 2 欄＝對齊 site-grid */
+  .item-list { margin-top: var(--spacing-md); display: grid; gap: var(--spacing-lg); }
+  .page-body .item-list h3 { margin-top: 0; font-weight: var(--font-weight-regular); }
+  .item-list h3 + p { margin-top: var(--spacing-sm); }
+  .item-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-gutter); align-items: start; }
+  .item-thumb { grid-column: span 2; aspect-ratio: 1; background: var(--light-gray); }
+  .item-row > :last-child { grid-column: 3 / -1; }
+  @media (min-width: 768px) { .item-row { grid-template-columns: repeat(6, 1fr); } }
+
+  /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。TODO 圖片待 user 給，現在是灰底佔位 */
+  .page-figure { position: sticky; top: 50%; height: 0; align-self: start; }
+  .page-figure > * {
     @apply text-s;
-    position: sticky;
-    top: 50%;
     transform: translateY(-50%);
-    align-self: start;
     aspect-ratio: 1;
+    display: flex;
     align-items: center;
     justify-content: center;
     background: var(--light-gray);
@@ -49,5 +63,7 @@
   /* 點導覽＝把該段標題捲到「第一段標題在頁頂時的位置」（--section-y0，section-nav.js 量）→ 最後一段至少要高到捲得到那條線 */
   @media (min-width: 768px) {
     .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
+    /* 沒段落的短頁（404）也要高過畫面中線，導覽／右圖的 sticky 才停得住 */
+    .page-body { min-height: calc(100vh - var(--top-h) - var(--bar-h)); }
   }
 }

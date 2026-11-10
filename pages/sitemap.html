@@ -15,29 +15,42 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/sitemap.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染 -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/sitemap.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-zh="網站地圖" data-en="Site Map">網站地圖</h1>
-      <!-- 文字依語言切換（data-zh／data-en，lang.js），中英不混排 -->
-      <nav class="site-grid gap-y-lg mt-xl" aria-label="網站地圖">
-        <ul class="col-span-4 md:col-span-6 flex flex-col gap-xs">
-          <li><a href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
-          <li><a href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
-          <li><a href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
-          <li><a href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
-          <li><a href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
-          <li><a href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
-        </ul>
-        <ul class="col-span-4 md:col-span-6 flex flex-col gap-xs">
-          <li><a href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
-          <li><a href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
-          <li><a href="regulations.html" class="nav-link" data-zh="規章" data-en="Regulations">規章</a></li>
-          <li><a href="terms.html" class="nav-link" data-zh="條款" data-en="Terms">條款</a></li>
-          <li><a href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
-        </ul>
-      </nav>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-zh="網站地圖" data-en="Site Map">網站地圖</h1>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Main">主選單</h2>
+          <ul class="mt-md">
+            <li><a href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
+            <li><a href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
+            <li><a href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
+            <li><a href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
+            <li><a href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
+            <li><a href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="More">其他</h2>
+          <ul class="mt-md">
+            <li><a href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
+            <li><a href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
+            <li><a href="regulations.html" class="nav-link" data-zh="規章" data-en="Regulations">規章</a></li>
+            <li><a href="terms.html" class="nav-link" data-zh="條款" data-en="Terms">條款</a></li>
+            <li><a href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

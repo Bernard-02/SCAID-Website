@@ -25,9 +25,12 @@
 - **網站 transition＝fade in／fade out**（user 2026-11-03）：token `--dur-fade`／`--transition-fade`（variables.css）、JS 用 `DUR.fade`（motion.js）。
   換頁：router 換頁前加 `html.page-leaving` 讓 main 淡出（跟 fetch 並行），換完內容拿掉＝淡入。footer 開關時底列其他鈕也走這組（淡完 visibility 才 hidden）。之後其他進出場也吃這組。
 - **內頁版型**（about 起，user 2026-11-03，`css/components/page.css`）：桌面 col 1 段落導覽、col 2–7 內文由上往下、col 9–12 右圖（是什麼圖待 user 說）；
-  頁標題／段落標題／小標／內文同字級（text-md），靠粗體＋間距分層，標題不 sticky。每段 `h2.section-title`；
+  頁標題／段落標題／小標／說明段落 text-md 粗體、內文小一階 text-s、附註 text-xs，標題不 sticky。每段 `h2.section-title`；
   段落導覽（`section-nav.js` 依 section-title 生成：上下 chevron＋每段一個矩形）sticky 在 `<main>` 裡＝選單開時跟內容一起右推；
   點了把該段標題捲到「第一段標題在頁頂時的位置」，最後一段撐高到捲得到。手機先只有內文（導覽、右圖 md 才出）。
+  **全部內頁（含 404）都用這版型＋右圖**（user 2026-11-10），h1 跟段落標題同 text-md。右圖、段落導覽「永遠在畫面正中」＝高 0 的 sticky 錨點停在中線、內容往上下溢出
+  （有高度的 sticky 捲到底會被格子底頂走）。段落裡的條列 `.item-list`（項目間空一行、h3 不粗體）；`.item-row`＝左方形縮圖 2 欄＋右文字（faculty／partners）。
+  faculty 名字／單位中英兩行都顯示、不跟語言切換；curriculum 課名＋必修同字級（text-md）。
 - 狀態全掛 `<html>` class：`menu-open`／`footer-open`／`news-open`／`page-leaving`；換頁 `closeOverlays()` 全收。
 
 ## 技術棧

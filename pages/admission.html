@@ -15,17 +15,41 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/admission.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/admission.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Admission">入學</h1>
-      <div class="site-grid gap-y-xl mt-xl">
-        <div class="col-span-4 md:col-span-6"><h2 class="text-lg" data-en="Admission Routes">申請管道</h2><ul class="mt-sm flex flex-col gap-xs"><li data-en="Placeholder: route one">示意：管道一</li><li data-en="Placeholder: route two">示意：管道二</li><li data-en="Placeholder: route three">示意：管道三</li></ul></div>
-        <div class="col-span-4 md:col-span-6"><h2 class="text-lg" data-en="Key Dates">重要日程</h2><ul class="mt-sm flex flex-col gap-xs"><li data-en="Placeholder: date and item">示意：日期＋事項</li><li data-en="Placeholder: date and item">示意：日期＋事項</li></ul></div>
-        <div class="col-span-4 md:col-span-6"><h2 class="text-lg" data-en="Downloads">下載</h2><p class="mt-sm" data-en="Placeholder: brochure and attachment links.">示意：簡章／附件連結。</p></div>
-      </div>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Admission">入學</h1>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Admission Routes">申請管道</h2>
+          <ul class="mt-md">
+            <li data-en="Placeholder: route one">示意：管道一</li>
+            <li data-en="Placeholder: route two">示意：管道二</li>
+            <li data-en="Placeholder: route three">示意：管道三</li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Key Dates">重要日程</h2>
+          <ul class="mt-md">
+            <li data-en="Placeholder: date and item">示意：日期＋事項</li>
+            <li data-en="Placeholder: date and item">示意：日期＋事項</li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Downloads">下載</h2>
+          <p class="mt-md" data-en="Placeholder: brochure and attachment links.">示意：簡章／附件連結。</p>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>

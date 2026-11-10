@@ -15,19 +15,30 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/terms.html 也能獨立跑。內容為 MOCK 示意，接 Directus 後改由模組渲染。
-       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/terms.html 也能獨立跑。版型同 about（css/components/page.css）。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
-    <section class="site-container py-2xl">
-      <h1 class="text-2xl" data-en="Terms">條款</h1>
-      <div class="site-grid mt-xl">
-        <div class="col-span-4 md:col-span-8 flex flex-col gap-md">
-          <p data-en="Placeholder: terms of use, paragraph one.">示意文字：使用條款第一段。</p>
-          <p data-en="Placeholder: terms of use, paragraph two.">示意文字：使用條款第二段。</p>
-          <p data-en="Placeholder: privacy policy summary.">示意文字：隱私權政策摘要。</p>
-        </div>
-      </div>
-    </section>
+    <div class="site-container site-grid">
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <h1 data-en="Terms">條款</h1>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Terms of Use">使用條款</h2>
+          <p class="mt-md" data-en="Placeholder: terms of use, paragraph one.">示意：使用條款第一段。</p>
+          <p class="mt-md" data-en="Placeholder: terms of use, paragraph two.">示意：使用條款第二段。</p>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Privacy Policy">隱私權政策</h2>
+          <p class="mt-md" data-en="Placeholder: privacy policy summary.">示意：隱私權政策摘要。</p>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
   </main>
 
   <div id="site-footer"></div>
