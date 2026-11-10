@@ -1,0 +1,103 @@
+【IT 協助請求】SCAID 後台 disc.scaid.usc.edu.tw：① 502 Bad Gateway ② HTTPS 憑證不符
+提出單位：AI設計職人學位學程（SCAID）
+日期：2026-11-10
+
+前言：
+・SCAID 官網沿用 SCCD 的架構：前台是純靜態網站，內容由後台 Directus（Node.js）以 JSON API 提供。
+・後台主機 disc.scaid.usc.edu.tw（3.34.29.122）上的 Directus 是從 SCCD 後台複製過來的，目前打不開。
+・以下兩項請協助確認；附的指令與做法僅供參考，以主機實際環境為準。
+
+目前狀況（2026-11-10 從校外實測）：
+  https://disc.scaid.usc.edu.tw/               → 502 Bad Gateway（nginx/1.22.1）
+  https://disc.scaid.usc.edu.tw/server/health  → 502 Bad Gateway
+  http://disc.scaid.usc.edu.tw/                → 301 轉 https（正常）
+  瀏覽器網址列顯示「不安全」（Not secure）
+  對照：SCCD 後台 https://sccdtest.usc.edu.tw/server/health → 200（正常）
+
+
+════════════════════════════════════════════════
+請求一：502 — nginx 連不到後面的 Directus
+════════════════════════════════════════════════
+
+判讀：
+  nginx 本身正常，但轉給 Directus（Node.js，預設 port 8055）時沒有回應，
+  代表 Directus 沒有在執行，或一啟動就失敗。
+
+請協助確認（在主機上執行）：
+  1. Directus 是否在執行：
+       pm2 status
+       pm2 logs directus --lines 50                  （啟動失敗的原因會在這裡）
+       curl -I http://localhost:8055/server/health   （應回 200）
+     （若不是用 pm2 管理，請改看 systemd 或對應的服務紀錄）
+
+  2. nginx 轉發的 port 與 Directus 一致：
+       sudo grep -rn proxy_pass /etc/nginx/sites-enabled/ /etc/nginx/conf.d/
+     應為 proxy_pass http://127.0.0.1:8055;（或 .env 裡 PORT 設定的 port）
+
+從 SCCD 複製過來常見的失敗原因（供排查參考）：
+  a. pm2 的程序清單不會跟著資料夾複製 → 新主機需重新啟動並設定開機自動執行：
+       cd <Directus 資料夾>
+       pm2 start "npx directus start" --name directus
+       pm2 save
+       pm2 startup        （照它印出的指令再執行一次）
+
+  b. .env 的資料庫設定仍是 SCCD 的（DB_HOST / DB_DATABASE / DB_USER / DB_PASSWORD）
+     → 連不到資料庫就會啟動失敗。
+     SCAID 請用獨立的資料庫，不要連到 SCCD 的資料庫（避免兩系資料互相影響）。
+     若是新建的空資料庫，需先執行一次：
+       npx directus bootstrap
+     （建立資料表與管理員帳號，帳密取自 .env 的 ADMIN_EMAIL / ADMIN_PASSWORD）
+
+  c. node_modules 從另一台主機複製 → 部分套件（argon2、sharp）與 Node 版本綁定，
+     換機器常會啟動失敗。請在 Directus 資料夾內重新執行：
+       npm install
+
+  d. .env 其他需改成 SCAID 的項目：
+       PUBLIC_URL=https://<後台網域>    （見請求二，網域可能會調整）
+       KEY=...  SECRET=...             （請重新產生，不要與 SCCD 共用）
+       CORS_ENABLED=true
+       CORS_ORIGIN=true                （前台網域確定後再改為該網址）
+
+  附帶（之後一定會遇到）：
+     nginx 預設 client_max_body_size 只有 1MB，老師在後台上傳圖片／影片會失敗（413）。
+     請在該站的 nginx 設定加大，例如：client_max_body_size 200M;
+
+
+════════════════════════════════════════════════
+請求二：HTTPS 憑證不涵蓋 disc.scaid.usc.edu.tw
+════════════════════════════════════════════════
+
+判讀：
+  主機目前使用 *.usc.edu.tw 萬用憑證（TWCA，效期至 2027-04-21）。
+  萬用憑證只涵蓋「一層」子網域：
+       sccdtest.usc.edu.tw      ✔ 涵蓋
+       disc.scaid.usc.edu.tw    ✘ 不涵蓋（兩層）
+
+影響：
+  不只是網址列顯示不安全。前台網站用 JavaScript 讀取後台資料時，
+  瀏覽器會因憑證不符直接拒絕連線，前台會完全讀不到後台內容。
+
+請協助擇一：
+  ── 做法 A（建議，最簡單）──
+  改用一層的子網域，例如 scaidcms.usc.edu.tw（名稱由 IT 決定），
+  DNS 指到 3.34.29.122，沿用現有 *.usc.edu.tw 憑證，nginx 的 server_name 一併修改。
+  SCCD 後台 sccdtest.usc.edu.tw 即是這個做法。
+
+  ── 做法 B ──
+  保留 disc.scaid.usc.edu.tw，另外為它申請憑證：
+    ・主機上用 Let's Encrypt（免費、自動續期）：
+        sudo certbot --nginx -d disc.scaid.usc.edu.tw
+    ・或另向 TWCA 申請 *.scaid.usc.edu.tw 憑證
+
+
+════════════════════════════════════════════════
+驗證方式（兩項都完成後）
+════════════════════════════════════════════════
+
+  curl -I https://<後台網域>/server/health   → 應回 HTTP 200（不加 -k 也能通過）
+  瀏覽器開 https://<後台網域>/admin          → 出現 Directus 登入頁，網址列沒有「不安全」
+
+完成後請回覆：
+  1. 最終的後台網域
+  2. 管理員帳號（請另以安全方式提供）
+  我們會把前台的 API 網址改成該網域（前台只需改一處設定）。
