@@ -14,7 +14,7 @@
   - **Logo**：全站同一種＝兩端矩形（白圓點）夾名字，名字跟語言走（中文一行／英文兩行，看 `<html lang>`），寬度 max-content。頂到最頂、置中；首頁未展開時 `home.css` 放到畫面正中央（transition 位移）。footer 另一版（長條＋英中名在下）。都是佔位待換 SVG。
   - **選單**：透明、固定寬 `--menu-w`（手機 10rem／桌面 18rem），logo 不動，沒有底色。開著時內容左緣推到選單右緣（推「選單寬 − 內距」，內容自己的左內距不重複算；user 2026-11-03 定案，不對 grid／logo），跟 play 鈕同一條線，play 鈕在選單右緣（選單開著時 menu 鈕 min-width 撐成選單欄那格、名字算在格子裡，play 自然排在後面——名字中英怎麼換都不影響 play，純 CSS 不量）。
     主選單在上、次選單＋語言鈕推到底，字級同底列。開著時 menu 鈕白圓點＋名字常駐、intro 照常、動態收成只剩＋。選單與 footer 互斥。
-  - **底列**（固定、貼底 `--bar-pad`）：三欄＝左 menu／intro（play icon）、中 最新動態＋（永遠畫面正中、寬＝`--col-w`＝首頁動態圖片寬）、右 footer。
+  - **底列**（固定、貼底 `--bar-pad`）：三欄＝左 menu／intro（play icon）、中 最新動態＋（**只在首頁**，內頁淡掉、user 2026-11-10；永遠畫面正中、寬＝`--col-w`＝首頁動態圖片寬）、右 footer。
     矩形鈕 hover／鍵盤聚焦才在旁邊出名字，名字跟語言走（選單／簡介／頁尾 ↔ menu／intro／footer），平常視覺隱藏但仍是報讀名稱。
     兩側等寬由 `fitBar` 量 `--side-min`：側邊放不下名字才縮動態、中心不動；標題放不下就跑馬燈。
   - **footer**：覆蓋層（`pages/footer.html`），只有點底列右下 footer 鈕才出現；開著時底列只剩 footer 鈕（白圓點、不出名字），menu／intro／動態用網站 transition 淡出、關掉時淡入（user 2026-11-03 改回一開始的排法）；logo 頂到頂、內容貼底，copyright 對齊底列那條線（`--bar-pad`）。往下捲沒有 footer。**內容走 Directus 單例 `footer`**（`footer-cms.js`；抓不到留 HTML 的 MOCK、抓到後台為準、空欄位整列收；欄位表 `docs/Directus-後台欄位.md`）。

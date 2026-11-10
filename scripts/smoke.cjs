@@ -183,11 +183,14 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await m.keyboard.press('Escape');
   await m.waitForFunction(() => !document.documentElement.classList.contains('menu-open'));
 
+  // 底列中間的動態只在首頁（user 2026-11-10）：內頁藏起來、點不到
+  assert(await css(m, '.bar-news', 'visibility') === 'hidden' && await css(m, '.bar-news', 'opacity') === '0', '內頁：底列沒有動態');
+
   // footer 覆蓋層：鈕開／關、白圓點＋名字常駐、底列其餘照常、Esc 關、跟選單互斥
   assert(await css(m, '.site-footer', 'display') === 'none', 'footer 預設藏');
-  // 點 footer 鈕、逐幀記 menu／play（.bar-left）與動態的 opacity＋visibility：其他鈕要 fade out 退場、關掉時 fade in 回來
+  // 點 footer 鈕、逐幀記 menu／play（.bar-left）的 opacity＋visibility（內頁沒有動態）：其他鈕要 fade out 退場、關掉時 fade in 回來
   const clickFooterAndTrack = () => m.evaluate(() => new Promise(res => {
-    const els = [document.querySelector('.bar-left'), document.querySelector('.bar-news')], out = [];
+    const els = [document.querySelector('.bar-left')], out = [];
     /** @type {HTMLElement} */ (document.querySelector('.footer-btn')).click();
     const t0 = performance.now();
     const tick = () => { out.push(els.map(el => { const cs = getComputedStyle(el); return [+cs.opacity, cs.visibility]; })); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out); };
@@ -195,8 +198,8 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   }));
   const midFrames = (track, i) => track.filter(f => f[i][0] > 0.05 && f[i][0] < 0.95 && f[i][1] === 'visible').length;
   const fOut = await clickFooterAndTrack();
-  assert(midFrames(fOut, 0) >= 3 && midFrames(fOut, 1) >= 3 && fOut.at(-1).every(([o, v]) => o === 0 && v === 'hidden'),
-    `footer 開：menu／play／動態 fade out 退場（中途 ${midFrames(fOut, 0)}／${midFrames(fOut, 1)} 幀、最後 ${JSON.stringify(fOut.at(-1))}）`);
+  assert(midFrames(fOut, 0) >= 3 && fOut.at(-1).every(([o, v]) => o === 0 && v === 'hidden'),
+    `footer 開：menu／play fade out 退場（中途 ${midFrames(fOut, 0)} 幀、最後 ${JSON.stringify(fOut.at(-1))}）`);
   assert(await css(m, '.site-footer', 'display') === 'flex' && (await m.textContent('.site-footer')).includes('電子郵件'), 'footer 開');
   // footer 內容走後台：值換上、空欄位整列收、javascript: 網址擋掉、英文空退中文
   await m.waitForFunction(() => document.querySelector('.footer-copyright')?.textContent === '後台版權（示意）');
@@ -214,8 +217,9 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(await css(m, '.footer-btn .bar-label', 'width') === '1px', 'footer 開：只有矩形、不出名字');
   assert(await css(m, '.bar-left', 'visibility') === 'hidden' && await css(m, '.bar-news', 'visibility') === 'hidden' && await css(m, '.site-logo', 'visibility') === 'hidden', 'footer 開：底列只剩 footer 鈕');
   const fIn = await clickFooterAndTrack();
-  assert(midFrames(fIn, 0) >= 3 && midFrames(fIn, 1) >= 3 && fIn.at(-1).every(([o, v]) => o === 1 && v === 'visible'),
-    `footer 關：menu／play／動態 fade in 回來（中途 ${midFrames(fIn, 0)}／${midFrames(fIn, 1)} 幀）`);
+  assert(midFrames(fIn, 0) >= 3 && fIn.at(-1).every(([o, v]) => o === 1 && v === 'visible'),
+    `footer 關：menu／play fade in 回來（中途 ${midFrames(fIn, 0)} 幀）`);
+  assert(await css(m, '.bar-news', 'visibility') === 'hidden', 'footer 關回內頁：動態還是藏著');
   assert(await css(m, '.site-footer', 'display') === 'none', 'footer 關');
   await m.click('.footer-btn');
   await m.keyboard.press('Escape');
@@ -234,6 +238,8 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await m.click('.site-logo');
   await m.waitForFunction(() => document.body.dataset.page === 'index');
   assert(new URL(m.url()).pathname === '/', 'logo → root');
+  await m.waitForFunction(() => getComputedStyle(document.querySelector('.bar-news')).opacity === '1');
+  assert(await css(m, '.bar-news', 'visibility') === 'visible', '回首頁：動態淡入回來');
   await m.click('.bar-news');
   await m.waitForFunction(() => document.documentElement.classList.contains('news-open'));
   assert(new URL(m.url()).pathname === '/', '展開不換頁');

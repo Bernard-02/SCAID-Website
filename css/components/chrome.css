@@ -136,6 +136,8 @@
   html.menu-open .menu-btn .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
   /* footer 開著：底列只剩 footer 鈕（白圓點），照一開始的排法（user 2026-11-03） */
   html.footer-open :is(.bar-left, .bar-news) { opacity: 0; visibility: hidden; }
+  /* 底列中間的動態只在首頁（user 2026-11-10）：內頁同 footer 開著的退場 */
+  body:not([data-page="index"]) .bar-news { opacity: 0; visibility: hidden; }
   /* footer 開關時 menu／play／動態走網站 transition 淡出淡入（user 2026-11-03）：淡出時 visibility 等淡完才 hidden
      （之後點不到、不報讀）；淡入時 visibility 立刻回來。.bar-news 的同款寫在它自己的規則 */
   .bar-left { transition: var(--transition-fade), visibility 0s; }
@@ -152,7 +154,7 @@
      豎線收掉變－，大小同＋。
      標題放不下時 chrome.js 標 .is-marquee 跑馬燈（兩份 copy 接力） */
   .bar-news { min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
-  html.footer-open .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
+  html.footer-open .bar-news, body:not([data-page="index"]) .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
   /* 首頁展開＋選單開著（桌面）：動態跟清單一起右推，－才會繼續在圖片右邊。手機清單滿版、推了－會出畫面 → 不推 */
   @media (min-width: 768px) {
     html.news-open.menu-open .bar-news { transform: translateX(var(--shift)); }
