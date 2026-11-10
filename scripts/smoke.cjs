@@ -2,7 +2,7 @@
 // 全站殼（logo 位置、透明選單＋內容右推、語言切換、底列矩形鈕 hover 名字、動態跑馬燈、footer 覆蓋層、intro dialog）、
 // router（全部頁面／返回／404／hash 不重載）、首頁動態展開、自製 scrollbar。
 // 用法：node scripts/smoke.cjs <playwright 套件目錄> [webkit 執行檔]
-//   本機：node scripts/smoke.cjs "../SCCD Website/node_modules/playwright" "%LOCALAPPDATA%/ms-playwright/webkit-2359/Playwright.exe"
+//   本機：node scripts/smoke.cjs "../SCCD Website/node_modules/playwright" "%LOCALAPPDATA%/ms-playwright/webkit-2370/Playwright.exe"
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const { webkit } = require(path.resolve(process.argv[2]));
@@ -23,6 +23,13 @@ const watch = (page) => {
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   page.on('requestfailed', r => { const u = r.url(); if (new URL(u).hostname === '127.0.0.1' && !u.endsWith('intro-test.mp4')) errors.push('reqfailed: ' + u); });
+  // 假 Directus footer 單例（後台網域還是 placeholder，不接會 DNS 失敗）
+  return page.route(/\/items\/footer/, r => r.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, json: { data: {
+    email: 'cms@example.com', tel: '02 1111 1111', fax: null, address_zh: '後台地址（示意）', address_en: null,
+    social: [{ label: 'Instagram', url: 'https://example.com/ig' }, { label: 'Bad', url: 'javascript:alert(1)' }],
+    links: [{ label: 'SCCD', url: 'https://example.com/sccd' }], badge: null,
+    copyright_zh: '後台版權（示意）', copyright_en: 'CMS copyright (placeholder)',
+  } } }));
 };
 const css = (page, sel, prop, pseudo) => page.$eval(sel, (el, a) => getComputedStyle(el, a.pseudo || null)[a.prop], { prop, pseudo });
 const rect = (page, sel) => page.$eval(sel, el => { const r = el.getBoundingClientRect(); return { top: r.top, left: r.left, width: r.width, height: r.height, cy: r.top + r.height / 2 }; });
@@ -37,7 +44,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
 
   // ── 手機 390 ──
   const m = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  watch(m);
+  await watch(m);
   await m.goto(base + '/index.html');
   await m.waitForSelector('#site-header .site-bar');
   await m.waitForSelector('#site-footer .site-footer', { state: 'attached' });
@@ -191,6 +198,13 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(midFrames(fOut, 0) >= 3 && midFrames(fOut, 1) >= 3 && fOut.at(-1).every(([o, v]) => o === 0 && v === 'hidden'),
     `footer 開：menu／play／動態 fade out 退場（中途 ${midFrames(fOut, 0)}／${midFrames(fOut, 1)} 幀、最後 ${JSON.stringify(fOut.at(-1))}）`);
   assert(await css(m, '.site-footer', 'display') === 'flex' && (await m.textContent('.site-footer')).includes('電子郵件'), 'footer 開');
+  // footer 內容走後台：值換上、空欄位整列收、javascript: 網址擋掉、英文空退中文
+  await m.waitForFunction(() => document.querySelector('.footer-copyright')?.textContent === '後台版權（示意）');
+  assert(await m.$eval('[data-cms="email"] a', a => a.textContent === 'cms@example.com' && a.getAttribute('href') === 'mailto:cms@example.com'), 'footer 後台：email');
+  assert(await css(m, '[data-cms="fax"]', 'display') === 'none' && await css(m, '.footer-badge', 'display') === 'none' && (await m.textContent('[data-cms="tel"] dd')) === '02 1111 1111', 'footer 後台：空欄位收掉');
+  assert(JSON.stringify(await m.$$eval('.footer-social-box', a => a.map(x => x.getAttribute('href')))) === '["https://example.com/ig","#"]', 'footer 後台：社群連結、javascript: 擋掉');
+  assert(await m.$eval('[data-cms="address"] dd', d => d.dataset.en === '後台地址（示意）') && await m.$eval('.footer-copyright', p => p.dataset.en === 'CMS copyright (placeholder)'), 'footer 後台：中英（英文空退中文）');
+  assert((await m.$$eval('.footer-links a', a => a.map(x => x.textContent))).join() === 'SCCD', 'footer 後台：姊妹系所');
   assert((await rect(m, '.footer-logo')).top < 1, 'footer logo 頂到頂');
   const cr = await rect(m, '.footer-copyright');
   const fr = await rect(m, '.footer-btn .bar-rect');
@@ -264,7 +278,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
 
   // ── 桌面 1280 ──
   const d = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  watch(d);
+  await watch(d);
   await d.goto(base + '/pages/about.html');
   await d.waitForSelector('#site-header .site-bar');
   assert(await css(d, '#page-content', 'paddingTop') === '112px', 'desktop 頂距 7rem');

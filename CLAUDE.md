@@ -17,7 +17,7 @@
   - **底列**（固定、貼底 `--bar-pad`）：三欄＝左 menu／intro（play icon）、中 最新動態＋（永遠畫面正中、寬＝`--col-w`＝首頁動態圖片寬）、右 footer。
     矩形鈕 hover／鍵盤聚焦才在旁邊出名字，名字跟語言走（選單／簡介／頁尾 ↔ menu／intro／footer），平常視覺隱藏但仍是報讀名稱。
     兩側等寬由 `fitBar` 量 `--side-min`：側邊放不下名字才縮動態、中心不動；標題放不下就跑馬燈。
-  - **footer**：覆蓋層（`pages/footer.html`），只有點底列右下 footer 鈕才出現；開著時底列只剩 footer 鈕（白圓點、不出名字），menu／intro／動態用網站 transition 淡出、關掉時淡入（user 2026-11-03 改回一開始的排法）；logo 頂到頂、內容貼底，copyright 對齊底列那條線（`--bar-pad`）。往下捲沒有 footer。
+  - **footer**：覆蓋層（`pages/footer.html`），只有點底列右下 footer 鈕才出現；開著時底列只剩 footer 鈕（白圓點、不出名字），menu／intro／動態用網站 transition 淡出、關掉時淡入（user 2026-11-03 改回一開始的排法）；logo 頂到頂、內容貼底，copyright 對齊底列那條線（`--bar-pad`）。往下捲沒有 footer。**內容走 Directus 單例 `footer`**（`footer-cms.js`；抓不到留 HTML 的 MOCK、抓到後台為準、空欄位整列收；欄位表 `docs/Directus-後台欄位.md`）。
   - **intro**：play 鈕 `data-video` 有網址才開原生 `<dialog>` 播影片。
   - **自製 scrollbar**：同 SCCD，藏原生、JS thumb（`custom-scrollbar.js`），手機不顯示。
 - **首頁**：一屏只有置中 logo；點動態「+」→ `html.news-open`：logo 上移到頂、清單在畫面中間展開（寬 `--col-w`）、可捲；
@@ -62,9 +62,10 @@
 │   ├── router.js           # PAGES 清單→路由表、連結攔截、popstate（同頁只換 hash 不重載）、a11y 報讀
 │   ├── config/api.js       # Directus URL 唯一注入點（placeholder）、fetchCmsJson、assetUrl、LKG
 │   ├── utils/helpers.js    # classic：window.SCAIDHelpers（sitePath、版型判斷、游標 var、GSAP 註冊）
-│   └── modules/ui/         # chrome / section-nav / lang / custom-scrollbar / site-base / escape-html / page-cleanup / motion / a11y / reduce-motion
+│   └── modules/ui/         # chrome / footer-cms / section-nav / lang / custom-scrollbar / site-base / escape-html / page-cleanup / motion / a11y / reduce-motion
 ├── images/favicon.svg      # 矩形＋圓（TODO 正式 SVG）
 ├── scripts/smoke.cjs       # Playwright 煙霧測試（用法見檔頭）
+├── docs/                   # Directus-後台欄位.md（後台集合／欄位 key 照這份建，新接一個集合就補一節）、IT-請求-*.txt
 ├── custom-cursor/  website-icons/  types/helpers.d.ts  .claude/skills/gsap-core
 ```
 
@@ -74,7 +75,7 @@ npm install
 npm run watch:css     # 開發：Tailwind 監看
 npm run build:css     # 交付前重編（minify）
 npm run check:ts      # JS 型別檢查
-node scripts/smoke.cjs "../SCCD Website/node_modules/playwright" "%LOCALAPPDATA%/ms-playwright/webkit-2359/Playwright.exe"
+node scripts/smoke.cjs "../SCCD Website/node_modules/playwright" "%LOCALAPPDATA%/ms-playwright/webkit-2370/Playwright.exe"
 ```
 本地預覽：VS Code Live Server 開 `index.html`，或 `python -m http.server`。**按 G（或網址加 `?grid`）開 grid 疊圖**（`js/modules/ui/grid-overlay.js`，記在 localStorage）。
 部署：靜態檔；`.htaccess` 含 SPA fallback。乾淨網址要等 server fallback 設好才把網域填進 `router.js CLEAN_URL_HOSTS`。
@@ -101,6 +102,6 @@ scroll-snap、矮橫向／直向全站層（`css/layout/landscape.css` 84KB）�
 ## TODO
 - Logo SVG（頂部版、footer 鎖定版）→ 換掉 `.logo-strip`；正式 favicon／apple-touch-icon／og-image
 - intro 影片網址 → `header.html .play-btn data-video`
-- footer：社群 icon、聯絡資訊、姊妹系所連結、標章圖
+- footer：社群 icon 圖（連結、聯絡資訊、姊妹系所、標章、copyright 已走後台）
 - Directus 開了 → `js/config/api.js` 網域；各頁 MOCK 與底列動態改模組渲染；內容依 lang 抓對應欄位
 - 正式網域 → `router.js CLEAN_URL_HOSTS`、`index.html` canonical／og:url

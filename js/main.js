@@ -13,6 +13,7 @@ import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
 import { initSectionNav } from './modules/ui/section-nav.js';
+import { loadFooterCms } from './modules/ui/footer-cms.js';
 
 // 片段注入：pages/header.html → #site-header、pages/footer.html → #site-footer
 // cache: 'no-cache' 強制 revalidate：開發時改片段立即看到（SPA 不 hard reload）
@@ -63,4 +64,4 @@ initRouter();
 initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
 loadPartial('site-header', 'pages/header.html').then(() => { updateNavActive(); applyLang(); fitBar(); });
-loadPartial('site-footer', 'pages/footer.html').then(() => applyLang());
+loadPartial('site-footer', 'pages/footer.html').then(() => { applyLang(); loadFooterCms(); });

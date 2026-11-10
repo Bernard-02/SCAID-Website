@@ -229,6 +229,7 @@
   .footer-contact { display: flex; flex-direction: column; gap: var(--spacing-md); }
   .footer-links { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
   .footer-badge { width: 9.5rem; height: 3.75rem; background: var(--light-gray); }
+  img.footer-badge { width: auto; max-width: 100%; background: none; }   /* 後台標章圖：高同佔位、寬照比例 */
   @media (hover: hover) {
     .footer-links a:hover, .footer-contact a:hover, .footer-social-box:hover { opacity: 0.6; }
   }
