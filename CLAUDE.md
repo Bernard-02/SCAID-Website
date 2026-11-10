@@ -28,6 +28,7 @@
   頁標題／段落標題／小標／說明段落 text-md 粗體、內文小一階 text-s、附註 text-xs，標題不 sticky。每段 `h2.section-title`；
   段落導覽（`section-nav.js` 依 section-title 生成：上下 chevron＋每段一個矩形）sticky 在 `<main>` 裡＝選單開時跟內容一起右推；
   點了把該段標題捲到「第一段標題在頁頂時的位置」，最後一段撐高到捲得到。手機先只有內文（導覽、右圖 md 才出）。
+- **詳細頁**（`<slug>-detail`，user 2026-11-10）：列表 `a.item-row` 點進去；左上角 `.back-btn`（← icon，回列表）＝col 1 上緣對齊內容第一行、桌面 sticky、左緣對齊導覽矩形，跟 `.section-nav` 同放 `grid-area: 1 / 1`；選單亮父頁。目前只有 `faculty-detail`（照片＋名字＋各段條列、右圖照常；接 Directus 後帶 `?id=`）。
   **全部內頁（含 404）都用這版型＋右圖**（user 2026-11-10），h1 跟段落標題同 text-md。右圖、段落導覽「永遠在畫面正中」＝高 0 的 sticky 錨點停在中線、內容往上下溢出
   （有高度的 sticky 捲到底會被格子底頂走）。段落裡的條列 `.item-list`（項目間空一行、h3 不粗體）；`.item-row`＝左方形縮圖 2 欄＋右文字（faculty／partners）。
   faculty 名字／單位中英兩行都顯示、不跟語言切換；curriculum 課名＋必修同字級（text-md）。
@@ -45,6 +46,7 @@
 |---|---|---|
 | about / partners / faculty / curriculum / news / admission | 關於／合作企業／師資／課程／動態／入學 · About／Partners／Faculty／Curriculum／News／Admission | 主選單 |
 | qa / donate / regulations / terms / sitemap | 常見問題／捐款／規章／條款／網站地圖 · QA／Donate／Regulations／Terms／Site Map | 次選單 |
+| faculty-detail | 教師（師資列表點進去） | 詳細頁（不進選單／sitemap） |
 | 404 | | |
 
 ## 專案結構
@@ -53,7 +55,7 @@
 ├── pages/
 │   ├── header.html         # 全站殼：logo、透明選單（含語言鈕）、底列、intro dialog → 注入 #site-header
 │   ├── footer.html         # footer 覆蓋層 → 注入 #site-footer
-│   └── <slug>.html         # 12 個內頁（MOCK 示意；直接開也能獨立跑）
+│   └── <slug>.html         # 13 個內頁（含 faculty-detail）（MOCK 示意；直接開也能獨立跑）
 ├── css/
 │   ├── variables.css       # token（手機值預設、≥768 放大；含 --top-h／--bar-h／--menu-w）
 │   ├── input.css           # Tailwind 入口（@import 順序＝cascade 順序）

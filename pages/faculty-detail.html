@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
+  <title>教師 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 教師詳細頁（從 faculty.html 列表點進來，user 2026-11-10 草圖）：左上角返回鈕、col 1 段落導覽、col 2–7 照片＋名字＋各段條列、右圖同其他內頁。
+       內容為 MOCK 示意；接 Directus 後用 ?id= 抓那位老師、由模組渲染。名字／單位中英兩行都顯示（同列表）；段落名稱與順序是示意，待學程確認 -->
+  <main id="page-content">
+    <div class="site-container site-grid">
+      <a href="faculty.html" class="back-btn"><span class="icon icon-arrow-left" aria-hidden="true"></span><span class="sr-only" data-en="Back to Faculty">返回師資</span></a>
+      <nav class="section-nav hidden md:flex" aria-label="本頁段落"></nav>
+
+      <article class="page-body col-span-4 md:col-start-2 md:col-span-6">
+        <div class="profile-photo"></div>
+        <h1>Name (placeholder)<br>教師姓名（示意）</h1>
+        <p class="profile-sub">Affiliation (placeholder)<br>任職單位（示意）</p>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Education">學歷</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Experience">經歷</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Expertise">專長</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Exhibitions">展覽</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Awards">獲獎</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+
+        <section class="page-section">
+          <h2 class="section-title" data-en="Publications">著作</h2>
+          <ul class="item-list">
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+            <li><h3 data-en="Year (placeholder)">年份（示意）</h3><p data-en="Placeholder: description">示意：說明文字</p></li>
+          </ul>
+        </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>

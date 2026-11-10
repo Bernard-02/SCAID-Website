@@ -18,6 +18,7 @@
      字級同底列 → 矩形跟 menu 鈕同一套 em；寬＝矩形寬、chevron 置中往兩側溢出 → 矩形左緣對齊 menu 鈕 */
   .section-nav {
     @apply text-s md:text-md;
+    grid-area: 1 / 1;          /* 明確放 col 1 row 1：詳細頁的返回鈕也在這格，不能被自動排擠到別欄 */
     position: sticky;
     top: 50%;
     height: 0;
@@ -36,6 +37,29 @@
   .section-nav-dot[aria-current] { opacity: 1; }
   @media (hover: hover) {
     .section-nav-dot:hover, .section-nav-step:not(:disabled):hover { opacity: 0.6; }
+  }
+
+  /* 返回鈕（點進去的詳細頁，user 2026-11-10 草圖）：col 1 左上角、上緣＝內容第一行；桌面 sticky 停在那條線，手機排在內文上面。
+     字級同段落導覽、左緣對齊導覽矩形（＝menu 鈕）；padding＋負 margin＝點擊範圍放大但 icon 位置不動 */
+  .back-btn {
+    @apply text-s md:text-md;
+    grid-area: 1 / 1;
+    justify-self: start;
+    align-self: start;
+    padding: 0.5em;
+    margin: -0.5em;
+    line-height: 1;
+  }
+  .back-btn .icon { display: block; }
+  @media (min-width: 768px) { .back-btn { position: sticky; top: calc(var(--top-h) - 0.5em); } }   /* 扣 padding：icon 本身停在 --top-h */
+
+  /* 詳細頁頭：照片寬同列表縮圖（2 欄：手機 4 欄裡的 2、桌面內文 6 欄裡的 2），下面名字、單位 */
+  .profile-photo { width: calc(50% - var(--spacing-gutter) / 2); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-lg); }
+  @media (min-width: 768px) { .profile-photo { width: calc((100% - 5 * var(--spacing-gutter)) / 3 + var(--spacing-gutter)); } }
+  .profile-sub { margin-top: var(--spacing-sm); }
+
+  @media (hover: hover) {
+    .back-btn:hover, a.item-row:hover { opacity: 0.6; }
   }
 
   /* 段落裡的條列（faculty／curriculum／news…，user 2026-11-10 草圖）：一項一塊、項目間空一行；項目標題 h3 不粗體。

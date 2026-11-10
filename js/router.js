@@ -9,7 +9,8 @@ import { DUR } from './modules/ui/motion.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
-const PAGES = ['about', 'partners', 'faculty', 'curriculum', 'news', 'admission',
+// <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
+const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'news', 'admission',
                'qa', 'donate', 'regulations', 'terms', 'sitemap', '404'];
 const routes = {
   '/':           { page: 'index', htmlFile: 'index.html' },
@@ -64,7 +65,7 @@ function announceAndFocusMain(main) {
 export function updateNavActive(page = document.body.dataset.page) {
   document.querySelectorAll('#site-header a.nav-link, #site-footer a.nav-link').forEach(a => {
     const route = resolveRoute(new URL(a.getAttribute('href'), window.location.href).pathname);
-    const on = !!route && route.page === page;
+    const on = !!route && route.page === page?.replace(/-detail$/, '');
     a.classList.toggle('active', on);
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });

@@ -391,6 +391,23 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(Math.abs(dcr.top + dcr.height - 752) < 1, `desktop footer 捲到底：最後一行在底列那條線（bottom ${dcr.top + dcr.height}）`);
   await d.keyboard.press('Escape');
 
+  // 師資列表點進詳細頁：左上角返回鈕（左緣對齊導覽矩形、上緣＝內容第一行、捲動時 sticky 停住）、選單亮師資、返回回列表
+  await d.goto(base + '/pages/faculty.html');
+  await d.waitForSelector('#site-header .site-bar');
+  await d.click('a.item-row >> nth=0');
+  await d.waitForFunction(() => document.body.dataset.page === 'faculty-detail');
+  assert(new URL(d.url()).pathname === '/pages/faculty-detail.html' && await d.$$eval('.section-nav-dot', b => b.length) === 6 && await css(d, '.page-figure', 'display') === 'block', '詳細頁：網址、6 段導覽、右圖');
+  assert(await d.$eval('.site-menu a[href="faculty.html"]', a => a.classList.contains('active')), '詳細頁：選單亮師資');
+  const bk = async () => (await rect(d, '.back-btn .icon'));
+  let bkr = await bk();
+  const ph = await rect(d, '.profile-photo');
+  assert(Math.abs(bkr.left - await dotL()) < 1 && Math.abs(bkr.top - ph.top) < 1, `返回鈕左上角：對齊導覽矩形、照片上緣（${bkr.left},${bkr.top} vs ${await dotL()},${ph.top}）`);
+  await d.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+  assert(Math.abs((await bk()).top - bkr.top) < 1, '返回鈕 sticky：捲動後還在左上角');
+  await d.click('.back-btn');
+  await d.waitForFunction(() => document.body.dataset.page === 'faculty');
+  assert(new URL(d.url()).pathname === '/pages/faculty.html', '返回鈕回師資列表');
+
   // grid 疊圖：按 G 開關、記住；桌面 12 欄、手機 4 欄
   await d.goto(base + '/pages/about.html');
   await d.waitForSelector('#site-header .site-bar');
