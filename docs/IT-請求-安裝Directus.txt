@@ -1,0 +1,237 @@
+【IT 協助請求】SCAID 後台：在新主機安裝 Directus（比照 SCCD 後台）
+提出單位：AI設計職人學位學程（SCAID）
+日期：2026-11-10
+
+前言：
+・感謝協助開好 Node.js 環境。這份是「全新安裝」的步驟，取代前一份《後台502與憑證》的請求一
+  （那份假設是從 SCCD 複製過來的資料夾；現在改成乾淨安裝，不需要從 SCCD 搬任何東西）。
+  前一份的請求二（HTTPS 憑證／後台網域）仍需處理，本份步驟六會用到。
+・架構比照 SCCD 後台（sccdtest.usc.edu.tw）：
+     nginx（HTTPS）→ Directus（Node.js，本機 port 8055）＋ MySQL 資料庫 ＋ 檔案存 S3
+  前台是純靜態網站，只透過 HTTPS 讀後台的 JSON API（https://<後台網域>/items/...）。
+・SCAID 請用獨立的資料庫、獨立的金鑰與 S3 位置，不要與 SCCD 共用。
+・以下指令僅供參考，以主機實際環境為準。文中 <…> 為待填值。
+  密碼、金鑰只寫在主機上的 .env，請勿寫進信件或文件。
+
+
+════════════════════════════════════════════════
+步驟〇：確認 Node.js 版本，決定 Directus 版本
+════════════════════════════════════════════════
+
+  node -v
+
+  ・v26 以上   → 安裝最新版 Directus 12（目前 12.6.1）
+  ・v22 或 v24 → 最多只能裝 12.5.1（Directus 12.6 起要求 Node.js 26）
+                 Node 26 已是 LTS，方便的話建議升到 26，之後升級 Directus 才跟得上。
+
+  註：SCCD 後台目前是 Directus 11；SCAID 是新裝，直接用 12（授權說明見文末附註）。
+
+
+════════════════════════════════════════════════
+步驟一：建資料庫（MySQL，比照 SCCD）
+════════════════════════════════════════════════
+
+  CREATE DATABASE scaid_directus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER 'scaid_directus'@'localhost' IDENTIFIED BY '<資料庫密碼>';
+  GRANT ALL PRIVILEGES ON scaid_directus.* TO 'scaid_directus'@'localhost';
+  FLUSH PRIVILEGES;
+
+  ・請用 utf8mb4：中文罕用字、表情符號才存得下。
+  ・主機上還沒有 MySQL 的話，建議裝 MySQL 8.4（LTS）。
+  ・若 IT 偏好 PostgreSQL 也可以，步驟三的 DB_CLIENT 改 pg、DB_PORT 改 5432 即可。
+
+
+════════════════════════════════════════════════
+步驟二：準備 S3（存放後台上傳的圖片與檔案，比照 SCCD）
+════════════════════════════════════════════════
+
+  ・SCAID 專用的 bucket（或 IT 指定的 bucket），請與主機放在同一個 AWS 區域（region）。
+    SCCD 那台曾兩次因為主機連 S3 逾時，造成全站圖片掛掉；同區域可降低這個風險。
+  ・bucket 維持私有即可（檔案由 Directus 讀出來給前台）。建議開啟版本控制（Versioning），誤刪可救回。
+  ・建一組 IAM 存取金鑰，只給這個 bucket 的權限：
+       s3:ListBucket                                  → arn:aws:s3:::<bucket 名>
+       s3:GetObject、s3:PutObject、s3:DeleteObject    → arn:aws:s3:::<bucket 名>/Directus/*
+  ・若暫時沒有 S3，可先把檔案存在主機上（步驟三有寫改法）。但之後再改成 S3 必須搬檔，
+    SCCD 搬過一次相當麻煩，建議一開始就決定。
+
+
+════════════════════════════════════════════════
+步驟三：安裝 Directus、設定 .env
+════════════════════════════════════════════════
+
+  請用一般使用者（非 root）執行：
+
+  mkdir ~/scaid-directus && cd ~/scaid-directus
+  npm init -y
+  npm install directus@12              （Node 22／24 請改 npm install directus@12.5.1）
+
+  產生兩組隨機值（KEY、SECRET 各跑一次，不要沿用 SCCD 的）：
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+  建立 ~/scaid-directus/.env，內容如下：
+
+  # ── 基本 ──
+  HOST=127.0.0.1
+  PORT=8055
+  PUBLIC_URL=https://<後台網域>
+  IP_TRUST_PROXY=true
+  KEY=<隨機值一>
+  SECRET=<隨機值二>
+
+  # ── 資料庫（步驟一）──
+  DB_CLIENT=mysql
+  DB_HOST=127.0.0.1
+  DB_PORT=3306
+  DB_DATABASE=scaid_directus
+  DB_USER=scaid_directus
+  DB_PASSWORD=<資料庫密碼>
+  DB_CHARSET=UTF8MB4_UNICODE_CI
+
+  # ── 第一個管理員（只在步驟四 bootstrap 時使用）──
+  ADMIN_EMAIL=<學程提供的信箱>
+  ADMIN_PASSWORD=<暫時密碼>
+
+  # ── 讓前台網站跨網域讀取 ──
+  CORS_ENABLED=true
+  CORS_ORIGIN=*
+
+  # ── 檔案（步驟二）──
+  STORAGE_LOCATIONS=s3
+  STORAGE_S3_DRIVER=s3
+  STORAGE_S3_KEY=<IAM access key>
+  STORAGE_S3_SECRET=<IAM secret key>
+  STORAGE_S3_BUCKET=<bucket 名>
+  STORAGE_S3_REGION=<bucket 所在區域>
+  STORAGE_S3_ROOT=Directus
+
+  # ── 以下三項是 SCCD 上線後才陸續請 IT 追加的，這次一開始就設好 ──
+  FILES_MAX_UPLOAD_SIZE=200mb
+  FILES_MIME_TYPE_ALLOW_LIST=image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf
+  ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION=12000
+
+  說明：
+  ・HOST=127.0.0.1：Directus 只聽本機，外部一律經過 nginx（port 8055 不對外開）。
+  ・IP_TRUST_PROXY=true：放在 nginx 後面時，Directus 12 起需要明寫。
+  ・CORS_ORIGIN=*：與 SCCD 相同。前台正式網域確定後，可再收斂成該網址。
+  ・FILES_MAX_UPLOAD_SIZE：上傳檔案大小上限，請與步驟六 nginx 的 client_max_body_size 一致。
+  ・FILES_MIME_TYPE_ALLOW_LIST：擋掉 HEIC／TIFF（瀏覽器無法顯示，上傳後前台會破圖）。
+  ・ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION：預設 6000px，超過的大圖產不出縮圖。
+  ・暫時不用 S3：STORAGE_LOCATIONS 改成 local，並刪掉 STORAGE_S3_ 開頭的幾行
+    （檔案會存在 ~/scaid-directus/uploads）。
+  ・.env 權限設成只有自己能讀：chmod 600 .env
+
+
+════════════════════════════════════════════════
+步驟四：初始化並試跑
+════════════════════════════════════════════════
+
+  cd ~/scaid-directus
+  npx directus bootstrap      （建立系統資料表＋第一個管理員，帳密取自 .env）
+  npx directus start          （看到 Server started at http://127.0.0.1:8055 即成功）
+
+  另開一個終端機測試：
+  curl http://127.0.0.1:8055/server/ping      → 應回 pong
+
+  確認後按 Ctrl+C 停止（下一步交給 pm2 常駐）。
+  bootstrap 成功後，請刪掉 .env 裡 ADMIN_PASSWORD 那一行（之後用不到，不留明文密碼）。
+
+
+════════════════════════════════════════════════
+步驟五：pm2 常駐、開機自動啟動
+════════════════════════════════════════════════
+
+  sudo npm install -g pm2
+  cd ~/scaid-directus
+  pm2 start "npx directus start" --name scaid-directus
+  pm2 save
+  pm2 startup        （照它印出的那行 sudo 指令再執行一次，重開機才會自動啟動）
+
+  ⚠ 之後若修改 .env，請用下面這行重啟，新設定才會生效：
+     pm2 restart scaid-directus --update-env
+  （SCCD 遇過：只下 pm2 restart，pm2 沿用舊設定，改了 .env 卻沒生效。）
+
+
+════════════════════════════════════════════════
+步驟六：nginx 反向代理＋HTTPS
+════════════════════════════════════════════════
+
+  網域依前一份請求二的結果：建議改用一層子網域（例如 scaidcms.usc.edu.tw），
+  可直接沿用現有的 *.usc.edu.tw 萬用憑證；SCCD 的 sccdtest.usc.edu.tw 就是這個做法。
+
+  server {
+      listen 80;
+      server_name <後台網域>;
+      return 301 https://$host$request_uri;
+  }
+
+  server {
+      listen 443 ssl;
+      server_name <後台網域>;
+      ssl_certificate     <憑證路徑>;
+      ssl_certificate_key <私鑰路徑>;
+
+      client_max_body_size 200M;      # 與 FILES_MAX_UPLOAD_SIZE 一致（nginx 預設只有 1M）
+
+      location / {
+          proxy_pass http://127.0.0.1:8055;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header Upgrade $http_upgrade;      # WebSocket（後台即時更新用）
+          proxy_set_header Connection "upgrade";
+          proxy_read_timeout 300s;                     # 上傳大檔不中斷
+      }
+  }
+
+  sudo nginx -t && sudo systemctl reload nginx
+
+  ・主機防火牆（Lightsail 在「網路」分頁）：只開 80、443（與 SSH），8055 不要對外開。
+  ・主機若有限制對外連線，請放行 S3 與 telemetry.directus.com（Directus 12.6 起的授權回報網址）。
+
+
+════════════════════════════════════════════════
+步驟七：驗證
+════════════════════════════════════════════════
+
+  curl -I https://<後台網域>/server/ping     → HTTP 200（不加 -k 也能通過＝憑證正確）
+  瀏覽器開 https://<後台網域>/admin          → 出現 Directus 登入頁，網址列沒有「不安全」
+  用管理員登入 → 檔案庫上傳一張圖片 → 能正常預覽＝S3 設定正確
+
+  註：Directus 12 起 /server/health 必須登入才能看（未登入回 403 屬正常）。
+      前一份請求單用 /server/health 驗證的方式，請改用上面的 /server/ping。
+
+
+════════════════════════════════════════════════
+步驟八：備份（建議）
+════════════════════════════════════════════════
+
+  資料庫每天備份一次（帳密放在 ~/.my.cnf，不要寫在指令裡）：
+
+  mkdir -p ~/backups
+  crontab -e，加入：
+  0 3 * * * mysqldump --single-transaction scaid_directus | gzip > ~/backups/scaid-directus-$(date +\%Y\%m\%d).sql.gz
+
+  ・檔案在 S3，靠步驟二的版本控制保護。
+  ・升級 Directus 前請先備份資料庫；升大版本（例如 12 → 13）前請先看官方的 breaking changes。
+
+
+════════════════════════════════════════════════
+附註：版本與授權（給學程與 IT 參考，不影響安裝步驟）
+════════════════════════════════════════════════
+
+  ・Directus 12 自架預設為免費的 Core 方案，不需要申請序號。Core 的限制：
+       後台帳號 3 個（硬上限）、資料表（collection）25 個、自動化流程（Flow）5 個。
+    超過上限時，非管理員帳號無法登入、部分 API 會停用。
+    帳號請先開「管理員 1 個＋編輯者最多 2 個」。
+  ・學校規模超過 Directus 免費完整版（Innovation Grant）的門檻（年營收 500 萬美元、50 人），
+    因此適用 Core 方案；之後若需要更多帳號，再評估付費授權。
+
+
+完成後請回覆：
+  1. 最終的後台網域
+  2. Node.js 版本與安裝的 Directus 版本（在 ~/scaid-directus 執行 npm ls directus）
+  3. 管理員帳號（密碼請另以安全方式提供）
+  4. S3 bucket 名稱與區域（之後前台圖片若要比照 SCCD 改走 CloudFront，會用到）
+  我們會把前台的 API 網址改成該網域（前台只需改一處設定）。
