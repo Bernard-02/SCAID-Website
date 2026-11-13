@@ -22,7 +22,7 @@ const assert = (c, msg) => { if (!c) fails.push(msg); };
 const watch = (page) => {
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-  page.on('requestfailed', r => { const u = r.url(); if (new URL(u).hostname === '127.0.0.1' && !u.endsWith('intro-test.mp4')) errors.push('reqfailed: ' + u); });
+  page.on('requestfailed', r => { const u = r.url(); if (new URL(u).hostname === '127.0.0.1' && !u.endsWith('intro-test.mp4')) errors.push(`reqfailed: ${u}（${r.failure()?.errorText}，頁面 ${new URL(page.url()).pathname}）`); });
   // 假 Directus footer 單例（後台網域還是 placeholder，不接會 DNS 失敗）
   return page.route(/\/items\/footer/, r => r.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, json: { data: {
     email: 'cms@example.com', tel: '02 1111 1111', fax: null, address_zh: '後台地址（示意）', address_en: null,
@@ -166,17 +166,18 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await openMenu(m);
   await m.click('.lang-btn');
   assert((await m.textContent('main h1')).trim() === 'Terms', '切 en：當頁標題');
-  // 內頁選單開：內容左緣＝max(logo 左緣, 選單右緣)（手機 en logo 幾乎滿版 → 對齊選單右緣 160）
+  // 內頁選單開：內容左緣（手機＝左緣的段落導覽矩形）推到選單右緣 160＝play 那條線；內文在它右邊一個 rail（48）
   await m.waitForTimeout(700);
   {
-    const h = await rect(m, 'main h1'), lg = await rect(m, '.site-logo');
-    void lg;
-    assert(Math.abs(h.left - 160) < 2 && Math.abs(h.left - (await rect(m, '.play-btn')).left) < 2, `手機內頁選單開：內容左緣＝選單右緣＝play（h1 ${h.left}）`);
+    const n = await rect(m, '.section-nav'), h = await rect(m, 'main h1');
+    assert(Math.abs(n.left - 160) < 2 && Math.abs(n.left - (await rect(m, '.play-btn')).left) < 2 && Math.abs(h.left - n.left - 48) < 2,
+      `手機內頁選單開：導覽矩形＝選單右緣＝play、內文再讓一個 rail（nav ${n.left} h1 ${h.left}）`);
   }
   await m.click('.site-menu a[href="about.html"]');
   await m.waitForFunction(() => document.body.dataset.page === 'about');
   assert((await m.textContent('main h1')).trim() === 'About' && (await m.textContent('main h2')).trim() === 'Competencies', 'en 換頁：新頁標題也是英文');
-  assert(await css(m, '.section-nav', 'display') === 'none' && await css(m, '.page-figure', 'display') === 'none', '手機 about：段落導覽、右圖先不出');
+  assert(await css(m, '.section-nav', 'display') === 'flex' && await css(m, '.page-figure', 'display') === 'none', '手機 about：段落導覽在、右圖不在內文裡（改右緣縮圖鈕）');
+  assert((await m.textContent('.figure-dialog-body')).trim() === 'Placeholder: image', '右圖複本也跟語言走');
   await openMenu(m);
   await m.click('.lang-btn');
   assert((await m.textContent('main h1')).trim() === '關於' && (await m.textContent('main h2')).trim() === '培育能力', '切回 zh：標題');
@@ -185,6 +186,48 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
 
   // 底列中間的動態只在首頁（user 2026-11-10）：內頁藏起來、點不到
   assert(await css(m, '.bar-news', 'visibility') === 'hidden' && await css(m, '.bar-news', 'opacity') === '0', '內頁：底列沒有動態');
+
+  // 手機內頁版型（user 2026-11-13 手機稿）：左緣段落導覽（矩形對齊 menu 鈕、畫面中線）、內文左右各讓一個 rail（48）、
+  // 右緣中線上的右圖縮圖鈕（右緣對齊 footer 鈕、不壓內文）；點了 dialog 放大蓋滿畫面，再點任何地方／Esc 淡出後關；選單開著縮圖退場
+  await m.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).opacity === '1'
+    && new DOMMatrix(getComputedStyle(document.getElementById('page-content')).transform).m41 === 0);
+  {
+    const th = await rect(m, '.figure-thumb'), mr = await rect(m, '.menu-btn .bar-rect'), fr = await rect(m, '.footer-btn .bar-rect');
+    const n = await rect(m, '.section-nav'), b = await rect(m, '.page-body');
+    assert(await m.$$eval('.section-nav-dot', x => x.length) === 3 && Math.abs(n.left - mr.left) < 1 && Math.abs(n.cy - 422) < 1,
+      `手機段落導覽：3 格、矩形左緣對齊 menu 鈕、畫面中線（left ${n.left} vs ${mr.left}、cy ${n.cy}）`);
+    assert(Math.abs(b.left - 64) < 1 && Math.abs(b.left + b.width - 326) < 1, `手機內文左右各讓 48（${b.left}～${b.left + b.width}）`);
+    assert(Math.abs(th.left + th.width - (fr.left + fr.width)) < 1 && Math.abs(th.cy - 422) < 1 && th.width === 32 && th.height === 32 && th.left - (b.left + b.width) >= 15,
+      `縮圖鈕：右緣對齊 footer 鈕、畫面中線、32 見方、不壓內文（right ${th.left + th.width} vs ${fr.left + fr.width}、cy ${th.cy}、${th.width}×${th.height}、離內文 ${th.left - b.left - b.width}）`);
+    assert(await m.$eval('#figure-dialog', d => d.open) === false && await css(m, '#figure-dialog', 'display') === 'none', '放大 dialog 預設關');
+    // 點導覽最後一段 → 那段標題捲到第一段標題原本的位置（手機也撐高最後一段）
+    const y0 = (await rect(m, '.section-title')).top;
+    await m.click('.section-nav-dot[data-i="2"]');
+    await m.evaluate(() => new Promise(r => { let last = -1; const t = () => { if (scrollY === last) r(scrollY); else { last = scrollY; setTimeout(t, 150); } }; setTimeout(t, 150); }));
+    const y2 = await m.$$eval('.section-title', ts => ts[2].getBoundingClientRect().top);
+    assert(Math.abs(y2 - y0) < 1.5 && await m.$eval('.section-nav-dot[data-i="2"]', x => x.getAttribute('aria-current') === 'true'), `手機段落導覽：點最後一段 → 對齊第一段標題位置（${y2} vs ${y0}）`);
+    await m.evaluate(() => scrollTo({ top: 300, behavior: 'instant' }));
+    await m.click('.figure-btn');
+    await m.waitForFunction(() => getComputedStyle(document.querySelector('#figure-dialog')).opacity === '1');
+    const dr = await rect(m, '#figure-dialog'), ir = await rect(m, '.figure-dialog-body > *'), cr = await rect(m, '.figure-close .bar-rect');
+    assert(await m.$eval('#figure-dialog', d => d.open) && dr.top === 0 && dr.left === 0 && dr.width === 390 && dr.height === 844, `點縮圖：dialog 蓋滿畫面（${JSON.stringify(dr)}）`);
+    assert(Math.abs(ir.width - 358) < 1 && Math.abs(ir.height - 358) < 1 && Math.abs(ir.left - 16) < 1 && (await m.textContent('.figure-dialog-body')).trim() === '示意：圖片',
+      `放大的圖：內容寬、方形（${ir.width}×${ir.height} left ${ir.left}）`);
+    assert(Math.abs(cr.left + cr.width / 2 - 195) < 1 && Math.abs(cr.cy - mr.cy) < 1 && await css(m, '.figure-close .bar-rect', 'opacity', '::after') === '1'
+      && await css(m, '.figure-close .bar-label', 'width') === '1px', `關閉鈕：正中、跟底列矩形同高、白圓點、滑鼠點開不亮名字（cx ${cr.left + cr.width / 2} cy ${cr.cy}）`);
+  }
+  await m.mouse.click(195, 300);
+  assert(await m.$eval('#figure-dialog', d => d.open && d.classList.contains('is-closing')), '點一下放大圖：先淡出');
+  await m.waitForFunction(() => !(/** @type {HTMLDialogElement} */ (document.querySelector('#figure-dialog')).open));
+  await m.click('.figure-btn');
+  await m.keyboard.press('Escape');
+  await m.waitForFunction(() => !(/** @type {HTMLDialogElement} */ (document.querySelector('#figure-dialog')).open));
+  assert(await m.evaluate(() => scrollY) === 300, `Esc 關放大圖：頁面沒被捲回頂（scrollY ${await m.evaluate(() => scrollY)}）`);
+  await m.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await openMenu(m);
+  await m.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).visibility === 'hidden');
+  await m.keyboard.press('Escape');
+  await m.waitForFunction(() => !document.documentElement.classList.contains('menu-open') && getComputedStyle(document.querySelector('.figure-btn')).opacity === '1');
 
   // footer 覆蓋層：鈕開／關、白圓點＋名字常駐、底列其餘照常、Esc 關、跟選單互斥
   assert(await css(m, '.site-footer', 'display') === 'none', 'footer 預設藏');
@@ -240,6 +283,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(new URL(m.url()).pathname === '/', 'logo → root');
   await m.waitForFunction(() => getComputedStyle(document.querySelector('.bar-news')).opacity === '1');
   assert(await css(m, '.bar-news', 'visibility') === 'visible', '回首頁：動態淡入回來');
+  await m.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).visibility === 'hidden');   // 首頁沒有右圖 → 縮圖鈕退場
   await m.click('.bar-news');
   await m.waitForFunction(() => document.documentElement.classList.contains('news-open'));
   assert(new URL(m.url()).pathname === '/', '展開不換頁');
@@ -281,6 +325,15 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     `換頁 fade out／in（淡出中途 ${fadeOutMid} 幀、淡入中途 ${fadeInMid} 幀、換內容時 opacity ${firstNew && firstNew[0]}、最後 ${fade[fade.length - 1][0]}）`);
   assert(await m.evaluate(() => scrollY) === 0, '換頁後在頂部');
   assert(await css(m, '#custom-scrollbar-thumb', 'display') === 'none', 'mobile 無自製捲軸');
+  // 手機詳細頁：返回鈕在左緣那一條（對齊 menu 鈕、上緣＝照片）、捲動後 sticky 停住
+  await m.goto(base + '/pages/faculty-detail.html');
+  await m.waitForSelector('#site-header .site-bar');
+  {
+    const bk = await rect(m, '.back-btn .icon'), ph = await rect(m, '.profile-photo'), mr = await rect(m, '.menu-btn .bar-rect');
+    await m.evaluate(() => scrollTo({ top: 600, behavior: 'instant' }));
+    assert(Math.abs(bk.left - mr.left) < 1 && Math.abs(bk.top - ph.top) < 1 && Math.abs((await rect(m, '.back-btn .icon')).top - bk.top) < 1,
+      `手機返回鈕：對齊 menu 鈕、照片上緣、捲動後 sticky（${bk.left},${bk.top} vs ${mr.left},${ph.top}）`);
+  }
 
   // ── 桌面 1280 ──
   const d = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -288,6 +341,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await d.goto(base + '/pages/about.html');
   await d.waitForSelector('#site-header .site-bar');
   assert(await css(d, '#page-content', 'paddingTop') === '112px', 'desktop 頂距 7rem');
+  assert(await css(d, '.figure-btn', 'display') === 'none' && await css(d, '.page-figure', 'display') === 'block', 'desktop：右圖在內文旁、沒有縮圖鈕');
   assert(await css(d, '.site-container', 'paddingLeft') === '60px', 'desktop container padding 60');
   assert((await css(d, '.site-grid', 'gridTemplateColumns')).split(' ').length === 12, 'desktop grid 12 欄');
   // about 內頁版型：標題 text-md 粗體、內文小一階 text-s；內文從 col 2 起；col 1 段落導覽（矩形左緣對齊 menu 鈕）

@@ -130,10 +130,18 @@
   .bar-btn { display: inline-flex; align-items: center; gap: 0.5em; flex: none; color: inherit; }
   .bar-rect { position: relative; display: block; width: 0.75em; height: 1.25em; background: currentColor; }
   .bar-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  /* 選單開著 menu 名字常駐；其餘照常 hover 才出 */
-  .bar-btn:hover .bar-label,
-  .bar-btn:focus-visible .bar-label,
+  /* 選單開著 menu 名字常駐；其餘 hover／鍵盤聚焦才出。觸控不算（user 2026-11-13 手機版）：點完 :hover／:focus-visible 會黏在鈕上
+     → 選單關了名字還留著，所以 hover 只給滑鼠、聚焦排除 html.input-touch（helpers.js） */
+  html:not(.input-touch) .bar-btn:focus-visible .bar-label,
   html.menu-open .menu-btn .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  @media (hover: hover) {
+    .bar-btn:hover .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  }
+  /* 觸控：矩形鈕本體很小（寬 0.75em）→ ::before 把可點範圍往外撐，畫面不變。左右各撐半個 menu／play 間距＝兩顆的範圍相接不重疊 */
+  @media (pointer: coarse) {
+    .site-bar .bar-btn { position: relative; }
+    .bar-btn::before { content: ''; position: absolute; inset: -1em calc(var(--bar-gap, 1rem) / -2); }
+  }
   /* footer 開著：底列只剩 footer 鈕（白圓點），照一開始的排法（user 2026-11-03） */
   html.footer-open :is(.bar-left, .bar-news) { opacity: 0; visibility: hidden; }
   /* 底列中間的動態只在首頁（user 2026-11-10）：內頁同 footer 開著的退場 */
@@ -148,6 +156,30 @@
      ⚠️ 起點要寫明 0：flex 子項 min-width 預設 auto，auto→長度不能過場＝play 直接跳過去 */
   .menu-btn { justify-content: flex-start; min-width: 0; transition: min-width var(--dur-medium) var(--ease-wipe); }
   html.menu-open .menu-btn { min-width: calc(var(--menu-w) - var(--container-padding) - var(--bar-gap)); }
+
+  /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊 footer 鈕、上下在畫面中線
+     （＝桌面右圖那條水平線；手機沒有自製捲軸，z 同捲軸），點了開 .figure-dialog 放大（桌面右圖在 main 裡，page.css .page-figure；HTML 掛 md:hidden）。
+     內文右邊讓出 --rail-w（page.css .page-body）→ 不壓字。固定在殼上、不放 #page-content 裡（裡面不能有 fixed）；
+     內容由 chrome.js syncFigure 從當頁 .page-figure 複製，有圖才 .has-figure。
+     進出場走網站 transition：沒圖／footer 開／選單開（內容右推過來會被它壓到）／換頁淡出，淡完才 hidden ── */
+  .figure-btn {
+    position: fixed;
+    z-index: 35;
+    right: var(--container-padding);
+    top: 50%;
+    width: var(--thumb-w);
+    aspect-ratio: 1;
+    transform: translateY(-50%);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-fade), visibility 0s var(--dur-fade);
+  }
+  .figure-btn.has-figure { opacity: 1; visibility: visible; transition: var(--transition-fade), visibility 0s; }
+  html:is(.footer-open, .menu-open, .page-leaving) .figure-btn { opacity: 0; visibility: hidden; transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  .figure-btn::before { content: ''; position: absolute; inset: calc(var(--spacing-xs) * -1); }   /* 可點範圍往外撐，畫面不變 */
+  .figure-thumb { display: block; width: 100%; height: 100%; overflow: hidden; }
+  /* 複本縮成方形縮圖：圖片裁切填滿；佔位的字藏掉只留灰底 */
+  .figure-thumb > * { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--light-gray); font-size: 0; }
 
   /* 動態：中欄滿寬。內容＝[左墊][標題][＋][右墊]，兩墊等分剩餘＝置中。
      選單開著／首頁展開：標題退掉（只剩＋）；首頁展開再加：右墊收 0（＋滑到右端）再推出欄外一個 gutter（不擋動態圖片）、
@@ -251,9 +283,39 @@
   .intro-dialog::backdrop { background: var(--theme-fg); }
   .intro-dialog video { width: 100%; height: 100%; object-fit: contain; }
   .intro-close { position: absolute; top: var(--spacing-md); right: var(--container-padding); }
+
+  /* ── 右圖放大 dialog（手機，右緣縮圖鈕開；user 2026-11-13）：白底蓋滿畫面、圖在 logo 區與底列區之間置中。
+     inset 0 撐滿＝跟著實際可視範圍（同 footer 覆蓋層），不靠 ::backdrop 補；fade in 走 keyframes、fade out 由 chrome.js 加 .is-closing 淡完才關。
+     ⚠️ display 只能寫在 [open]：寫在 .figure-dialog 會蓋掉瀏覽器「沒開＝display none」 ── */
+  .figure-dialog {
+    inset: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: var(--top-h) var(--container-padding) var(--bar-h);
+    border: 0;
+    background: var(--theme-bg);
+    color: var(--theme-fg);
+    transition: var(--transition-fade);
+  }
+  .figure-dialog::backdrop { background: none; }
+  .figure-dialog[open] { display: flex; align-items: center; justify-content: center; animation: fade-in var(--dur-fade) var(--ease-standard); }
+  .figure-dialog.is-closing { opacity: 0; }
+  /* 放大的圖：方形，寬＝內容寬，矮畫面（橫拿）改吃可用高。樣子同桌面右圖（page.css .page-figure > *） */
+  .figure-dialog-body > * { width: min(100vw - 2 * var(--container-padding), 100svh - var(--top-h) - var(--bar-h)); }
+  /* 關閉鈕：矩形在畫面正中（圖的正下方）、跟底列的矩形同高，白圓點＝開著。鈕高 1.5em＝底列那一行的高、底貼 --bar-pad（同底列的排法）；
+     左緣定在「中線 − 半個矩形」→ 名字出來是往右長、矩形不動 */
+  .figure-close { @apply text-s md:text-md; position: absolute; left: calc(50% - 0.375em); bottom: var(--bar-pad); height: 1.5em; }
+  .figure-close .bar-rect::after { opacity: 1; }
 }
 
 /* 跑馬燈：兩份 copy 各走自己的寬（含 padding-right 當間距）＝無縫接力 */
 @keyframes bar-marquee {
   to { transform: translateX(-100%); }
+}
+/* 網站 transition 的 keyframes 版（元素從 display none 出現時 transition 起不來，例：dialog 打開） */
+@keyframes fade-in {
+  from { opacity: 0; }
 }

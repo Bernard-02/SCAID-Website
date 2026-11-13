@@ -8,7 +8,7 @@ import { initRouter, updateNavActive } from './router.js';
 import { sitePath } from './modules/ui/site-base.js';
 import { runPageCleanups } from './modules/ui/page-cleanup.js';
 import { installReducedMotionGsap } from './modules/ui/reduce-motion.js';
-import { initChrome, closeOverlays, fitBar } from './modules/ui/chrome.js';
+import { initChrome, closeOverlays, fitBar, syncFigure } from './modules/ui/chrome.js';
 import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
@@ -52,6 +52,7 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   closeOverlays();      // 選單／footer 覆蓋層／首頁展開態不跨頁
   updateNavActive(page);
   initSectionNav();     // 內頁段落導覽（先於 applyLang：生成的報讀文字也要套語言）
+  syncFigure();         // 手機：右緣縮圖鈕換成這一頁的右圖（先於 applyLang：複本也要套語言）
   applyLang();          // 新換進來的內容若有 data-zh 也套語言
   // 接 Directus 後：if (page === 'news') import('./modules/pages/news.js').then(m => m.initNews(params));
 }
@@ -63,5 +64,5 @@ initChrome();           // 先於 router：底列動態在首頁要攔 click（p
 initRouter();
 initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
-loadPartial('site-header', 'pages/header.html').then(() => { updateNavActive(); applyLang(); fitBar(); });
+loadPartial('site-header', 'pages/header.html').then(() => { updateNavActive(); syncFigure(); applyLang(); fitBar(); });
 loadPartial('site-footer', 'pages/footer.html').then(() => { applyLang(); loadFooterCms(); });

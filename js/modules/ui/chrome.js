@@ -1,8 +1,10 @@
 /**
  * 全站殼行為（結構 pages/header.html／footer.html，樣式 css/components/chrome.css）：
- * 選單開關、footer 覆蓋層、intro 影片 dialog、底列量測（兩側等寬＋動態跑馬燈）、首頁動態原地展開。
+ * 選單開關、footer 覆蓋層、intro 影片 dialog、底列量測（兩側等寬＋動態跑馬燈）、首頁動態原地展開、手機的右圖縮圖鈕＋放大 dialog。
  * 全部 document 委派＝片段注入前後都綁得到；狀態掛 <html> class（menu-open／footer-open／news-open）
  */
+import { DUR } from './motion.js';
+import { prefersReducedMotion } from './reduce-motion.js';
 
 const html = document.documentElement;
 
@@ -24,8 +26,9 @@ function setFooter(open) {
 }
 // 首頁動態展開：logo 上移、清單出來、底列＋滑到右端變－（home.css／chrome.css）；收合捲回頂
 function setNews(open) {
+  const was = html.classList.contains('news-open');
   html.classList.toggle('news-open', open);
-  if (!open) window.scrollTo(0, 0);
+  if (was && !open) window.scrollTo(0, 0);   // 本來開著才捲：closeOverlays 每次 Esc 都會進來，內頁按 Esc 不該被捲回頂
 }
 
 // 換頁／Esc：選單、footer、首頁展開全收（main.js initPageModules 每次換頁呼叫）
@@ -41,6 +44,28 @@ function openIntro(btn) {
   dialog.showModal();
   video.play().catch(() => {});
   dialog.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); }, { once: true });
+}
+
+// 內頁右圖的手機版（user 2026-11-13；chrome.css .figure-btn／.figure-dialog）：桌面右圖在 main 裡，手機是畫面右緣中線上的縮圖鈕、點了開 dialog 放大。
+// 縮圖與放大的內容＝當頁 .page-figure 內容的複本 → 換頁（main.js initPageModules）、header 片段注入後都要 sync；
+// 之後接 Directus 把右圖換掉時也要再呼叫一次。該頁沒圖（首頁）＝鈕不現身
+const figureDialog = () => /** @type {HTMLDialogElement | null} */ (document.getElementById('figure-dialog'));
+export function syncFigure() {
+  const btn = document.querySelector('.figure-btn'), dialog = figureDialog();
+  if (!btn || !dialog) return;   // header 片段還沒注入
+  if (dialog.open) dialog.close();   // 開著時換頁（上一頁／下一頁）
+  const src = document.querySelector('#page-content .page-figure > *');
+  btn.classList.toggle('has-figure', !!src);
+  for (const box of [btn.querySelector('.figure-thumb'), dialog.querySelector('.figure-dialog-body')]) {
+    box.replaceChildren(...(src ? [src.cloneNode(true)] : []));
+  }
+}
+// 關＝先淡出（.is-closing）、淡完才真的 close()
+function closeFigure() {
+  const dialog = figureDialog();
+  if (!dialog?.open || dialog.classList.contains('is-closing')) return;
+  dialog.classList.add('is-closing');
+  setTimeout(() => { dialog.classList.remove('is-closing'); dialog.close(); }, prefersReducedMotion() ? 0 : DUR.fade * 1000);
 }
 
 // 底列量測（chrome.css .site-bar）：
@@ -84,6 +109,13 @@ export function initChrome() {
     if (t.closest('.intro-close')) { /** @type {HTMLDialogElement} */ (document.getElementById('intro-dialog')).close(); return; }
     const play = t.closest('.play-btn');
     if (play instanceof HTMLElement) { openIntro(play); return; }
+    if (t.closest('.figure-btn')) {
+      figureDialog()?.showModal();
+      // showModal 會自動聚焦關閉鈕 → 滑鼠／觸控點開的不要一開就亮焦點框與名字（鍵盤 Enter 的 detail 是 0，照常聚焦）
+      if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      return;
+    }
+    if (t.closest('#figure-dialog')) { closeFigure(); return; }   // 放大後點任何地方都關
     if (t.closest('.site-menu a')) { setMenu(false); return; }
     // 首頁：動態原地展開、不走 router（preventDefault → router 看到 defaultPrevented 放行）；footer 開著先收
     if (t.closest('.bar-news') && document.body.dataset.page === 'index') {
@@ -93,6 +125,8 @@ export function initChrome() {
     }
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOverlays(); });
+  // 右圖 dialog 的 Esc：原生會直接關 → 攔下來走淡出。cancel 不冒泡 → capture
+  document.addEventListener('cancel', (e) => { if (e.target === figureDialog()) { e.preventDefault(); closeFigure(); } }, true);
 
   // 名字現／隱（hover、鍵盤聚焦）→ 側邊寬變 → 下一幀重量（等樣式套上）；視窗寬也是
   const refit = (e) => { if (e.target instanceof Element && e.target.closest('.site-bar')) requestAnimationFrame(fitBar); };

@@ -1,11 +1,15 @@
 /* 內頁版型（user 2026-11-03，參考圖＝degree show 站 about）：桌面 col 1 段落導覽、col 2 起內文由上往下、右邊圖片。
-   標題跟內文同字級，靠粗體＋間距分層；標題不 sticky。手機先只排內文（導覽、圖片 md 才出）。
+   標題跟內文同字級，靠粗體＋間距分層；標題不 sticky。
+   手機（user 2026-11-13 手機稿）：同一套三塊壓窄——左緣段落導覽＋返回鈕（對齊 menu 鈕）、中間內文由上往下、
+   右緣中線上的右圖縮圖鈕（對齊 footer 鈕；點了放大蓋滿畫面，chrome.css .figure-btn／.figure-dialog）。內文左右各讓出 --rail-w。
    段落導覽行為 js/modules/ui/section-nav.js */
 
 @layer components {
   /* 頁標題、段落標題（h2.section-title）、小標（h3）、說明段落同字級 text-md；內文小一階 text-s（user 2026-11-04）。
-     :where 不加權重 → 個別 text-* utility 還蓋得過 */
-  .page-body { @apply text-s; }
+     :where 不加權重 → 個別 text-* utility 還蓋得過。
+     grid-row 1 寫死：手機內文滿欄（col-span-full）跟導覽／返回鈕疊同一列，那一列才有整頁高給它們的 sticky 走；
+     手機左右讓出 --rail-w 給導覽與縮圖鈕（桌面＝0，位置走 grid 欄） */
+  .page-body { @apply text-s; grid-row: 1; margin-inline: var(--rail-w); overflow-wrap: anywhere; }   /* anywhere：窄手機上放不下的長英文字折在欄內，不衝到縮圖鈕底下 */
   .page-body :where(h1, h2, h3, .page-lead) { @apply text-md; }
   .page-lead { margin-top: var(--spacing-md); font-weight: var(--font-weight-bold); }
   .page-section { margin-top: var(--spacing-2xl); }
@@ -39,19 +43,27 @@
     .section-nav-dot:hover, .section-nav-step:not(:disabled):hover { opacity: 0.6; }
   }
 
-  /* 返回鈕（點進去的詳細頁，user 2026-11-10 草圖）：col 1 左上角、上緣＝內容第一行；桌面 sticky 停在那條線，手機排在內文上面。
+  /* 返回鈕（點進去的詳細頁，user 2026-11-10 草圖）：col 1 左上角、上緣＝內容第一行，sticky 停在那條線（手機也是，在左緣那一條裡）。
      字級同段落導覽、左緣對齊導覽矩形（＝menu 鈕）；padding＋負 margin＝點擊範圍放大但 icon 位置不動 */
   .back-btn {
     @apply text-s md:text-md;
+    --pad: 0.5em;
     grid-area: 1 / 1;
     justify-self: start;
     align-self: start;
-    padding: 0.5em;
-    margin: -0.5em;
+    position: sticky;
+    top: calc(var(--top-h) - var(--pad));   /* 扣 padding：icon 本身停在 --top-h */
+    padding: var(--pad);
+    margin: calc(var(--pad) * -1);
     line-height: 1;
   }
   .back-btn .icon { display: block; }
-  @media (min-width: 768px) { .back-btn { position: sticky; top: calc(var(--top-h) - 0.5em); } }   /* 扣 padding：icon 本身停在 --top-h */
+  /* 觸控：導覽鈕、返回鈕的可點範圍往左右撐（都在 --rail-w 那一條裡，不壓內文）；矩形／icon 位置不動 */
+  @media (pointer: coarse) {
+    .section-nav-dot { padding-inline: 1em; }
+    .section-nav-step { padding-inline: 0.75em; }
+    .back-btn { --pad: 1em; }
+  }
 
   /* 詳細頁頭：照片寬同列表縮圖（2 欄：手機 4 欄裡的 2、桌面內文 6 欄裡的 2），下面名字、單位 */
   .profile-photo { width: calc(50% - var(--spacing-gutter) / 2); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-lg); }
@@ -72,22 +84,21 @@
   .item-row > :last-child { grid-column: 3 / -1; }
   @media (min-width: 768px) { .item-row { grid-template-columns: repeat(6, 1fr); } }
 
-  /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。TODO 圖片待 user 給，現在是灰底佔位 */
+  /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。TODO 圖片待 user 給，現在是灰底佔位。
+     手機不出（HTML 掛 hidden md:block）：內容被複製到右緣縮圖鈕與放大 dialog（chrome.js syncFigure）→ 放大那份吃同一個樣子 */
   .page-figure { position: sticky; top: 50%; height: 0; align-self: start; }
-  .page-figure > * {
+  .page-figure > *, .figure-dialog-body > * {
     @apply text-s;
-    transform: translateY(-50%);
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--light-gray);
   }
+  .page-figure > * { transform: translateY(-50%); }
 
   /* 點導覽＝把該段標題捲到「第一段標題在頁頂時的位置」（--section-y0，section-nav.js 量）→ 最後一段至少要高到捲得到那條線 */
-  @media (min-width: 768px) {
-    .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
-    /* 沒段落的短頁（404）也要高過畫面中線，導覽／右圖的 sticky 才停得住 */
-    .page-body { min-height: calc(100vh - var(--top-h) - var(--bar-h)); }
-  }
+  .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
+  /* 沒段落的短頁（404）也要高過畫面中線，導覽／右圖的 sticky 才停得住 */
+  .page-body { min-height: calc(100vh - var(--top-h) - var(--bar-h)); }
 }

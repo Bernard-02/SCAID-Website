@@ -77,6 +77,8 @@
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離；footer 內容也貼這條 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
+  --thumb-w: 2rem;              /* 手機內頁右緣的右圖縮圖鈕邊長（chrome.css .figure-btn） */
+  --rail-w: calc(var(--thumb-w) + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝縮圖鈕（page.css .page-body）；桌面走 grid＝0 */
 
   /* ===== Motion tokens（全站單一來源）=====
      duration：GSAP 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS transition 與 GSAP tween 同步
@@ -129,5 +131,6 @@
     --bar-pad: 3rem;
     --menu-w: 18rem;
     --col-w: min(60vw, 32rem);
+    --rail-w: 0px;
   }
 }

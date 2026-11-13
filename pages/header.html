@@ -62,9 +62,23 @@
     </button>
   </div>
 
+  <!-- 手機：內頁右圖的縮圖鈕（user 2026-11-13 手機稿；桌面右圖在 main 裡，page.css .page-figure）。固定在畫面右緣「捲軸那一塊」、
+       上下在畫面中線，右緣對齊 footer 鈕；點了開 #figure-dialog 放大。
+       縮圖與放大的內容由 chrome.js syncFigure 從當頁 .page-figure 複製，該頁有圖才標 .has-figure 現身 -->
+  <button type="button" class="figure-btn md:hidden" aria-haspopup="dialog">
+    <span class="figure-thumb" aria-hidden="true"></span><span class="sr-only" data-en="View image">看圖片</span>
+  </button>
+
   <!-- intro 影片：原生 <dialog>，Esc／右上鈕關 -->
   <dialog class="intro-dialog" id="intro-dialog" aria-label="intro">
     <video controls playsinline></video>
     <button type="button" class="bar-btn intro-close"><span class="bar-label" data-zh="關閉" data-en="close">關閉</span><span class="bar-rect"></span></button>
+  </dialog>
+
+  <!-- 右圖放大（手機，右緣縮圖鈕開）：原生 <dialog> 白底蓋滿畫面、圖置中；點任何地方／Esc 關（fade in／out）。
+       下方矩形鈕（白圓點＝開著）給鍵盤與報讀用，位置同底列那條線 -->
+  <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片">
+    <div class="figure-dialog-body"></div>
+    <button type="button" class="bar-btn figure-close"><span class="bar-rect"></span><span class="bar-label" data-zh="關閉" data-en="close">關閉</span></button>
   </dialog>
 </header>

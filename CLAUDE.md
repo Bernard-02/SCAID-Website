@@ -15,20 +15,21 @@
   - **選單**：透明、固定寬 `--menu-w`（手機 10rem／桌面 18rem），logo 不動，沒有底色。開著時內容左緣推到選單右緣（推「選單寬 − 內距」，內容自己的左內距不重複算；user 2026-11-03 定案，不對 grid／logo），跟 play 鈕同一條線，play 鈕在選單右緣（選單開著時 menu 鈕 min-width 撐成選單欄那格、名字算在格子裡，play 自然排在後面——名字中英怎麼換都不影響 play，純 CSS 不量）。
     主選單在上、次選單＋語言鈕推到底，字級同底列。開著時 menu 鈕白圓點＋名字常駐、intro 照常、動態收成只剩＋。選單與 footer 互斥。
   - **底列**（固定、貼底 `--bar-pad`）：三欄＝左 menu／intro（play icon）、中 最新動態＋（**只在首頁**，內頁淡掉、user 2026-11-10；永遠畫面正中、寬＝`--col-w`＝首頁動態圖片寬）、右 footer。
-    矩形鈕 hover／鍵盤聚焦才在旁邊出名字，名字跟語言走（選單／簡介／頁尾 ↔ menu／intro／footer），平常視覺隱藏但仍是報讀名稱。
+    矩形鈕 hover／鍵盤聚焦才在旁邊出名字，名字跟語言走（選單／簡介／頁尾 ↔ menu／intro／footer），平常視覺隱藏但仍是報讀名稱。觸控不出名字（點完 :hover 會黏著 → hover 包 `@media (hover: hover)`、聚焦排除 `html.input-touch`），可點範圍用 `::before` 往外撐（`pointer: coarse`，畫面不變）。
     兩側等寬由 `fitBar` 量 `--side-min`：側邊放不下名字才縮動態、中心不動；標題放不下就跑馬燈。
   - **footer**：覆蓋層（`pages/footer.html`），只有點底列右下 footer 鈕才出現；開著時底列只剩 footer 鈕（白圓點、不出名字），menu／intro／動態用網站 transition 淡出、關掉時淡入（user 2026-11-03 改回一開始的排法）；logo 頂到頂、內容貼底，copyright 對齊底列那條線（`--bar-pad`）。往下捲沒有 footer。**內容走 Directus 單例 `footer`**（`footer-cms.js`；抓不到留 HTML 的 MOCK、抓到後台為準、空欄位整列收；欄位表 `docs/Directus-後台欄位.md`）。
   - **intro**：play 鈕 `data-video` 有網址才開原生 `<dialog>` 播影片。
+  - **手機的右圖**（user 2026-11-13 手機稿）：內頁右圖在手機＝畫面右緣「捲軸那一塊」的縮圖鈕 `.figure-btn`（固定在殼上、不在底列裡；右緣對齊 footer 鈕、上下在畫面中線＝桌面右圖那條水平線；邊長 `--thumb-w`、z 同捲軸 35；內文右邊讓出 `--rail-w` 不壓字），點了開原生 `<dialog>` `#figure-dialog` 白底蓋滿畫面、圖置中，再點任何地方／Esc 關（fade in／out）。縮圖與放大內容＝當頁 `.page-figure` 內容的複本（`chrome.js syncFigure`，換頁與 header 注入後呼叫；右圖做成會自己換的 ASCII 圖時這套複本不適用——`syncFigure` 會關掉開著的 dialog、複本也不會跟著動，到時改成同一個來源同時畫進右圖／縮圖／放大三處）。選單開（內容右推會被壓到）／footer 開／換頁時縮圖淡出。
   - **自製 scrollbar**：同 SCCD，藏原生、JS thumb（`custom-scrollbar.js`），手機不顯示。
 - **首頁**：一屏只有置中 logo；點動態「+」→ `html.news-open`：logo 上移到頂、清單在畫面中間展開（寬 `--col-w`）、可捲；
   底列標題退掉、＋滑到動態欄外右邊一個 gutter（不擋圖）、豎線收掉變－，大小同＋（CSS 畫的兩條線，transition）。
 - **網站 transition＝fade in／fade out**（user 2026-11-03）：token `--dur-fade`／`--transition-fade`（variables.css）、JS 用 `DUR.fade`（motion.js）。
   換頁：router 換頁前加 `html.page-leaving` 讓 main 淡出（跟 fetch 並行），換完內容拿掉＝淡入。footer 開關時底列其他鈕也走這組（淡完 visibility 才 hidden）。之後其他進出場也吃這組。
-- **內頁版型**（about 起，user 2026-11-03，`css/components/page.css`）：桌面 col 1 段落導覽、col 2–7 內文由上往下、col 9–12 右圖（是什麼圖待 user 說）；
+- **內頁版型**（about 起，user 2026-11-03，`css/components/page.css`）：桌面 col 1 段落導覽、col 2–7 內文由上往下、col 9–12 右圖（user 2026-11-13 初步想法、未定案：不是後台的單一張圖，而是有一個資料庫、每隔幾秒隨機生成一張 ASCII 圖像；現在是灰底佔位）；
   頁標題／段落標題／小標／說明段落 text-md 粗體、內文小一階 text-s、附註 text-xs，標題不 sticky。每段 `h2.section-title`；
   段落導覽（`section-nav.js` 依 section-title 生成：上下 chevron＋每段一個矩形）sticky 在 `<main>` 裡＝選單開時跟內容一起右推；
-  點了把該段標題捲到「第一段標題在頁頂時的位置」，最後一段撐高到捲得到。手機先只有內文（導覽、右圖 md 才出）。
-- **詳細頁**（`<slug>-detail`，user 2026-11-10）：列表 `a.item-row` 點進去；左上角 `.back-btn`（← icon，回列表）＝col 1 上緣對齊內容第一行、桌面 sticky、左緣對齊導覽矩形，跟 `.section-nav` 同放 `grid-area: 1 / 1`；選單亮父頁。目前只有 `faculty-detail`（照片＋名字＋各段條列、右圖照常；接 Directus 後帶 `?id=`）。
+  點了把該段標題捲到「第一段標題在頁頂時的位置」，最後一段撐高到捲得到。手機（user 2026-11-13 手機稿）＝同一套三塊壓窄：左緣段落導覽＋返回鈕（對齊 menu 鈕）、中間內文由上往下、右緣中線上的右圖縮圖鈕（見上「手機的右圖」）；內文 `col-span-full`＋左右 margin `--rail-w`（＝縮圖邊長＋gutter，桌面 0），跟導覽同在 grid row 1（sticky 才有整頁高可走）。
+- **詳細頁**（`<slug>-detail`，user 2026-11-10）：列表 `a.item-row` 點進去；左上角 `.back-btn`（← icon，回列表）＝col 1 上緣對齊內容第一行、sticky（手機也是）、左緣對齊導覽矩形，跟 `.section-nav` 同放 `grid-area: 1 / 1`；選單亮父頁。目前只有 `faculty-detail`（照片＋名字＋各段條列、右圖照常；接 Directus 後帶 `?id=`）。
   **全部內頁（含 404）都用這版型＋右圖**（user 2026-11-10），h1 跟段落標題同 text-md。右圖、段落導覽「永遠在畫面正中」＝高 0 的 sticky 錨點停在中線、內容往上下溢出
   （有高度的 sticky 捲到底會被格子底頂走）。段落裡的條列 `.item-list`（項目間空一行、h3 不粗體）；`.item-row`＝左方形縮圖 2 欄＋右文字（faculty／partners）。
   faculty 名字／單位中英兩行都顯示、不跟語言切換；curriculum 課名＋必修同字級（text-md）。
