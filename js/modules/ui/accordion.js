@@ -2,9 +2,10 @@
  * 摺疊的展開／收起動畫（原生 <details>，css/components/page.css「摺疊」；常見問題、動態、入學；user 2026-11-18）。
  * 原生 <details> 的開合是瞬間的（內容直接出現／消失）→ 這裡接手 summary 的點擊，把整個 details 的高度補間：
  *   展開＝先標 open（內容才量得到高）、高度從收著的高長到全高；
- *   收起＝高度縮回 summary 的高，縮完才真的拿掉 open。收的時候一開始就標 .is-closing——圓點的位置是 CSS 的事，
- *   CSS 看到它就當已經關了，圓點跟著內容一起往上滑回第一行。
- * 補間走 Web Animations（時長 DUR.medium、曲線 --ease-standard＝跟圓點的 CSS 過場同一組，兩個才會同步）。
+ *   收起＝高度縮回 summary 的高，縮完才真的拿掉 open。收的時候一開始就標 .is-closing——CSS 看到它就當已經關了
+ *   （動態那種列的圓點開始淡出、封面縮圖不再放大）。
+ * 圓點對在整塊高的 50%（page.css；user 2026-11-19）→ 跟著這裡的高度補間一起走，不用另外同步。
+ * 補間走 Web Animations（時長 DUR.medium、曲線 --ease-standard）。
  * 動到一半再點＝從目前的高度掉頭。系統「減少動態」＝不接手，照原生瞬間開合。
  * 掛在 #page-content（換頁只換裡面、它本身一直在）→ 開機叫一次，之後才渲染出來的題目也吃得到。
  */

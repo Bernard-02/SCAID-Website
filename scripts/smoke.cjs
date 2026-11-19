@@ -583,15 +583,19 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await d.waitForFunction(() => document.body.dataset.page === 'faculty');
   assert(new URL(d.url()).pathname === '/pages/faculty.html', '返回鈕回師資列表');
 
-  // 摺疊（原生 <details>：常見問題、動態、入學；user 2026-11-18）：列尾一顆圓點（同選單 hover 那顆）、收著對在第一行中間；
-  // 打開＝圓點滑到整個展開後內容高度的正中間，關起來滑回第一行。fold(i)＝第 i 個 details 的圓點（::after，top 是圓心）與整塊的高
+  // 摺疊（原生 <details>：常見問題、榮譽、動態、入學；user 2026-11-18）：列尾一顆圓點（同選單 hover 那顆），永遠對在整塊的水平中線
+  // （user 2026-11-19：收著＝那一列的正中、不是第一行；打開＝整個展開後內容高度的正中）。fold(i)＝第 i 個 details 的圓點（::after，top 是圓心）與整塊的高
   const fold = (i) => d.$eval(`details >> nth=${i}`, el => { const s = getComputedStyle(el, '::after'); return { w: parseFloat(s.width), h: parseFloat(s.height), top: parseFloat(s.top), box: el.getBoundingClientRect().height, open: el.open, op: s.opacity }; });
   await d.goto(base + '/pages/qa.html');
   await d.waitForSelector('#site-header .site-bar');
   assert(await css(d, 'main h2', 'fontSize') === '20px' && await css(d, 'summary', 'fontSize') === '16px' && await css(d, 'details > p', 'fontSize') === '16px', 'qa：分類標題 20px、問題與答案 16px');
   let f = await fold(0);
-  assert(await css(d, 'summary', 'display') === 'block' && Math.abs(f.w - DOT_D) < 0.2 && Math.abs(f.h - f.w) < 0.1 && Math.abs(f.top - 12) < 0.5 && await css(d, 'details', 'backgroundColor', '::after') === 'rgb(0, 0, 0)',
-    `qa：列尾是圓點、對在第一行中間（沒有原生箭頭；${JSON.stringify(f)}）`);
+  assert(await css(d, 'summary', 'display') === 'block' && Math.abs(f.w - DOT_D) < 0.2 && Math.abs(f.h - f.w) < 0.1 && Math.abs(f.top - f.box / 2) < 0.5 && await css(d, 'details', 'backgroundColor', '::after') === 'rgb(0, 0, 0)',
+    `qa：列尾是圓點、對在那一列的正中（沒有原生箭頭；${JSON.stringify(f)}）`);
+  // 問題折成兩行（窄欄）也是整塊的正中、不是第一行（user 2026-11-19）
+  f = await d.$eval('details', el => { el.style.width = '8em'; const r = { top: parseFloat(getComputedStyle(el, '::after').top), box: el.getBoundingClientRect().height }; el.style.width = ''; return r; });
+  assert(f.box > 40 && Math.abs(f.top - f.box / 2) < 0.5, `qa：問題折行 → 圓點還是在整塊的正中（${JSON.stringify(f)}）`);
+  f = await fold(0);
   // 展開／收起都有動畫（accordion.js 把 details 的高度補間，user 2026-11-18）：點下去逐幀記「整塊的高、圓點的 top、open」
   const foldTrack = (i) => d.evaluate(k => new Promise(res => {
     const el = /** @type {HTMLDetailsElement} */ (document.querySelectorAll('details')[k]), out = [];
@@ -609,7 +613,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   const openH = f.box;
   tr = await foldTrack(0);
   f = await fold(0);
-  assert(!f.open && Math.abs(f.top - 12) < 0.5 && Math.abs(f.box - closedH) < 0.5, `qa：關起來 → 圓點滑回第一行（${JSON.stringify(f)}）`);
+  assert(!f.open && Math.abs(f.top - closedH / 2) < 0.5 && Math.abs(f.box - closedH) < 0.5, `qa：關起來 → 圓點回到那一列的正中（${JSON.stringify(f)}）`);
   assert(mid(tr, closedH, openH) >= 5 && tr.every(([h, top], k) => k === 0 || (h <= tr[k - 1][0] + 0.2 && top <= tr[k - 1][1] + 0.2)) && tr.filter(([h]) => h > closedH + 2).every(([, , open]) => open),
     `qa：收起有動畫（高度一路縮、圓點一路往上、縮完才拿掉 open；中途 ${mid(tr, closedH, openH)} 幀）`);
   // 動到一半再點＝從目前的高度掉頭，不會卡住

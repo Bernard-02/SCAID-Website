@@ -136,18 +136,13 @@
   .page-body .link-list .nav-link { display: block; padding-right: calc(var(--spacing-gutter) + 0.5rem); }
   .page-body .link-list .nav-link::after { left: auto; right: 0; margin-left: 0; }
 
-  /* 摺疊（原生 <details>：常見問題、動態、入學；user 2026-11-18）：原生箭頭拿掉，整列最右邊一顆圓點——跟選單 hover／選中時出現的
-     那顆同一種（--dot-size，chrome.css .nav-link::after；方塊試過後改回圓點），收著時對在第一行文字的中間、右緣＝內文欄右緣。
-     打開＝圓點滑到「整個展開後的內容」高度的正中間；關起來滑回第一行。hover 不變。
-     展開／收起有動畫（accordion.js 把 details 的高度補間；user 2026-11-18）：收的時候內容還在（open 等縮完才拿掉），所以一開始就標
-     .is-closing、這裡當它已經關了 → 圓點跟著內容一起往上滑回第一行。圓點的過場跟高度補間同一組時長／曲線（--dur-medium、--ease-standard）。
-     畫在 details::after（絕對定位＝不佔位，pointer-events none＝點它等於點那一列）；位置用 top 的百分比定 → 可以過場。
-     文字右邊讓出 --fold-pad 不壓到圓點。--fold-top＝第一行字框離列頂多遠（半個行距空隙，看那一列的字級）＋0.5em＝第一行中線 */
-  .page-body details {
-    position: relative;
-    --fold-pad: calc(var(--spacing-gutter) + 0.5rem);
-    --fold-top: calc((var(--line-height-s) - 1) * 0.5em);
-  }
+  /* 摺疊（原生 <details>：常見問題、榮譽、動態、入學；user 2026-11-18）：原生箭頭拿掉，整列最右邊一顆圓點——跟選單 hover／選中時出現的
+     那顆同一種（--dot-size，chrome.css .nav-link::after；方塊試過後改回圓點），右緣＝內文欄右緣。
+     圓點永遠對在整塊的水平中線（top 50%；user 2026-11-19：全站的圓點都是這個邏輯——原本常見問題收著時對第一行，
+     問題折成兩行就不在中線上）：收著＝那一列的正中，打開＝整個展開後內容高度的正中。hover 不變。
+     展開／收起有動畫（accordion.js 把 details 的高度補間；user 2026-11-18）：圓點是整塊高的 50% → 跟著補間一起走，不用另外過場。
+     畫在 details::after（絕對定位＝不佔位，pointer-events none＝點它等於點那一列）。文字右邊讓出 --fold-pad 不壓到圓點 */
+  .page-body details { position: relative; --fold-pad: calc(var(--spacing-gutter) + 0.5rem); }
   .page-body summary { display: block; padding-right: var(--fold-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條） */
   .page-body summary::-webkit-details-marker { display: none; }
   /* 榮譽（user 2026-11-19）：收著那一列＝左國旗、右邊獎項名稱、獎項下面得獎人；展開的內容（主辦方、獎別）對齊右邊獎項那一欄。
@@ -163,19 +158,17 @@
     content: '';
     position: absolute;
     right: 0;
-    top: calc(var(--fold-top) + 0.5em);
+    top: 50%;
     width: var(--dot-size);
     aspect-ratio: 1;
     border-radius: 50%;
     background: currentColor;
     transform: translateY(-50%);
     pointer-events: none;
-    transition: top var(--dur-medium) var(--ease-standard);
   }
-  .page-body details[open]:not(.is-closing)::after { top: 50%; }
-  /* 動態的列（user 2026-11-18）：圓點永遠在整個 block 的正中（收著＝縮圖那一列的中線，不是第一行；展開跟著整塊長高），
-     而且 hover／鍵盤聚焦才出現、點開後常駐（收回去又回到 hover 才出；opacity 走網站 fade；觸控不出，理由同底列名字） */
-  .item-list details::after { top: 50%; opacity: 0; transition: top var(--dur-medium) var(--ease-standard), var(--transition-fade); }
+  /* 動態／入學的列（user 2026-11-18）：圓點 hover／鍵盤聚焦才出現、點開後常駐（收回去又回到 hover 才出；opacity 走網站 fade；
+     觸控不出，理由同底列名字）。收的時候 open 等縮完才拿掉 → accordion.js 一開始就標 .is-closing，這裡當它已經關了 */
+  .item-list details::after { opacity: 0; transition: var(--transition-fade); }
   .item-list details:has(> summary:focus-visible)::after { opacity: 1; }
   @media (hover: hover) { .item-list details:hover::after { opacity: 1; } }
   .item-list details[open]:not(.is-closing)::after { opacity: 1; }
