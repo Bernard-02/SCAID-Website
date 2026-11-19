@@ -43,7 +43,7 @@
 點開＝時間、地點（沒填就不出那一行），下面相簿（沒有就不出），點相簿的圖放大到整個畫面。
 
 `pages/admission.html`（user 2026-11-18）：**入學頁＝一則一則的動態**，跟動態頁同一種列、不另外做別種版型，不分年份。
-跟動態頁不同：外面只有標題＋時間（不顯示分類）。點開的順序＝說明文字（`summary_*`）→ 相簿（`album`）→ 附件（`attachments`，粗體、另開新視窗的連結），有填才出；入學頁不顯示地點。
+跟動態頁不同：外面只有標題＋時間（不顯示分類；不顯示縮圖 `image`，user 2026-11-19）。點開的順序＝說明文字（`summary_*`）→ 相簿（`album`）→ 附件（`attachments`，粗體、另開新視窗的連結），有填才出；入學頁不顯示地點。
 哪幾則會列在入學頁＝勾了 `admission` 的（**待確認**：也可以改成看分類）。
 
 | key | 類型／介面 | 內容 |
@@ -106,6 +106,21 @@
 | `category_zh` / `category_en` | String | 分類 |
 | `question_zh` / `question_en` | String | 問題 |
 | `answer_zh` / `answer_en` | Text／Multiline | 回答（純文字） |
+
+## records（榮譽）— 後台待建
+
+`pages/records.html`（user 2026-11-19）。每筆一個 `<details>`：收著＝國旗、獎項名稱、得獎人；點開＝主辦方、獎別。
+`scripts/setup-directus.cjs` 的 SPEC 還沒加這個集合。
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `status`、`sort` | | |
+| `country_code` | String／Dropdown | 國家代碼，ISO 3166-1 兩碼小寫（tw／jp／de…）；前台照它抓國旗（flag-icons 的 SVG） |
+| `country_zh` / `country_en` | String | 國家名稱（畫面上不顯示，給報讀用） |
+| `award_zh` / `award_en` | String | 獎項名稱 |
+| `winner_zh` / `winner_en` | String | 得獎人 |
+| `organizer_zh` / `organizer_en` | String | 主辦方 |
+| `prize_zh` / `prize_en` | String | 獎別（金獎、佳作…） |
 
 ## regulations（規章）
 

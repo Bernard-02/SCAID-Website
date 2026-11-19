@@ -5,7 +5,7 @@
 
 ## 現況
 
-- **前台**：首頁＋14 個內頁的版型都在，內容全是示意文字。只有頁尾接了後台。
+- **前台**：首頁＋15 個內頁的版型都在，內容全是示意文字。只有頁尾接了後台。
 - **後台**：Directus 已開（`scaidcms.usc.edu.tw`），9 個集合已建、Public 可讀。除了 `footer`（一筆示意值），**其他 8 個集合都是空的**。
 - **Logo**：靜態 SVG 已換上（頂部＝文字版、頁尾＝直條版）。動態還在選案。
 - **版本控制**：最後一個 commit 是 `868c6cf`。之後改了 31 個檔，另有字體、3 個 UI 模組、2 支後台 script、`curriculum-detail` 等新檔，全部還沒 commit。
@@ -31,7 +31,7 @@
 ## 2. 等素材
 
 - [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、課程（含每門課說明）、動態、入學、常見問題、捐款、規章（PDF 或連結）、條款。現在英文全是 Placeholder。
-- [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 灰階圖；師資照片、企業 logo、動態封面是灰底。
+- [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
 - [ ] **頁尾真實資料**：電話、傳真、地址、社群連結（後台 `footer` 現在是示意值，直接在後台改）。
 - [ ] **社群 icon 圖**：現在是方框。
 - [ ] **intro 影片網址**：填進 `pages/header.html` 的 `.play-btn data-video`，沒填按了不會開。
@@ -56,6 +56,7 @@
 | 師資 `faculty.html`、`faculty-detail.html?id=` | `faculty` | 未接 |
 | 課程 `curriculum.html`、`curriculum-detail.html?id=` | `courses` | 未接 |
 | 合作企業 `partners.html` | `partners` | 未接 |
+| 榮譽 `records.html` | `records`（後台待建，2026-11-19 新增的頁） | 未接 |
 | 常見問題 `qa.html` | `qa` | 未接 |
 | 規章 `regulations.html` | `regulations` | 未接 |
 | 關於、捐款、條款 | `pages`＋`page_sections` | 未接 |
