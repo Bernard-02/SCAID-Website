@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => {
   });
 });
 const DOT_D = 512 * 20 / 1067.29;   // 桌面（1280 寬，logo 512）hover 圓點直徑＝logo 骨牌的圓孔（user 2026-11-18）
-const PAGES = ['about', 'partners', 'faculty', 'curriculum', 'news', 'admission', 'qa', 'donate', 'regulations', 'terms', 'sitemap'];
+const PAGES = ['about', 'partners', 'faculty', 'curriculum', 'news', 'records', 'admission', 'qa', 'donate', 'regulations', 'terms', 'sitemap'];
 const fails = [], errors = [];
 const assert = (c, msg) => { if (!c) fails.push(msg); };
 const watch = async (page) => {
@@ -159,7 +159,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   }
   // 選中的選項：文字右邊一顆圓點（user 2026-11-18 方塊改回圓點；直徑＝logo 骨牌的圓孔＝logo 寬×20/1067.29）、不畫底線；沒選中的圓點藏著
   assert(await m.$eval('.site-menu .nav-link.active', a => { const s = getComputedStyle(a, '::after'), logoW = document.querySelector('.site-logo').getBoundingClientRect().width; return s.opacity === '1' && s.borderRadius === '50%' && Math.abs(parseFloat(s.width) - logoW * 20 / 1067.29) < 0.2 && Math.abs(parseFloat(s.height) - parseFloat(s.width)) < 0.1 && getComputedStyle(a).textDecorationLine === 'none'; }), '選中選項：右邊圓點、沒底線');
-  assert(await m.$$eval('.site-menu .nav-link:not(.active)', as => as.length === 10 && as.every(a => getComputedStyle(a, '::after').opacity === '0')), '沒選中的選項沒有圓點');
+  assert(await m.$$eval('.site-menu .nav-link:not(.active)', as => as.length === 11 && as.every(a => getComputedStyle(a, '::after').opacity === '0')), '沒選中的選項沒有圓點');
   assert((await css(m, '.site-grid', 'gridTemplateColumns')).split(' ').length === 4, 'mobile grid 4 欄');
   assert((await m.textContent('main h1')).trim() === '網站地圖', 'sitemap h1 zh');
   await m.waitForTimeout(700);   // 選單關閉後 logo 的右推 transition 走完再量位置

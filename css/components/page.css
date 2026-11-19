@@ -150,6 +150,14 @@
   }
   .page-body summary { display: block; padding-right: var(--fold-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條） */
   .page-body summary::-webkit-details-marker { display: none; }
+  /* 榮譽（user 2026-11-19）：收著那一列＝左國旗、右邊獎項名稱、獎項下面得獎人；展開的內容（主辦方、獎別）對齊右邊獎項那一欄。
+     國旗 4:3、高＝一行字（寬 2em × 3/4＝1.5em＝行距）、彩色、不加框，跨兩列上下置中＝對在右邊兩行字的正中
+     （user 2026-11-19：先做兩行高＋灰階＋黑框，太大、要有顏色、不用框、center 對齊）。
+     國家名稱還在（.sr-only，報讀用；絕對定位＝不佔格子） */
+  .record { --flag-w: 2em; }
+  .page-body .record > summary { display: grid; grid-template-columns: var(--flag-w) 1fr; column-gap: var(--spacing-gutter); }
+  .record > summary img { grid-row: span 2; align-self: center; width: 100%; aspect-ratio: 4 / 3; }
+  .page-body .record > :not(summary) { padding-left: calc(var(--flag-w) + var(--spacing-gutter)); }
   .page-body details > :not(summary) { padding-right: var(--fold-pad); }
   .page-body details::after {
     content: '';
