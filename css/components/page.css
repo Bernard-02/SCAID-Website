@@ -176,12 +176,13 @@
   /* 動態／入學（user 2026-11-18）：每則＝一個摺疊，收著的樣子同師資那一列（縮圖＋標題＋分類，summary 掛 .item-row）；
      動態頁：外面＝標題＋分類，展開＝.fold-meta（時間／地點）→ 相簿。入學頁：外面＝標題＋時間，展開＝說明文字（p）→ 相簿 → 附件（.link-list 連結清單、粗體）。有才出。
      點相簿的圖放大到整個畫面（共用右圖的放大 dialog，chrome.js openFigure，‹ X › 可左右切）；打開的那則點封面縮圖＝放大封面。
-     桌面展開內容對齊文字那一欄（縮圖右邊）、手機吃整列寬 */
+     桌面展開內容對齊文字那一欄（縮圖右邊）、手機吃整列寬。
+     入學沒有縮圖（user 2026-11-19）：summary 不掛 .item-row、裡面直接標題＋時間，展開內容靠左 */
   .page-body summary.item-row { display: grid; padding-right: 0; }
   .page-body summary.item-row > :last-child { padding-right: var(--fold-pad); }
   .fold-body { @apply text-s; margin-top: var(--spacing-md); display: grid; gap: var(--spacing-md); }
   @media (min-width: 768px) {
-    .fold-body { margin-left: calc(var(--item-thumb-w) + var(--spacing-gutter)); }
+    .item-row + .fold-body { margin-left: calc(var(--item-thumb-w) + var(--spacing-gutter)); }
   }
   /* 時間、地點直接寫、一行一個，不加「時間／地點」標籤（user 2026-11-18） */
   .fold-body .link-list { font-weight: var(--font-weight-bold); }   /* 附件（展開內容裡的連結清單）＝粗體（user 2026-11-18） */

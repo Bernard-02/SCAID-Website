@@ -698,15 +698,16 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await d.goto(base + '/pages/admission.html');
   await d.waitForSelector('#site-header .site-bar');
   {
-    assert(await d.$$eval('summary', ss => ss.length >= 5 && ss.every(x => x.classList.contains('item-row') && x.querySelector('.item-thumb') && x.querySelectorAll('h3').length === 1
+    assert(await d.$$eval('summary', ss => ss.length >= 5 && ss.every(x => !x.querySelector('.item-thumb') && x.querySelectorAll('h3').length === 1
       && x.querySelectorAll('p').length === 1 && /^\d{4}\.\d\d/.test(x.querySelector('p').textContent)))
-      && await css(d, 'summary p', 'fontSize') === '20px' && await d.$('.section-nav') === null, '入學：每一列＝縮圖＋標題＋時間（動態那種列，沒有分類）、沒有段落導覽');
+      && await css(d, 'summary p', 'fontSize') === '20px' && await d.$('.section-nav') === null, '入學：每一列＝標題＋時間（沒有縮圖、沒有分類）、沒有段落導覽');
     await d.click('summary >> nth=0');
     await d.waitForTimeout(700);
     const body = await d.$eval('details[open] .fold-body', b => ({ order: [...b.children].map(c => c.tagName === 'P' ? '說明' : c.className.split(' ')[0]).join(' → '), desc: b.querySelector(':scope > p')?.textContent.length,
       files: [...b.querySelectorAll('.link-list a')].map(a => a.target + a.getAttribute('href').slice(-4) + getComputedStyle(a).fontWeight).join(), shots: b.querySelectorAll('.album-strip button').length }));
-    assert(body.order === '說明 → album → link-list' && body.desc > 20 && body.files === '_blank.pdf700,_blank.pdf700' && body.shots === 3 && await css(d, 'details[open] .fold-body > p', 'fontSize') === '16px',
-      `入學：完整示意那一則＝說明 → 相簿 → 附件（粗體）（${JSON.stringify(body)}）`);
+    assert(body.order === '說明 → album → link-list' && body.desc > 20 && body.files === '_blank.pdf700,_blank.pdf700' && body.shots === 3 && await css(d, 'details[open] .fold-body > p', 'fontSize') === '16px'
+      && Math.abs((await rect(d, 'details[open] .fold-body')).left - (await rect(d, 'details[open] summary')).left) < 1,
+      `入學：完整示意那一則＝說明 → 相簿 → 附件（粗體）、展開內容靠左（沒有縮圖那一欄）（${JSON.stringify(body)}）`);
   }
 
   // grid 疊圖：按 G 開關、記住；桌面 12 欄、手機 4 欄

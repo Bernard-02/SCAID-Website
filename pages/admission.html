@@ -19,7 +19,7 @@
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/admission.html 也能獨立跑。版型同 about（css/components/page.css）。
        入學＝一則一則的動態（user 2026-11-18）：整頁就是跟動態頁同一種列（pages/news.html），不另外做別種摺疊；沒有分類的 Section title → 沒有段落導覽。
        跟動態頁不同的地方（user 2026-11-18）：外面只有標題＋時間（沒有分類那一行）；點開的順序＝說明文字 → 相簿 → 附件（粗體的連結清單、另開新視窗），
-       有才出；沒有地點那一行。
+       有才出；沒有地點那一行。沒有縮圖（user 2026-11-19）：summary 不掛 .item-row、裡面直接標題＋時間，展開內容靠左。
        第一則是完整的示意（說明＋照片＋附件）；原本的申請管道／重要日程／下載都改寫成一則一則。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
@@ -30,12 +30,9 @@
       <section class="page-section">
         <ul class="item-list mt-0 text-md">
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: Enrolment guide and registration for new students">示意：新生入學須知與報到</h3>
-                <p data-en="20 Aug 2027 (placeholder)">2027.08.20（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: Enrolment guide and registration for new students">示意：新生入學須知與報到</h3>
+              <p data-en="20 Aug 2027 (placeholder)">2027.08.20（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: this is a description. Bring your offer letter and ID on registration day; see the attachments for the procedure and required documents. Senior students will lead a studio tour on site.">示意：這是一段說明文字。報到當天請攜帶錄取通知與身分證件，流程與應備文件見附件；現場另有學長姐帶領參觀工作室。</p>
@@ -51,60 +48,45 @@
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: Personal application, stage 2 interviews">示意：個人申請第二階段面試</h3>
-                <p data-en="Apr 2027 (placeholder)">2027.04（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: Personal application, stage 2 interviews">示意：個人申請第二階段面試</h3>
+              <p data-en="Apr 2027 (placeholder)">2027.04（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: applicants who pass stage 1 attend an interview in their assigned slot; bring your portfolio.">示意：通過第一階段的考生依通知時段到場面試，請攜帶作品集。</p>
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: Personal application (GSAT), stage 1">示意：個人申請（學測）第一階段</h3>
-                <p data-en="Mar 2027 (placeholder)">2027.03（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: Personal application (GSAT), stage 1">示意：個人申請（學測）第一階段</h3>
+              <p data-en="Mar 2027 (placeholder)">2027.03（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: screening by GSAT results; see the brochure for places and subjects counted.">示意：依學測成績篩選，名額與採計科目見招生簡章。</p>
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: Star Plan recommendation">示意：繁星推薦</h3>
-                <p data-en="Mar 2027 (placeholder)">2027.03（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: Star Plan recommendation">示意：繁星推薦</h3>
+              <p data-en="Mar 2027 (placeholder)">2027.03（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: recommended by high schools and ranked by school grades.">示意：由高中推薦，依在校成績比序。</p>
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: Special talent admission (portfolio and interview) opens">示意：特殊選才（作品集＋面試）開始報名</h3>
-                <p data-en="1–15 Dec 2026 (placeholder)">2026.12.01–12.15（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: Special talent admission (portfolio and interview) opens">示意：特殊選才（作品集＋面試）開始報名</h3>
+              <p data-en="1–15 Dec 2026 (placeholder)">2026.12.01–12.15（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: no GSAT required; assessed on portfolio and interview.">示意：不採計學測，以作品集與面試評分。</p>
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</h3>
-                <p data-en="22 Nov 2026, 14:00–16:00 (placeholder)">2026.11.22 14:00–16:00（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</h3>
+              <p data-en="22 Nov 2026, 14:00–16:00 (placeholder)">2026.11.22 14:00–16:00（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: an introduction to the curriculum, the dual-track model and admission routes, followed by Q&amp;A.">示意：介紹課程、雙軌共育與入學管道，會後開放提問。</p>
@@ -116,12 +98,9 @@
             </div>
           </details></li>
           <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Placeholder: 2026 admission brochure published">示意：115 學年度招生簡章公告</h3>
-                <p data-en="3 Nov 2026 (placeholder)">2026.11.03（示意）</p>
-              </div>
+            <summary>
+              <h3 data-en="Placeholder: 2026 admission brochure published">示意：115 學年度招生簡章公告</h3>
+              <p data-en="3 Nov 2026 (placeholder)">2026.11.03（示意）</p>
             </summary>
             <div class="fold-body">
               <p data-en="Placeholder: places, dates and required documents for each route; please download the brochure.">示意：各管道的名額、日程與應備資料，請下載簡章。</p>
