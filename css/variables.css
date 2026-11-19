@@ -1,13 +1,13 @@
 /* ========================================
    CSS Variables — Design System（手機優先：:root＝手機值，≥768 在下方放大）
-   token 架構沿用 SCCD（7 階字級／間距／motion／theme）；品牌黑白
+   token 架構沿用 SCCD（7 階字級／間距／motion／theme）；介面色目前只有黑白＋灰階（網站本身是彩色的）
    ⚠️ 改完任何 token 都要 `npm run build:css`（頁面吃的是 output.css）
    ======================================== */
 
 :root {
   /* Custom Cursors：--cursor-* 由 js/utils/helpers.js setCursorVars() 開機寫在 :root。CSS 與 JS 一律寫 var(--cursor-X) */
 
-  /* ===== Colors：黑白品牌 ===== */
+  /* ===== Colors：介面色（黑白＋灰階；網站內容是彩色的，不轉灰階，user 2026-11-19） ===== */
   --color-black: #000000;
   --color-white: #FFFFFF;
 

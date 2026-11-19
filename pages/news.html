@@ -20,7 +20,7 @@
        沒有段落導覽（左邊的 anchor 方塊；user 2026-11-18），年份標題照留。
        每則＝一個摺疊（原生 <details>，user 2026-11-18）：收著的樣子同師資那一列（縮圖＋標題＋分類），時間不寫在外面；
        點了展開＝時間、地點（沒有就不出那一行），下面相簿（沒有就不出）；點相簿的圖放大到整個畫面（chrome.js openFigure）。
-       樣式見 page.css「摺疊」「動態」。相簿圖暫時是 Lorem Picsum 灰階 stock。
+       樣式見 page.css「摺疊」「動態」。相簿圖暫時是 Lorem Picsum stock（彩色，user 2026-11-19）。
        相簿的 <img> 一定要寫原圖 width／height（user 2026-11-19）：圖還沒載進來就知道寬 → 一打開就排好、chevron 當下就決定出不出
        （沒寫＝寬 0，載完才跳出 chevron）。接 Directus 後從檔案的 width／height 帶。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
@@ -34,7 +34,7 @@
         <ul class="item-list text-md">
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-1-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-1-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</h3>
                 <p data-en="Placeholder: Admission">示意：招生</p>
@@ -46,15 +46,15 @@
                 <p data-en="Online (placeholder)">線上（示意）</p>
               </div>
               <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-1/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-2/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-3/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
               </div>
             </div>
           </details></li>
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-2-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-2-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: Partner visit: inside an animation studio pipeline">示意：合作企業參訪：動畫工作室的製作流程</h3>
                 <p data-en="Placeholder: Visit">示意：參訪</p>
@@ -66,18 +66,18 @@
                 <p data-en="Placeholder Animation Studio">示意動畫工作室</p>
               </div>
               <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-1/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-2/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-3/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-4/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-5/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-6/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-4/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-5/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-6/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
               </div>
             </div>
           </details></li>
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-3-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-3-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: Registration open for the mentor talk Virtual Production 101">示意：業師講座「虛擬製作入門」開放報名</h3>
                 <p data-en="Placeholder: Talk">示意：講座</p>
@@ -98,7 +98,7 @@
         <ul class="item-list text-md">
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-4-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-4-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: End-of-term show opens on 20 Dec">示意：期末成果展 12 月 20 日開幕</h3>
                 <p data-en="Placeholder: Exhibition">示意：展覽</p>
@@ -110,16 +110,16 @@
                 <p data-en="Placeholder: campus gallery">示意：校內展覽空間</p>
               </div>
               <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-1/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-2/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-3/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-4/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-4/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
               </div>
             </div>
           </details></li>
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-5-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-5-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: Program website launched">示意：學程網站上線</h3>
                 <p data-en="Placeholder: Announcement">示意：公告</p>
@@ -133,7 +133,7 @@
           </details></li>
           <li><details>
             <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-6-cover/800/800?grayscale" alt="" loading="lazy"></div>
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-6-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Placeholder: Recap of the first cohort orientation">示意：第一屆新生說明會回顧</h3>
                 <p data-en="Placeholder: Event">示意：活動</p>
@@ -145,9 +145,9 @@
                 <p data-en="Placeholder: College of Design">示意：設計學院</p>
               </div>
               <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-1/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-2/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-3/1200/800?grayscale" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span class="sr-only" data-en="Enlarge image">放大圖片</span></button>
               </div>
             </div>
           </details></li>

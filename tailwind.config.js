@@ -16,7 +16,7 @@ module.exports = {
           .map(k => [k, `var(--cursor-${k})`])
       ),
 
-      // 黑白品牌：只有黑白＋灰階
+      // 介面色：目前只有黑白＋灰階（網站本身是彩色的，user 2026-11-19）
       colors: {
         'black': '#000000',
         'white': '#FFFFFF',
