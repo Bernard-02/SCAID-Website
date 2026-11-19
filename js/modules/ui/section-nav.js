@@ -1,51 +1,79 @@
 /**
- * 內頁段落導覽（css/components/page.css .section-nav）：main 裡每個 .section-title 一個矩形鈕，上下 chevron 跳上／下一段。
- * 點了把該段標題捲到「第一段標題在頁頂時的位置」（user 2026-11-03）；捲動時標目前段落（aria-current）。
- * 頁面沒有 .section-nav 就不做事。main.js initPageModules 在 applyLang 前呼叫（chevron 報讀名稱要吃語言）
+ * 內頁段落導覽（css/components/page.css .section-nav）：main 裡每個 .section-title 一個矩形鈕，沒有上下 chevron（user 2026-11-18）。
+ * 最上面多一格＝頁標題（h1，.section-nav-top；一顆正方形方塊、中心對 h1 那一行）：點了捲回頁頂；還沒捲到第一段（在 h1／導言）時亮的是它，
+ * 不是第一段的矩形（user 2026-11-18）。
+ * 點了把該段頂端捲到 h1 那條線＝「h1 在頁頂時的位置」（user 2026-11-18；段落頂＝包著標題的 .page-section）；捲動時標目前段落（aria-current）。
+ * 矩形從 h1 那條線往下排、排不進時整串上移讓目前那格看得到：這裡只給格數 --n 與第幾格 --i，排不排得進、位移多少都是 page.css 算。
+ * 頁面沒有 .section-nav 就不做事。
  */
 import { registerPageCleanup } from './page-cleanup.js';
 
 export function initSectionNav() {
-  const nav = document.querySelector('#page-content .section-nav');
+  const nav = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .section-nav'));
   const titles = /** @type {HTMLElement[]} */ ([...document.querySelectorAll('#page-content .section-title')]);
   if (!nav || !titles.length) return;
 
   titles.forEach((t, i) => { if (!t.id) t.id = `section-${i + 1}`; });
-  const step = (dir, zh, en) =>
-    `<button type="button" class="section-nav-step" data-step="${dir}"><span class="icon icon-chevron ${dir < 0 ? 'rotate-90' : '-rotate-90'}" aria-hidden="true"></span><span class="sr-only" data-en="${en}">${zh}</span></button>`;
-  // 矩形的報讀名稱＝段落標題本身（aria-labelledby）→ 換語言自動跟著
-  nav.innerHTML = step(-1, '上一段', 'Previous section')
-    + titles.map((t, i) => `<button type="button" class="section-nav-dot" data-i="${i}" aria-labelledby="${t.id}"></button>`).join('')
-    + step(1, '下一段', 'Next section');
+  const h1 = document.querySelector('#page-content h1');
+  if (h1 && !h1.id) h1.id = 'page-title';
+  // 報讀名稱＝標題本身（aria-labelledby）→ 換語言自動跟著。頁標題那一格是第 -1 格，段落的矩形從 0 起
+  nav.innerHTML = (h1 ? `<button type="button" class="section-nav-top" data-i="-1" aria-labelledby="${h1.id}"></button>` : '')
+    + titles.map((t, i) => `<button type="button" class="section-nav-dot" data-i="${i}" aria-labelledby="${t.id}"></button>`).join('');
+  nav.style.setProperty('--n', String(titles.length));
   const dots = [...nav.querySelectorAll('.section-nav-dot')];
-  const [prev, next] = /** @type {HTMLButtonElement[]} */ ([...nav.querySelectorAll('.section-nav-step')]);
+  const top = nav.querySelector('.section-nav-top');
+  const first = top ? -1 : 0;   // 最前面那一格：有頁標題那一格就是它
+  /** 排不進畫面時哪一格要看得到 @param {number} i */
+  const reveal = (i) => nav.style.setProperty('--i', String(i));
 
+  const secs = titles.map(t => /** @type {HTMLElement} */ (t.closest('.page-section') || t));   // 沒包 section 就拿標題本身
+  const anchor = h1 || secs[0];   // 對齊線＝h1 在頁頂時的位置（--top-h）；沒 h1 就第一段
   const docTop = (el) => el.getBoundingClientRect().top + window.scrollY;
-  // 第 i 段的捲動位置：標題對齊第一段標題（第一段＝0）
-  const target = (i) => docTop(titles[i]) - docTop(titles[0]);
-  let active = -1;
+  // 第 i 段的捲動位置：段落頂對齊 h1 那條線；-1（頁標題）＝頁頂
+  const target = (i) => i < 0 ? 0 : docTop(secs[i]) - docTop(anchor);
+  let active = -2;   // 還沒標過（-1 是頁標題那一格，不能拿來當「沒有」）
+  let goal = -1;   // 點了、正捲過去的那格
   const update = () => {
-    const i = titles.filter((_, k) => target(k) <= window.scrollY + 1).length - 1;
+    const y = window.scrollY;
+    let i;
+    if (goal >= 0) {
+      // 點擊捲過去的途中：誰的位置最近亮誰（＝過兩段中點就換）。照一般規則往下要捲完才亮（拖在減速的尾巴）、往上卻早一整段亮
+      // → 兩個方向都在最後一段的一半到位、一樣快，中間經過的格子照樣一格格亮過去（user 2026-11-18）
+      i = secs.reduce((best, _, k) => Math.abs(target(k) - y) < Math.abs(target(best) - y) ? k : best, first);
+      if (Math.abs(target(goal) - y) < 2) goal = -1;
+    } else {
+      // 一般捲動：段落頂過了 h1 那條線才算到；還沒捲到第一段（在 h1／導言）＝頁標題那一格（沒有那一格才算第一段）
+      i = Math.max(first, titles.filter((_, k) => target(k) <= y + 1).length - 1);
+    }
     if (i === active) return;
     active = i;
-    dots.forEach((d, k) => { if (k === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
-    prev.disabled = i === 0;
-    next.disabled = i === titles.length - 1;
+    [top, ...dots].forEach((d, k) => { if (!d) return; if (k - 1 === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
+    reveal(i);
   };
-  const go = (i) => window.scrollTo({ top: target(Math.max(0, Math.min(titles.length - 1, i))) });   // 平滑與否看 html scroll-behavior（reduce-motion 關）
 
   // nav 在 main 裡、換頁整個換掉 → 它的 listener 不用收
   nav.addEventListener('click', (e) => {
     const b = e.target instanceof Element ? e.target.closest('button') : null;
     if (!(b instanceof HTMLElement)) return;
-    go(b.dataset.step ? active + Number(b.dataset.step) : Number(b.dataset.i));
+    const i = Number(b.dataset.i);
+    if (Math.abs(target(i) - window.scrollY) >= 2) goal = i;   // 點目前這格不用捲
+    window.scrollTo({ top: target(i) });   // 平滑與否看 html scroll-behavior（reduce-motion 關）
   });
+  // 鍵盤 Tab 到被切掉的格子 → 把它帶進來才看得到；離開導覽就回到目前段落。滑鼠點的不算（點了本來就會捲過去）
+  nav.addEventListener('focusin', (e) => {
+    const b = /** @type {HTMLElement} */ (e.target);
+    if (b.matches(':focus-visible')) reveal(Number(b.dataset.i));
+  });
+  nav.addEventListener('focusout', () => reveal(active));
   window.addEventListener('scroll', update, { passive: true });
+  // 捲到一半被使用者自己捲斷：停下來就回一般規則（沒 scrollend 的瀏覽器＝等捲到目標才回）
+  const settle = () => { goal = -1; update(); };
+  window.addEventListener('scrollend', settle);
   // 對齊線跟著版面變（換語言、視窗寬、字型載入）→ 重量給 CSS 撐最後一段（page.css --section-y0）。
   // 下一幀才寫：撐高最後一段會再觸發這個 observer，同一幀內改會報 ResizeObserver loop
   const grid = /** @type {HTMLElement} */ (nav.parentElement);
-  const ro = new ResizeObserver(() => requestAnimationFrame(() => { grid.style.setProperty('--section-y0', docTop(titles[0]) + 'px'); update(); }));
+  const ro = new ResizeObserver(() => requestAnimationFrame(() => { grid.style.setProperty('--section-y0', docTop(anchor) + 'px'); update(); }));
   ro.observe(titles[0].closest('.page-body') || grid);
-  registerPageCleanup(() => { window.removeEventListener('scroll', update); ro.disconnect(); });
+  registerPageCleanup(() => { window.removeEventListener('scroll', update); window.removeEventListener('scrollend', settle); ro.disconnect(); });
   update();
 }

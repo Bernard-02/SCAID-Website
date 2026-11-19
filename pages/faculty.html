@@ -8,7 +8,8 @@
   <title>師資 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -16,121 +17,122 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；每位老師點進 faculty-detail.html（接 Directus 後帶 ?id=）；直接開 /pages/faculty.html 也能獨立跑。版型同 about（css/components/page.css）。
-       內容為 MOCK 示意，接 Directus 後改由模組渲染。名字／單位中英兩行都顯示（user 2026-11-10 草圖）；其他文字中文寫內文、英文寫 data-en（lang.js）。
-       段落名稱與順序是示意，待學程確認 -->
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。全部文字（含名字／單位）中文寫內文、英文寫 data-en（lang.js；user 2026-11-18：名字也跟語言走，不再兩行並排）。
+       段落順序：專任 → 兼任 → 業界導師（user 2026-11-18；這頁是寫死的 HTML，順序就是檔案裡的順序）；段落名稱是示意，待學程確認。
+       名字與單位都是 text-md（清單 ul 掛 text-md，項目標題跟著清單的字級，page.css .item-list） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <nav class="section-nav flex" aria-label="本頁段落"></nav>
 
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
         <h1 data-en="Faculty">師資</h1>
-        <p class="page-lead font-regular" data-en="Placeholder: introduction to the faculty">示意：師資介紹</p>
+        <p class="page-lead font-regular" data-en="Placeholder: full-time faculty, part-time faculty and mentors from the six partner companies teach side by side.">示意：專任、兼任教師與 6 家合作企業的業界導師共同授課。</p>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Part-time Faculty">兼任教師</h2>
-          <ul class="item-list">
+      <section class="page-section">
+        <h2 class="section-title" data-en="Full-time Faculty">專任教師</h2>
+        <ul class="item-list text-md">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Lee Chun-Chieh (placeholder)">李俊傑（示意）</h3>
+              <p data-en="Program Director · Professor">學程主任 · 教授</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Huang Shu-Fen (placeholder)">黃淑芬（示意）</h3>
+              <p data-en="Associate Professor · Interaction Design">副教授 · 互動設計</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Wu Chien-Hung (placeholder)">吳建宏（示意）</h3>
+              <p data-en="Assistant Professor · 3D and XR">助理教授 · 3D 與 XR</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Tsai Pei-Chun (placeholder)">蔡佩君（示意）</h3>
+              <p data-en="Lecturer · Project Management">講師 · 專案管理</p>
             </div>
           </a></li>
-          </ul>
-        </section>
+        </ul>
+      </section>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Full-time Faculty">專任教師</h2>
-          <ul class="item-list">
+      <section class="page-section">
+        <h2 class="section-title" data-en="Part-time Faculty">兼任教師</h2>
+        <ul class="item-list text-md">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Wang Da-Ming (placeholder)">王大明（示意）</h3>
+              <p data-en="Placeholder Animation Studio · Director">示意動畫工作室 導演</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Chen Hsiao-Hua (placeholder)">陳小華（示意）</h3>
+              <p data-en="Placeholder Visual Co. · Visual Director">示意影像公司 視覺總監</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Lin Chih-Hao (placeholder)">林志豪（示意）</h3>
+              <p data-en="Placeholder University · Assistant Professor, Media Design">示意大學 媒體設計系 助理教授</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Chang Ya-Ting (placeholder)">張雅婷（示意）</h3>
+              <p data-en="Freelance Motion Designer">自由接案 動態設計師</p>
             </div>
           </a></li>
-          </ul>
-        </section>
+        </ul>
+      </section>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Industry Mentors">業界導師</h2>
-          <ul class="item-list">
+      <section class="page-section">
+        <h2 class="section-title" data-en="Industry Mentors">業界導師</h2>
+        <ul class="item-list text-md">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Liu Kuan-Yu (placeholder)">劉冠宇（示意）</h3>
+              <p data-en="Placeholder Games · Art Director">示意遊戲公司 美術總監</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Yang Hsin-Yi (placeholder)">楊心怡（示意）</h3>
+              <p data-en="Placeholder XR Studio · Technical Director">示意 XR 製作公司 技術總監</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Cheng Wen-Chieh (placeholder)">鄭文傑（示意）</h3>
+              <p data-en="Placeholder Post-production · Producer">示意後製公司 製片</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
-              <h3>Name (placeholder)<br>教師姓名（示意）</h3>
-              <p>Affiliation (placeholder)<br>任職單位（示意）</p>
+              <h3 data-en="Hsu Ya-Wen (placeholder)">許雅文（示意）</h3>
+              <p data-en="Placeholder Interactive Exhibits · Creative Director">示意互動展演公司 創意總監</p>
             </div>
           </a></li>
-          </ul>
-        </section>
+        </ul>
+      </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
     </div>
   </main>
 

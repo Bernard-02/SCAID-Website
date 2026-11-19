@@ -1,8 +1,8 @@
 // Directus REST base URL 的唯一注入點（沿用 SCCD 架構：前台只吃 JSON，渲染全在 SPA）。
-// TODO SCAID 後台網域尚未定：先放 placeholder，定案後只改這裡。
+// 後台網域 2026-11-18 定案；要換只改這裡。
 // SCCD 經驗：用網域不用裸 IP（憑證綁網域）、走 https、後台要開 CORS。
-export const CMS_API_BASE = 'https://CHANGE-ME.usc.edu.tw/items';
-export const CMS_ASSETS_BASE = 'https://CHANGE-ME.usc.edu.tw/assets';
+export const CMS_API_BASE = 'https://scaidcms.usc.edu.tw/items';
+export const CMS_ASSETS_BASE = 'https://scaidcms.usc.edu.tw/assets';
 
 // Directus 檔案 → 顯示 URL。吃 file id 字串或深取的 { id }；已是完整 URL／站內路徑原樣回；空回 ''。
 // SCCD 後期改走 CloudFront 直吃 S3（用 filename_disk 組 key）繞過弱機；有 CDN 時回來改這裡一處。

@@ -5,45 +5,71 @@
    段落導覽行為 js/modules/ui/section-nav.js */
 
 @layer components {
-  /* 頁標題、段落標題（h2.section-title）、小標（h3）、說明段落同字級 text-md；內文小一階 text-s（user 2026-11-04）。
+  /* 層級（user 2026-11-18）：Page title h1＝text-lg；Section title h2.section-title／Lead .page-lead＝text-md；
+     Subsection title h3＝內文大小 text-s、粗體（about 起）；Body＝text-s；Note＝text-xs（各頁自己標）。
+     （about、curriculum 原本 h2 自己掛 text-lg，user 2026-11-18 都改回 md）
      :where 不加權重 → 個別 text-* utility 還蓋得過。
      grid-row 1 寫死：手機內文滿欄（col-span-full）跟導覽／返回鈕疊同一列，那一列才有整頁高給它們的 sticky 走；
      手機左右讓出 --rail-w 給導覽與縮圖鈕（桌面＝0，位置走 grid 欄） */
   .page-body { @apply text-s; grid-row: 1; margin-inline: var(--rail-w); overflow-wrap: anywhere; }   /* anywhere：窄手機上放不下的長英文字折在欄內，不衝到縮圖鈕底下 */
-  .page-body :where(h1, h2, h3, .page-lead) { @apply text-md; }
+  .page-body :where(h1) { @apply text-lg; }
+  .page-body :where(h2, .page-lead) { @apply text-md; }
+  .page-body :where(h3) { @apply text-s; }   /* 粗體來自 typography.css h3 */
   .page-lead { margin-top: var(--spacing-md); font-weight: var(--font-weight-bold); }
   .page-section { margin-top: var(--spacing-2xl); }
   .page-section h3 { margin-top: var(--spacing-md); }
 
-  /* 導覽、右圖的「永遠在畫面正中」（user 2026-11-10）：sticky 本身高 0 停在畫面中線、內容往上下各溢出一半。
+  /* 高 0 的 sticky 錨點（右圖停畫面中線、導覽停 h1 那條線，user 2026-11-10／2026-11-18）：內容從錨點溢出去。
      sticky 會把自己的框留在內容格子裡，捲到底時格子底只到「畫面底 − 底列高」→ 有高度的框會被頂上去；高 0 就不會 */
 
-  /* 段落導覽：sticky 在 col 1 畫面垂直置中（在 #page-content 裡 → 選單開時跟內容一起右推）。
-     字級同底列 → 矩形跟 menu 鈕同一套 em；寬＝矩形寬、chevron 置中往兩側溢出 → 矩形左緣對齊 menu 鈕 */
+  /* 段落導覽：sticky 在 col 1、從 h1 那條線（--top-h＝#page-content padding-top）往下排（user 2026-11-18；在 #page-content 裡 → 選單開時跟內容一起右推）。
+     字級同底列 → 矩形跟 menu 鈕同一套 em；寬＝矩形寬 → 矩形左緣對齊 menu 鈕。
+     最上面那一格＝頁標題（.section-nav-top；user 2026-11-18，「對齊標題」指的是它）：一顆正方形方塊（邊長＝矩形的寬 0.45em；
+     刻意跟下面段落的長矩形不一樣才看得出差別，user 2026-11-19；先試過圓點），中心對在 h1 第一行的中線，點了回頁頂；
+     段落的矩形從它下面排，跟它隔 0.5em（同矩形之間的間距）。
+     只有矩形、沒有上下 chevron（user 2026-11-18）：全部排得進（h1 線～底列上緣那一帶）＝不動；
+     排不進＝整串往上移到目前那格剛好看得到，超出那一帶的切掉（也點不到）。
+     格數 --n、目前第幾格 --i 由 section-nav.js 給，其餘這裡算（視窗高怎麼變都不用 JS 重量） */
   .section-nav {
     @apply text-s md:text-md;
     grid-area: 1 / 1;          /* 明確放 col 1 row 1：詳細頁的返回鈕也在這格，不能被自動排擠到別欄 */
     position: sticky;
-    top: 50%;
+    --dot-pad: 0.25em;         /* 一格上下內距（.section-nav-dot）；錨點上移這麼多＝矩形本身對齊 h1 */
+    --dot-h: 2.1em;            /* 一格高＝矩形 1.6em＋上下內距 */
+    --nav-y: calc(var(--top-h) - var(--dot-pad));
+    top: var(--nav-y);
+    margin-top: calc(-1 * var(--dot-pad));   /* 自然位置也提早一個內距：捲到頂（sticky 還沒作用）矩形才對得上 h1；同 .back-btn 的做法 */
     height: 0;
     align-self: start;
     width: 0.45em;
     flex-direction: column;
     align-items: center;
-    justify-content: center;   /* 高 0 → 按鈕往上下各溢出一半 */
+    justify-content: flex-start;   /* 高 0 → 整串往下溢出 */
+    /* 可排的高＝錨點到底列上緣；目前那格的底超出去多少就整串上移多少（排得進＝0） */
+    /* 最上面頁標題那一格佔的高：錨點（h1 上緣往上一個內距）→ h1 第一行中線 → 再半顆方塊 → 一個內距 */
+    --top-slot: calc(var(--font-size-lg) * var(--line-height-lg) / 2 + 0.225em + 2 * var(--dot-pad));
+    --nav-shift: min(0px, 100dvh - var(--bar-h) - var(--nav-y) - var(--top-slot) - (var(--i, 0) + 1) * var(--dot-h));
+    /* 切在錨點～底列上緣；左右放寬＝不切到觸控的可點範圍。dvh 才對得上 sticky */
+    clip-path: inset(0 -9em calc(var(--nav-y) + var(--bar-h) - 100dvh) -9em);
   }
   .section-nav button { flex: none; color: inherit; }
-  .section-nav-step { padding: 0.5em 0.25em; }
-  .section-nav-step:disabled { opacity: 0.3; }
-  /* 矩形畫在 ::before，按鈕本身留內距＝好點 */
-  .section-nav-dot { padding: 0.25em 0.6em; opacity: 0.3; }
-  .section-nav-dot::before { content: ''; display: block; width: 0.45em; height: 1.6em; background: currentColor; }
-  .section-nav-dot[aria-current] { opacity: 1; }
+  /* 矩形畫在 ::before，按鈕本身留內距＝好點。位移掛在按鈕上（不是 nav）→ 上面那個切的範圍留在原地 */
+  .section-nav-dot, .section-nav-top {
+    padding: var(--dot-pad) 0.6em;
+    opacity: 0.3;
+    transform: translateY(var(--nav-shift));
+    transition: transform var(--dur-fast) var(--ease-standard);
+  }
+  :is(.section-nav-dot, .section-nav-top)::before { content: ''; display: block; width: 0.45em; height: 1.6em; background: currentColor; }
+  .section-nav-top { padding-top: calc(var(--top-slot) - 0.45em - var(--dot-pad)); }   /* 上內距把方塊的中心推到 h1 第一行中線 */
+  .section-nav-top::before { height: 0.45em; }   /* 正方形 */
+  :is(.section-nav-dot, .section-nav-top)[aria-current] { opacity: 1; }
   @media (hover: hover) {
-    .section-nav-dot:hover, .section-nav-step:not(:disabled):hover { opacity: 0.6; }
+    :is(.section-nav-dot, .section-nav-top):hover { opacity: 1; }   /* hover＝全黑（user 2026-11-18） */
   }
 
   /* 返回鈕（點進去的詳細頁，user 2026-11-10 草圖）：col 1 左上角、上緣＝內容第一行，sticky 停在那條線（手機也是，在左緣那一條裡）。
+     圖示＝反過來的 play（朝左三角，HTML 掛 icon-play rotate-180；user 2026-11-18），大小同底列的 play 鈕。
      字級同段落導覽、左緣對齊導覽矩形（＝menu 鈕）；padding＋負 margin＝點擊範圍放大但 icon 位置不動 */
   .back-btn {
     @apply text-s md:text-md;
@@ -57,36 +83,132 @@
     margin: calc(var(--pad) * -1);
     line-height: 1;
   }
-  .back-btn .icon { display: block; }
+  .back-btn .icon { display: block; font-size: 1.25em; }
   /* 觸控：導覽鈕、返回鈕的可點範圍往左右撐（都在 --rail-w 那一條裡，不壓內文）；矩形／icon 位置不動 */
   @media (pointer: coarse) {
-    .section-nav-dot { padding-inline: 1em; }
-    .section-nav-step { padding-inline: 0.75em; }
+    .section-nav-dot, .section-nav-top { padding-inline: 1em; }
     .back-btn { --pad: 1em; }
   }
 
-  /* 詳細頁頭：照片寬同列表縮圖（2 欄：手機 4 欄裡的 2、桌面內文 6 欄裡的 2），下面名字、單位 */
-  .profile-photo { width: calc(50% - var(--spacing-gutter) / 2); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-lg); }
-  @media (min-width: 768px) { .profile-photo { width: calc((100% - 5 * var(--spacing-gutter)) / 3 + var(--spacing-gutter)); } }
+  /* 列表縮圖／詳細頁照片的寬＝內文欄的 1.5 欄（user 2026-11-18，原本 2 欄）。內文欄手機當 4 欄、桌面 6 欄：
+     一欄＝(100% − 欄間 gutter) ÷ 欄數，1.5 欄＝1.5 個欄寬＋半個 gutter。% 在用的地方才算（兩處的 100% 都是內文欄寬） */
+  .page-body { --item-thumb-w: calc((100% - 3 * var(--spacing-gutter)) / 4 * 1.5 + var(--spacing-gutter) / 2); }
+  @media (min-width: 768px) { .page-body { --item-thumb-w: calc((100% - 5 * var(--spacing-gutter)) / 6 * 1.5 + var(--spacing-gutter) / 2); } }
+
+  /* 詳細頁頭：照片寬同列表縮圖，下面名字、單位 */
+  .profile-photo { width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-lg); }
   .profile-sub { margin-top: var(--spacing-sm); }
 
   @media (hover: hover) {
-    .back-btn:hover, a.item-row:hover { opacity: 0.6; }
+    .back-btn:hover { opacity: 0.6; }
   }
 
   /* 段落裡的條列（faculty／curriculum／news…，user 2026-11-10 草圖）：一項一塊、項目間空一行；項目標題 h3 不粗體。
-     .item-row＝左方形縮圖＋右文字：內文欄手機 4 欄／桌面 6 欄 → 切同樣欄數，縮圖佔 2 欄＝對齊 site-grid */
+     .item-row＝左方形縮圖（1.5 欄，--item-thumb-w）＋隔一個 gutter 的右文字（吃剩下的寬；1.5 欄＝文字左緣不在 site-grid 的欄線上） */
   .item-list { margin-top: var(--spacing-md); display: grid; gap: var(--spacing-lg); }
   .page-body .item-list h3 { margin-top: 0; font-weight: var(--font-weight-regular); }
   .item-list h3 + p { margin-top: var(--spacing-sm); }
-  .item-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-gutter); align-items: start; }
-  .item-thumb { grid-column: span 2; aspect-ratio: 1; background: var(--light-gray); }
-  .item-row > :last-child { grid-column: 3 / -1; }
-  @media (min-width: 768px) { .item-row { grid-template-columns: repeat(6, 1fr); } }
+  /* 項目的標題與說明跟著清單的字級（不吃 h3／p 各自預設的 text-s）：整份清單要大一階就在 ul 掛 text-*——
+     師資列表掛 text-md＝名字與單位都 md（user 2026-11-18） */
+  .item-list :where(h3, p) { font-size: inherit; line-height: inherit; }
+  .item-row { display: grid; grid-template-columns: var(--item-thumb-w) 1fr; gap: var(--spacing-gutter); align-items: start; }
+  .item-thumb { aspect-ratio: 1; background: var(--light-gray); }
+  /* 整列是連結的（師資 → 詳細頁、合作企業 → 官網）：hover 不變淡，整列最右邊、整列高的正中出一顆圓點（user 2026-11-18，方塊試過後改回圓點）——
+     大小同選單 hover 的那顆（--dot-size＝骨牌圓孔）。絕對定位＝出現不推版面 */
+  a.item-row { position: relative; }
+  a.item-row::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: var(--dot-size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translateY(-50%);
+    opacity: 0;
+  }
+  @media (hover: hover) {
+    a.item-row:hover::after { opacity: 1; }
+  }
+  /* 內頁的連結清單（課程課名、網站地圖）：hover 圓點在清單最右邊（右緣＝內文欄右緣，同整列連結／摺疊），不跟在字後面（user 2026-11-18）。
+     連結撐滿整列＝整列都點得到；右邊讓出圓點的位置不壓字（同摺疊的 --fold-pad） */
+  .page-body .link-list .nav-link { display: block; padding-right: calc(var(--spacing-gutter) + 0.5rem); }
+  .page-body .link-list .nav-link::after { left: auto; right: 0; margin-left: 0; }
+
+  /* 摺疊（原生 <details>：常見問題、動態、入學；user 2026-11-18）：原生箭頭拿掉，整列最右邊一顆圓點——跟選單 hover／選中時出現的
+     那顆同一種（--dot-size，chrome.css .nav-link::after；方塊試過後改回圓點），收著時對在第一行文字的中間、右緣＝內文欄右緣。
+     打開＝圓點滑到「整個展開後的內容」高度的正中間；關起來滑回第一行。hover 不變。
+     展開／收起有動畫（accordion.js 把 details 的高度補間；user 2026-11-18）：收的時候內容還在（open 等縮完才拿掉），所以一開始就標
+     .is-closing、這裡當它已經關了 → 圓點跟著內容一起往上滑回第一行。圓點的過場跟高度補間同一組時長／曲線（--dur-medium、--ease-standard）。
+     畫在 details::after（絕對定位＝不佔位，pointer-events none＝點它等於點那一列）；位置用 top 的百分比定 → 可以過場。
+     文字右邊讓出 --fold-pad 不壓到圓點。--fold-top＝第一行字框離列頂多遠（半個行距空隙，看那一列的字級）＋0.5em＝第一行中線 */
+  .page-body details {
+    position: relative;
+    --fold-pad: calc(var(--spacing-gutter) + 0.5rem);
+    --fold-top: calc((var(--line-height-s) - 1) * 0.5em);
+  }
+  .page-body summary { display: block; padding-right: var(--fold-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條） */
+  .page-body summary::-webkit-details-marker { display: none; }
+  .page-body details > :not(summary) { padding-right: var(--fold-pad); }
+  .page-body details::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: calc(var(--fold-top) + 0.5em);
+    width: var(--dot-size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translateY(-50%);
+    pointer-events: none;
+    transition: top var(--dur-medium) var(--ease-standard);
+  }
+  .page-body details[open]:not(.is-closing)::after { top: 50%; }
+  /* 動態的列（user 2026-11-18）：圓點永遠在整個 block 的正中（收著＝縮圖那一列的中線，不是第一行；展開跟著整塊長高），
+     而且 hover／鍵盤聚焦才出現、點開後常駐（收回去又回到 hover 才出；opacity 走網站 fade；觸控不出，理由同底列名字） */
+  .item-list details::after { top: 50%; opacity: 0; transition: top var(--dur-medium) var(--ease-standard), var(--transition-fade); }
+  .item-list details:has(> summary:focus-visible)::after { opacity: 1; }
+  @media (hover: hover) { .item-list details:hover::after { opacity: 1; } }
+  .item-list details[open]:not(.is-closing)::after { opacity: 1; }
+
+  /* 動態／入學（user 2026-11-18）：每則＝一個摺疊，收著的樣子同師資那一列（縮圖＋標題＋分類，summary 掛 .item-row）；
+     動態頁：外面＝標題＋分類，展開＝.fold-meta（時間／地點）→ 相簿。入學頁：外面＝標題＋時間，展開＝說明文字（p）→ 相簿 → 附件（.link-list 連結清單、粗體）。有才出。
+     點相簿的圖放大到整個畫面（共用右圖的放大 dialog，chrome.js openFigure，‹ X › 可左右切）；打開的那則點封面縮圖＝放大封面。
+     桌面展開內容對齊文字那一欄（縮圖右邊）、手機吃整列寬 */
+  .page-body summary.item-row { display: grid; padding-right: 0; }
+  .page-body summary.item-row > :last-child { padding-right: var(--fold-pad); }
+  .fold-body { @apply text-s; margin-top: var(--spacing-md); display: grid; gap: var(--spacing-md); }
+  @media (min-width: 768px) {
+    .fold-body { margin-left: calc(var(--item-thumb-w) + var(--spacing-gutter)); }
+  }
+  /* 時間、地點直接寫、一行一個，不加「時間／地點」標籤（user 2026-11-18） */
+  .fold-body .link-list { font-weight: var(--font-weight-bold); }   /* 附件（展開內容裡的連結清單）＝粗體（user 2026-11-18） */
+  /* 相簿（user 2026-11-18 改）：所有圖一排、同一個最大高（--album-h）、照原比例不裁切；放不下橫向捲（藏捲軸），
+     左右 chevron 捲 60% 可視寬（album.js 量到溢出才出 .has-chev、到頭 .is-end 半透明）＝SCCD playlist 縮圖列的樣子，沒有旋轉。
+     chevron 在圖列外面左右兩邊、圖列夾在中間（user 2026-11-19：不壓在圖上）；沒溢出不出 chevron＝圖列吃滿、左緣對齊文字欄。
+     chevron＝play icon（prev 轉 180°），大小同底列 play 鈕（text-s／md 的 1.25em） */
+  .album { --album-h: 6rem; }   /* 原本 8rem／12rem，user 2026-11-19 嫌大縮成 6rem／9rem */
+  .album.is-ready { display: flex; align-items: center; gap: var(--spacing-xs); }
+  @media (min-width: 768px) { .album { --album-h: 9rem; } }
+  .album-strip { flex: 1; min-width: 0; display: flex; gap: var(--spacing-gutter); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .album-strip::-webkit-scrollbar { display: none; }
+  .album-strip > button { flex: none; display: block; height: var(--album-h); background: var(--light-gray); cursor: zoom-in; scroll-snap-align: start; }   /* 只管圖，chevron 是 .album 直接的子 button */
+  .album-strip img { display: block; height: 100%; width: auto; }
+  .album-chev { @apply text-s md:text-md; display: none; flex: none; align-items: center; justify-content: center; }
+  .album-chev .icon { font-size: 1.25em; }
+  .album.has-chev .album-chev { display: flex; }
+  .album-prev { order: -1; }
+  .album-chev.is-end { opacity: 0.5; cursor: default; }
+  @media (hover: hover) { .album-chev:not(.is-end):hover { opacity: 0.6; } }
+  /* 封面縮圖有圖就鋪滿（動態；打開那則點它放大） */
+  .item-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
   /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。TODO 圖片待 user 給，現在是灰底佔位。
-     手機不出（HTML 掛 hidden md:block）：內容被複製到右緣縮圖鈕與放大 dialog（chrome.js syncFigure）→ 放大那份吃同一個樣子 */
-  .page-figure { position: sticky; top: 50%; height: 0; align-self: start; }
+     手機不出（HTML 掛 hidden md:block）：內容被複製到右緣縮圖鈕與放大 dialog（chrome.js syncFigure）→ 放大那份吃同一個樣子。
+     水平位置（user 2026-11-19）＝「內容區右緣～畫面右緣（100vw）」那段空間的正中：wrapper 佔 col 8–12，左邊用負 margin 吃掉一個 gutter
+     （＝從 col 7 右緣起）、右邊負 margin 吃掉容器內距（＝到 100vw），圖在 wrapper 裡 margin auto 置中；圖本身仍是 4 欄寬的方形 */
+  .page-figure { position: sticky; top: 50%; height: 0; align-self: start; margin-left: calc(-1 * var(--spacing-gutter)); margin-right: calc(-1 * var(--container-padding)); }
   .page-figure > *, .figure-dialog-body > * {
     @apply text-s;
     aspect-ratio: 1;
@@ -95,10 +217,48 @@
     justify-content: center;
     background: var(--light-gray);
   }
-  .page-figure > * { transform: translateY(-50%); }
+  /* 選單開著內容整個右推 --shift（chrome.css #page-content）→ 剩餘空間（內容右緣～100vw）跟著少掉 shift，它的正中往右移 shift/2：
+     右圖反向位移 −shift/2（抵銷一半的右推）＝中心跟著新空間重新置中，同時寬少掉 --shift（方形，高跟著縮）＝兩邊留白跟原本一樣寬
+     （user 2026-11-19；原本是右緣不動）；位移與寬的過場跟右推同一組時長與曲線 → 全程都在當下那段空間的正中。
+     窄桌面剩不到多少寬（甚至算出負的＝0）：overflow hidden 讓它保持方形縮到看不見，裡面的字不會撐高或跑出來 */
+  .page-figure > * {
+    --figure-w: calc((100vw - 2 * var(--container-padding) - 11 * var(--spacing-gutter)) / 12 * 4 + 3 * var(--spacing-gutter));   /* 4 欄寬 */
+    width: calc(var(--figure-w) - var(--shift, 0px));
+    margin-inline: auto;
+    transform: translateY(-50%) translateX(calc(-0.5 * var(--shift, 0px)));
+    overflow: hidden;
+    transition: width var(--dur-medium) var(--ease-wipe), transform var(--dur-medium) var(--ease-wipe);
+  }
+  /* 放大的是相簿的圖（<img>，動態頁）：不裁方形、不墊灰底，整張照原比例放進 logo 區～底列之間 */
+  .figure-dialog-body > img {
+    display: block;
+    aspect-ratio: auto;
+    width: auto;
+    max-width: calc(100vw - 2 * var(--container-padding));
+    max-height: calc(100svh - var(--top-h) - var(--bar-h));
+    background: none;
+  }
 
-  /* 點導覽＝把該段標題捲到「第一段標題在頁頂時的位置」（--section-y0，section-nav.js 量）→ 最後一段至少要高到捲得到那條線 */
-  .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
+  /* 段落圖片輪播（user 2026-11-18 about 起；slideshow.js 只算誰在中間、寫 data-pos）：中間 --slide-c 最大壓最上層，
+     左右兩張 --slide-s 最小在後面、邊緣被中間蓋住，再外面（|pos|≥2）藏在左右那張底下。圖 3:2，容器高＝中間那張（25/11＝0.66×2/3）。
+     left／width／opacity 轉場＝點了滑過去（時長同網站 fade） */
+  .slideshow { --slide-c: 66%; --slide-s: 24%; position: relative; aspect-ratio: 25 / 11; margin-top: var(--spacing-md); }   /* 標題 → 圖 → 內文（user 2026-11-18）；下面的 h3／p 自帶上距 */
+  .slide {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: var(--slide-s); aspect-ratio: 3 / 2; overflow: hidden; background: var(--light-gray);
+    opacity: 0; z-index: 1; padding: 0; border: 0;
+    transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard), opacity var(--dur-fade) var(--ease-standard);
+  }
+  .slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .slide[data-pos="-2"], .slide[data-pos="-1"] { left: 0; }
+  .slide[data-pos="1"], .slide[data-pos="2"] { left: calc(100% - var(--slide-s)); }
+  .slide[data-pos="-1"], .slide[data-pos="1"] { z-index: 2; opacity: 1; cursor: pointer; }
+  .slide[data-pos="0"] { left: calc((100% - var(--slide-c)) / 2); width: var(--slide-c); z-index: 3; opacity: 1; }
+  @media (hover: hover) { .slide:not(:disabled):hover { opacity: 0.6; } }
+
+  /* 點導覽＝把該段頂端捲到 h1 那條線（--section-y0＝h1 在頁頂時的位置，section-nav.js 量；段落頂＝<section>）→ 最後一段至少要高到捲得到那條線。
+     只有放了段落導覽的頁才撐（.section-nav 是 .page-body 前面的兄弟）：沒導覽的頁（動態、入學、合作企業…）撐了只會在頁尾多一截空白 */
+  .section-nav ~ .page-body .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
   /* 沒段落的短頁（404）也要高過畫面中線，導覽／右圖的 sticky 才停得住 */
   .page-body { min-height: calc(100vh - var(--top-h) - var(--bar-h)); }
 }

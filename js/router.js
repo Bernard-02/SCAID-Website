@@ -4,13 +4,14 @@
  */
 
 import { initPageModules, cleanupPageModules } from './main.js';
+import { closeOverlays } from './modules/ui/chrome.js';
 import { SITE_BASE_PATHNAME, sitePath } from './modules/ui/site-base.js';
 import { DUR } from './modules/ui/motion.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
 // <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
-const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'news', 'admission',
+const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'curriculum-detail', 'news', 'admission',
                'qa', 'donate', 'regulations', 'terms', 'sitemap', '404'];
 const routes = {
   '/':           { page: 'index', htmlFile: 'index.html' },
@@ -89,8 +90,17 @@ async function loadPage(route, search = '', fromUserNav = false) {
   const isStale = () => mySeq !== navSeq;
 
   try {
+    // 選單開著點連結：先收選單（內容滑回原位，--dur-medium），收完才淡出（user 2026-11-18）。fetch 先發不等。
+    // 內容裡的連結：chrome.js 在 pointerdown 就把選單收了，click 進來時 class 已沒了但內容還在滑 → 看 transform 還沒回 0 也等
+    const fetching = fetch(sitePath(route.htmlFile));
+    const shifted = Math.abs(new DOMMatrix(getComputedStyle(main).transform).m41) > 0.5;
+    if (root.classList.contains('menu-open') || shifted) {
+      closeOverlays();
+      await wait(prefersReducedMotion() ? 0 : DUR.medium * 1000);
+      if (isStale()) return;
+    }
     root.classList.add('page-leaving');
-    const [res] = await Promise.all([fetch(sitePath(route.htmlFile)), wait(prefersReducedMotion() ? 0 : DUR.fade * 1000)]);
+    const [res] = await Promise.all([fetching, wait(prefersReducedMotion() ? 0 : DUR.fade * 1000)]);
     if (isStale()) return;
     if (!res.ok) throw new Error(`Failed to load ${route.htmlFile}`);
     const html = await res.text();

@@ -2,18 +2,13 @@
   <!-- 無障礙：鍵盤 Tab 第一站，跳過導航直達主內容（#page-content 跨 SPA 換頁恆在） -->
   <a href="#page-content" class="skip-link">跳到主要內容</a>
 
-  <!-- Logo（全站固定、頂到最頂、置中；首頁未展開時 home.css 放到畫面正中央、transition 位移）。TODO 佔位，拿到 SVG 換 -->
+  <!-- Logo（全站固定、頂到最頂、置中；首頁未展開時 home.css 放到畫面正中央、transition 位移）。
+       圖＝images/Logo Text.svg（兩端矩形夾英中名，中英並列不跟語言切），chrome.css 用 mask 畫 -->
   <a href="../index.html" class="site-logo">
+    <!-- logo 背後的毛玻璃（iOS 那種，user 2026-11-18）：只罩 logo 外圍一圈、邊緣羽化；內容捲上來才疊半透明白（chrome.css .top-blur） -->
+    <span class="top-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
     <span class="sr-only" data-en="Home">回首頁</span>
-    <!-- 名字跟語言走：中文一行／英文兩行（看 <html lang>，chrome.css），寬度跟著變 -->
-    <span class="logo-lockup" aria-hidden="true">
-      <span class="logo-cap"></span>
-      <span class="logo-lockup-name">
-        <span class="logo-name-zh">實踐大學AI設計職人學位學程</span>
-        <span class="logo-name-en"><span class="block">Bachelor Program in Advanced Integrated Design</span><span class="block">Shih Chien University</span></span>
-      </span>
-      <span class="logo-cap"></span>
-    </span>
+    <span class="logo-text" aria-hidden="true"></span>
   </a>
 
   <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->
@@ -55,10 +50,10 @@
          首頁：點了原地展開清單、標題退掉、＋滑到右端放大變－（chrome.js 攔）；內頁：連到動態頁。選單開著時收成只剩＋。
          hover 別的鈕名字出來、側邊放不下才縮這塊（中心不動）；文字放不下就跑馬燈（fitBar） -->
     <a href="news.html" class="bar-news">
-      <span class="bar-news-track"><span class="bar-news-copy" data-en="Placeholder: latest news title">示意：最新動態標題</span></span><span class="bar-plus" aria-hidden="true"></span>
+      <span class="bar-news-track"><span class="bar-news-copy" data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</span></span><span class="bar-plus" aria-hidden="true"></span>
     </a>
     <button type="button" class="bar-btn footer-btn" aria-expanded="false" aria-controls="site-footer">
-      <span class="bar-label" data-zh="頁尾" data-en="footer">頁尾</span><span class="bar-rect"></span>
+      <span class="bar-label" data-zh="聯絡" data-en="contact">聯絡</span><span class="bar-rect"></span>
     </button>
   </div>
 
@@ -79,6 +74,11 @@
        下方矩形鈕（白圓點＝開著）給鍵盤與報讀用，位置同底列那條線 -->
   <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片">
     <div class="figure-dialog-body"></div>
-    <button type="button" class="bar-btn figure-close"><span class="bar-rect"></span><span class="bar-label" data-zh="關閉" data-en="close">關閉</span></button>
+    <!-- 控制列（user 2026-11-18）：‹ X ›，左右＝play icon（user 2026-11-19，大小同底列 play 鈕）。只有一張（右圖、封面）時左右不出（chrome.js 依張數標 .has-nav）；左右鍵也能切 -->
+    <div class="figure-nav">
+      <button type="button" class="figure-prev" aria-label="上一張"><span class="icon icon-play rotate-180" aria-hidden="true"></span></button>
+      <button type="button" class="figure-close" aria-label="關閉"><span class="icon icon-close icon-m" aria-hidden="true"></span></button>
+      <button type="button" class="figure-next" aria-label="下一張"><span class="icon icon-play" aria-hidden="true"></span></button>
+    </div>
   </dialog>
 </header>

@@ -28,9 +28,10 @@
   --dark-gray: #333333;
 
   /* ===== Typography ===== */
-  /* 英文 JetBrains Mono、中文 Noto Sans TC（Google Fonts 的 Noto Sans CJK TC 版）；字串堆疊在 tailwind.config.js fontFamily.sans */
+  /* 英文 JetBrains Mono（Google Fonts）、中文 Glow Sans TC Compressed（未來熒黑，自架切片 fonts/glow-sans-tc-compressed/font.css）；
+     字串堆疊在 tailwind.config.js fontFamily.sans */
   --font-mono: 'JetBrains Mono';
-  --font-zh: 'Noto Sans TC';
+  --font-zh: 'Glow Sans TC Compressed';
 
   /* 7 階字級（rem，base 16px）：Tailwind text-* 與 CSS var 都吃這裡 */
   --font-size-3xl: 3.5rem;    /* 56px */
@@ -69,14 +70,20 @@
   --spacing-7xl: 10rem;   /* 160px */
   --spacing-8xl: 12rem;   /* 192px */
 
+  /* logo 兩端那顆骨牌（Logo Text.svg：骨牌高 70、全寬 1067.29）：底列 menu／footer 鈕同大（user 2026-11-18）。
+     所有 hover／選中的圓點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18） */
+  --block-h: calc(var(--logo-w) * 70 / 1067.29);
+  --dot-size: calc(var(--block-h) * 20 / 70);
+
   /* ===== Layout ===== */
-  --spacing-gutter: 1rem;       /* .site-grid gap（Tailwind gap-gutter） */
+  --spacing-gutter: 1rem;      /* .site-grid gap（Tailwind gap-gutter） */
   --container-padding: 1rem;    /* .site-container 左右 */
   --top-h: 6rem;                /* 頂部 logo 鎖定版區高（chrome.css .site-logo，頂到最頂）：#page-content padding-top */
   --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離；footer 內容也貼這條 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
+  --logo-w: calc(100vw - 2 * var(--container-padding));   /* 全站 logo 寬（chrome.css .site-logo）：手機扣左右內距吃滿 */
   --thumb-w: 2rem;              /* 手機內頁右緣的右圖縮圖鈕邊長（chrome.css .figure-btn） */
   --rail-w: calc(var(--thumb-w) + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝縮圖鈕（page.css .page-body）；桌面走 grid＝0 */
 
@@ -110,7 +117,7 @@
     --font-size-3xl: 8rem;      /* 128px */
     --font-size-2xl: 6rem;      /* 96px */
     --font-size-xl: 2rem;       /* 32px */
-    --font-size-lg: 1.4rem;     /* 22.4px */
+    --font-size-lg: 1.6rem;     /* 25.6px */
     --font-size-md: 1.25rem;    /* 20px */
     --font-size-s: 1rem;        /* 16px */
     --font-size-xs: 0.85rem;    /* 13.6px */
@@ -131,6 +138,7 @@
     --bar-pad: 3rem;
     --menu-w: 18rem;
     --col-w: min(60vw, 32rem);
+    --logo-w: var(--col-w);     /* 桌面 logo 同動態欄寬 */
     --rail-w: 0px;
   }
 }

@@ -8,7 +8,8 @@
   <title>課程 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -16,6 +17,8 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/curriculum.html 也能獨立跑。版型同 about（css/components/page.css）。
+       每個年級裡分必修／選修兩組：小標（h3）寫一次、課名排在下面（user 2026-11-18）；哪一組沒有課就整組不出。小標跟課名同 text-md（h3 預設是內文大小，這頁另掛）。
+       課名＝連到 curriculum-detail（user 2026-11-18）：.link-list 間距同選單、hover 圓點在清單最右邊（page.css）；接 Directus 後帶 ?id=。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
@@ -24,129 +27,73 @@
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
         <h1 data-en="Curriculum">課程</h1>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Year 1">一年級</h2>
-          <ul class="item-list text-md">
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-          </ul>
-        </section>
+      <section class="page-section">
+        <h2 class="section-title" data-en="Year 1">一年級</h2>
+        <h3 class="text-md" data-en="Required">必修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Design Fundamentals (placeholder)">設計基礎（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Visual Aesthetics and Form (placeholder)">視覺美學與造型（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Introduction to Generative AI Tools (placeholder)">生成式 AI 工具入門（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Ideation and Sketching (placeholder)">創意發想與草圖（示意）</a></li>
+        </ul>
+        <h3 class="text-md" data-en="Elective">選修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Introduction to New Media (placeholder)">新媒體概論（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Digital Translation Workflow (placeholder)">數位轉譯流程（示意）</a></li>
+        </ul>
+      </section>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Year 2">二年級</h2>
-          <ul class="item-list text-md">
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-          </ul>
-        </section>
+      <section class="page-section">
+        <h2 class="section-title" data-en="Year 2">二年級</h2>
+        <h3 class="text-md" data-en="Required">必修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Motion Graphics (placeholder)">動態影像設計（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="3D Modelling and Animation (placeholder)">3D 建模與動畫（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="XR Technology Practice (placeholder)">XR 技術實作（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Cross-disciplinary Project I (placeholder)">跨域專題（一）（示意）</a></li>
+        </ul>
+        <h3 class="text-md" data-en="Elective">選修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Virtual Cinematography and Real-time Rendering (placeholder)">虛擬攝影與即時運算（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Industry Mentor Workshop (placeholder)">業師工作坊（示意）</a></li>
+        </ul>
+      </section>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Year 3">三年級</h2>
-          <ul class="item-list text-md">
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-          </ul>
-        </section>
+      <section class="page-section">
+        <h2 class="section-title" data-en="Year 3">三年級</h2>
+        <h3 class="text-md" data-en="Required">必修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Industry Project I (placeholder)">企業專案實作（一）（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Industry Project II (placeholder)">企業專案實作（二）（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Project Management and Scheduling (placeholder)">專案管理與時程控管（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Budgeting and Client Communication (placeholder)">預算編列與客戶溝通（示意）</a></li>
+        </ul>
+        <h3 class="text-md" data-en="Elective">選修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Production Pipeline Design (placeholder)">製作管線設計（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="AI Pipeline Integration (placeholder)">AI 製程整合（示意）</a></li>
+        </ul>
+      </section>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Year 4">四年級</h2>
-          <ul class="item-list text-md">
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Required">必修</div>
-            </li>
-            <li>
-              <div data-en="Course name (placeholder)">課程名稱（示意）</div>
-              <div data-en="Elective">選修</div>
-            </li>
-          </ul>
-        </section>
+      <section class="page-section">
+        <h2 class="section-title" data-en="Year 4">四年級</h2>
+        <h3 class="text-md" data-en="Required">必修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Industry Internship I (placeholder)">企業實習（上）（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Industry Internship II (placeholder)">企業實習（下）（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Graduation Project (placeholder)">畢業專題（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Internship Reflection and Portfolio (placeholder)">實習反思與作品集（示意）</a></li>
+        </ul>
+        <h3 class="text-md" data-en="Elective">選修</h3>
+        <ul class="link-list text-md">
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="Career Development Seminar (placeholder)">職涯發展講座（示意）</a></li>
+          <li><a href="curriculum-detail.html" class="nav-link" data-en="New Media Trends Seminar (placeholder)">新媒體趨勢專題（示意）</a></li>
+        </ul>
+      </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
     </div>
   </main>
 

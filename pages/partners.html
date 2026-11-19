@@ -8,7 +8,8 @@
   <title>合作企業 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -16,66 +17,63 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/partners.html 也能獨立跑。版型同 about（css/components/page.css）。
-       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+       內容為 MOCK 示意，接 Directus 後改由模組渲染（後台 url 空＝那列用 div 不用 a）。整列是外連 a.item-row、另開新視窗（user 2026-11-18）。企業名稱與說明都是 text-md（清單 ul 掛 text-md，同師資列表）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
-      <nav class="section-nav flex" aria-label="本頁段落"></nav>
-
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
         <h1 data-en="Partners">合作企業</h1>
-        <p class="page-lead" data-en="Placeholder: companies and organizations partnering with the program.">示意：與學程合作的企業與單位。</p>
+        <p class="page-lead" data-en="Placeholder: six companies co-educating with the program across animation, games, XR, post-production and interactive exhibits.">示意：與學程雙軌共育的 6 家企業，涵蓋動畫、遊戲、XR、後製與互動展演。</p>
 
-        <section class="page-section">
-          <h2 class="section-title" data-en="Company List">企業名單</h2>
-          <ul class="item-list">
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-            <li class="item-row">
-              <div class="item-thumb"></div>
-              <div>
-                <h3 data-en="Company name (placeholder)">企業名稱（示意）</h3>
-                <p data-en="Placeholder: what this partner does with the program">示意：合作內容</p>
-              </div>
-            </li>
-          </ul>
-        </section>
+      <section class="page-section">
+        <ul class="item-list mt-0 text-md">
+          <li><a class="item-row" href="https://example.com/animation-studio" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder Animation Studio">示意動畫工作室</h3>
+              <p data-en="Placeholder: co-teaching, Year 3 project briefs, Year 4 full-year internships">示意：協同授課、三年級專案命題、四年級全年實習</p>
+            </div>
+          </a></li>
+          <li><a class="item-row" href="https://example.com/games" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder Games">示意遊戲開發公司</h3>
+              <p data-en="Placeholder: mentors in class, art-pipeline workshops">示意：業師進班、美術管線工作坊</p>
+            </div>
+          </a></li>
+          <li><a class="item-row" href="https://example.com/xr-studio" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder XR Studio">示意 XR 製作公司</h3>
+              <p data-en="Placeholder: virtual production equipment, internships">示意：虛擬製作設備支援、實習</p>
+            </div>
+          </a></li>
+          <li><a class="item-row" href="https://example.com/post-production" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder Post-production">示意影像後製公司</h3>
+              <p data-en="Placeholder: project briefs, mentor talks">示意：專案命題、業師講座</p>
+            </div>
+          </a></li>
+          <li><a class="item-row" href="https://example.com/interactive-exhibits" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder Interactive Exhibits">示意互動展演設計公司</h3>
+              <p data-en="Placeholder: exhibition projects, internships">示意：展演專案合作、實習</p>
+            </div>
+          </a></li>
+          <li><a class="item-row" href="https://example.com/content-platform" target="_blank" rel="noopener">
+            <div class="item-thumb"></div>
+            <div>
+              <h3 data-en="Placeholder Digital Content Platform">示意數位內容平台</h3>
+              <p data-en="Placeholder: scholarships, job matching">示意：獎助學金、就業媒合</p>
+            </div>
+          </a></li>
+        </ul>
+      </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-9 md:col-span-4"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
     </div>
   </main>
 

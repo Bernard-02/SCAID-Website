@@ -13,6 +13,9 @@ import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
 import { initSectionNav } from './modules/ui/section-nav.js';
+import { initSlideshow } from './modules/ui/slideshow.js';
+import { initAlbums } from './modules/ui/album.js';
+import { initAccordion } from './modules/ui/accordion.js';
 import { loadFooterCms } from './modules/ui/footer-cms.js';
 
 // 片段注入：pages/header.html → #site-header、pages/footer.html → #site-footer
@@ -51,7 +54,9 @@ export function cleanupPageModules() {
 export function initPageModules(page, params = new URLSearchParams(), fromUserNav = false) {
   closeOverlays();      // 選單／footer 覆蓋層／首頁展開態不跨頁
   updateNavActive(page);
-  initSectionNav();     // 內頁段落導覽（先於 applyLang：生成的報讀文字也要套語言）
+  initSectionNav();     // 內頁段落導覽
+  initSlideshow();      // 段落圖片輪播（有 .slideshow 的頁）
+  initAlbums();         // 相簿一排橫捲＋chevron（有 .album 的頁）
   syncFigure();         // 手機：右緣縮圖鈕換成這一頁的右圖（先於 applyLang：複本也要套語言）
   applyLang();          // 新換進來的內容若有 data-zh 也套語言
   // 接 Directus 後：if (page === 'news') import('./modules/pages/news.js').then(m => m.initNews(params));
@@ -64,5 +69,6 @@ initChrome();           // 先於 router：底列動態在首頁要攔 click（p
 initRouter();
 initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
+initAccordion();        // 摺疊（<details>）展開／收起的動畫
 loadPartial('site-header', 'pages/header.html').then(() => { updateNavActive(); syncFigure(); applyLang(); fitBar(); });
 loadPartial('site-footer', 'pages/footer.html').then(() => { applyLang(); loadFooterCms(); });

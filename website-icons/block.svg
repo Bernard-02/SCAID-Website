@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 方塊 icon：logo 兩端那顆（images/Logo Text.svg 的同一條 path），直立矩形＋中央圓孔 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 70">
+  <path d="M0,0v70h45V0H0ZM22.5,45c-5.52,0-10-4.48-10-10s4.48-10,10-10,10,4.48,10,10-4.48,10-10,10Z"/>
+</svg>

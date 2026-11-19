@@ -10,9 +10,18 @@
   /* 首頁 main 撐滿一屏（未展開時是空的，頁面不捲） */
   body[data-page="index"] #page-content { min-height: 100svh; }
 
-  /* 展開的動態清單：畫面中間一欄（手機滿版；桌面寬＝--col-w，跟底列動態欄同寬） */
+  /* 展開的動態清單：畫面中間一欄（手機滿版；桌面寬＝--col-w，跟底列動態欄同寬）。
+     出現＝從畫面底下往上滑進來、邊滑邊淡入，不是直接跳出來（user 2026-11-19）：起點＝清單上緣在畫面底緣，時長與曲線同 logo 上移那一段
+     （--dur-slow／--ease-standard，chrome.css .site-logo）＝兩個一起往上。display none → block 起不了 transition，所以用 keyframes */
   .home-news-list { display: none; }
-  html.news-open .home-news-list { display: block; }
+  html.news-open .home-news-list { display: block; animation: news-rise var(--dur-slow) var(--ease-standard) backwards; }
+  /* 收合＝反向：往下滑出畫面、邊滑邊淡出（同一組時長／曲線，跟 logo 回中間一起）。滑的距離與要切掉的上半截由 chrome.js setNews 量了寫進來
+     （捲到一半收的話，畫面上緣以上的部分要先切掉，不然會跟著從上面滑進畫面） */
+  html.news-closing .home-news-list {
+    display: block;
+    clip-path: inset(var(--news-cut, 0px) 0 0 0);
+    animation: news-fall var(--dur-slow) var(--ease-standard) forwards;
+  }
   .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); }
   @media (min-width: 768px) {
     .home-news-list > ul { width: var(--col-w); margin: 0 auto; }
@@ -23,4 +32,12 @@
     background: var(--light-gray);
     border: 1px solid currentColor;
   }
+}
+
+/* 首頁動態清單進場：從畫面底緣升到定位（清單定位後的上緣＝--top-h）、同時淡入；退場反過來滑到畫面底緣以下、同時淡出 */
+@keyframes news-rise {
+  from { transform: translateY(calc(100svh - var(--top-h))); opacity: 0; }
+}
+@keyframes news-fall {
+  to { transform: translateY(var(--news-drop, 100svh)); opacity: 0; }
 }
