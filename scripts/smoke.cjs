@@ -23,7 +23,11 @@ const PAGES = ['contact', 'about', 'partners', 'faculty', 'curriculum', 'news', 
 const fails = [], errors = [];
 const assert = (c, msg) => { if (!c) fails.push(msg); };
 const CORS = { 'Access-Control-Allow-Origin': '*' };
+const BG_JS = /modules\/ui\/bg\.js/;
 const watch = async (page) => {
+  // 背景（bg.js）游標一動就每幀整張重畫：這支 Windows WebKit 是軟體繪圖、幀率會掉很多，其他段落數幀的動畫斷言會誤判
+  // → 換成空的；背景自己那段（搜「背景（user 2026-11-21）」）再拿掉。真的 Safari 的效能要在 Mac 上看
+  await page.route(BG_JS, r => r.fulfill({ contentType: 'text/javascript', body: 'export const INK = {}; export function initBg() {}' }));
   // 後台（Directus）：測試不靠正式後台的資料——沒另外給假資料的一律回空的（＝各頁留 HTML 的示意，同後台還沒填）。
   // 最先註冊＝優先順序最低（Playwright 後註冊的先比對），下面與各測試自己給的假資料會蓋過它
   await page.route(/scaidcms\.usc\.edu\.tw/, r => r.fulfill({ headers: CORS, json: { data: [] } }));
@@ -1091,6 +1095,99 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(body.order === '說明 → album → link-list' && body.desc > 20 && body.files === '_blank.pdf700,_blank.pdf700' && body.shots === 3 && await css(d, 'details[open] .fold-body > p', 'fontSize') === '18.4px'
       && Math.abs((await rect(d, 'details[open] .fold-body')).left - (await rect(d, 'details[open] summary')).left) < 1,
       `入學：完整示意那一則＝說明 → 相簿 → 附件（粗體）、展開內容靠左（沒有縮圖那一欄）（${JSON.stringify(body)}）`);
+  }
+
+  // ── 背景（user 2026-11-21）：畫布（跟著游標的炭筆筆跡）＜ 中空板 ＜ 內文。自己開一頁：滑鼠亂動不影響其他段的 hover ──
+  // 門檻都從 bg.js 的 INK 算：調手感的數字不用跟著改測試
+  {
+    const b = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await watch(b);
+    await b.unroute(BG_JS);   // 這段要真的背景（watch 換成空的，理由見那裡）
+    await b.goto(base + '/index.html');
+    await b.waitForSelector('#site-header .site-bar');
+    const INK = await b.evaluate(() => import('/js/modules/ui/bg.js').then(m => ({ ...m.INK })));
+    const layers = await b.evaluate(() => { const bg = document.body.firstElementChild, s = getComputedStyle(bg); return [bg.className, s.position, s.zIndex, s.pointerEvents, ...[...bg.children].map(e => e.className)].join(); });
+    assert(layers === 'bg,fixed,-1,none,bg-ink,bg-board,bg-lid' && await css(b, 'body', 'isolation') === 'isolate', `背景：畫布 ＜ 中空板 ＜ 蓋板包成一組，在內容後面、不吃指標（${layers}）`);
+    // 中空板的格有大有小、平均＝logo 的骨牌寬（user 2026-11-21）：板子那張畫布的一列裡找每一格左緣那條暗線
+    const cols = await b.evaluate(() => { const c = /** @type {HTMLCanvasElement} */ (document.querySelector('.bg-board')), d = c.getContext('2d').getImageData(0, 0, c.width, 1).data, xs = [];
+      for (let x = 0; x < c.width; x++) if (d[x * 4 + 3] > 35 && d[x * 4 + 3] < 60 && d[x * 4] < 10) xs.push(x);
+      const gaps = xs.slice(1).map((x, i) => x - xs[i]);
+      return { pitch: parseFloat(getComputedStyle(c).getPropertyValue('--board-pitch')), block: document.querySelector('.bar-rect').getBoundingClientRect().width,
+        min: Math.min(...gaps), max: Math.max(...gaps), avg: gaps.reduce((a, g) => a + g, 0) / gaps.length }; });
+    const [lo, hi] = INK.vary, span = hi - lo, wmax = hi * cols.pitch;
+    assert(Math.abs(cols.pitch - cols.block) < 0.5 && cols.min < cols.pitch * (lo + span / 4) && cols.max > cols.pitch * (hi - span / 4) && Math.abs(cols.avg / (cols.pitch * (lo + hi) / 2) - 1) < 0.25,
+      `中空板的格有大有小、平均＝骨牌寬 ×${(lo + hi) / 2}（${JSON.stringify(cols)}）`);
+    // 畫布上一塊有多黑（0＝全白、1＝全黑）
+    const ink = (x, y, w, h) => b.evaluate(([x, y, w, h]) => { const p = document.querySelector('.bg-ink').getContext('2d').getImageData(x, y, w, h).data; let s = 0; for (let i = 0; i < p.length; i += 4) s += 255 - p[i]; return s / (p.length / 4) / 255; }, [x, y, w, h]);
+    // 中空板在這一點露出幾成（蓋板被挖掉多少；0＝整個蓋住看不到板子）
+    const board = (x, y) => b.evaluate(([x, y]) => { const c = document.querySelector('.bg-lid'), k = c.width / innerWidth; return 1 - c.getContext('2d').getImageData(Math.floor(x * k), Math.floor(y * k), 1, 1).data[3] / 255; }, [x, y]);
+    assert(await board(450, 500) === 0, '還沒畫：中空板整個蓋住、看不到');
+    await b.mouse.move(300, 300);
+    await b.mouse.move(600, 300, { steps: 2 });    // 快
+    const fast = await ink(350, 290, 200, 20);
+    await b.mouse.move(300, 500);
+    await b.mouse.move(600, 500, { steps: 20 });   // 慢，然後停在 (600, 500)
+    const slow = await ink(350, 490, 200, 20), near = await board(450, 500), far = await board(1000, 150);
+    assert(slow > 0.1 && slow > fast * 2, `筆跡：走越慢越濃（快 ${fast.toFixed(3)}、慢 ${slow.toFixed(3)}）`);
+    assert(near > 0.5 && far === 0, `中空板只在筆跡周圍出現（筆跡旁 ${near.toFixed(2)}、遠處 ${far}）`);
+    // 筆跡過一陣子自己消失、中空板跟著一起；游標停著的那一點一直畫＝筆跡與板子都留著。量「消失」的地方要躲開停著那一點：
+    // 它被折射成好幾份，最遠的一份離它 (bend−1)×最寬的格/2＋半個筆頭；板子最大＝halo ×（1＋float）×（1＋breathe）
+    const inkX = 300, inkW = Math.floor(600 - ((INK.bend - 1) * wmax / 2 + INK.size / 2) - 15) - inkX;
+    const boardX = Math.floor(600 - INK.halo * (1 + INK.float) * (1 + INK.breathe) / 2 - 16);
+    await b.waitForFunction(([ix, iw, bx]) => { const ctx = (s) => document.querySelector(s).getContext('2d'), k = document.querySelector('.bg-lid').width / innerWidth;
+      return ctx('.bg-ink').getImageData(ix, 490, iw, 20).data.every(v => v === 255) && ctx('.bg-lid').getImageData(Math.floor(bx * k), Math.floor(500 * k), 1, 1).data[3] === 255; }, [inkX, inkW, boardX], { timeout: 30000 }).catch(() => {});
+    // 停著那一點自己那一格的那一份：中心離它最多 (bend−1)/(2·bend)×格寬 → 在那附近找最黑的一直條（只量一個小方塊，剛好落在兩格交界時會量到空白）
+    const restR = Math.ceil((INK.bend - 1) / (2 * INK.bend) * wmax) + 6;
+    const restInk = await b.evaluate(([x0, w]) => { const d = document.querySelector('.bg-ink').getContext('2d').getImageData(x0, 495, w, 10).data; let m = 0;
+      for (let x = 0; x < w; x++) { let s = 0; for (let y = 0; y < 10; y++) s += 255 - d[(y * w + x) * 4]; m = Math.max(m, s / 10 / 255); } return m; }, [600 - restR, restR * 2]);
+    const gone = [await ink(inkX, 490, inkW, 20), await board(boardX, 500)], rest = [restInk, await board(600, 500)];
+    assert(inkW > 0 && gone[0] === 0 && gone[1] === 0 && rest[0] > 0.5 && rest[1] > 0.5,
+      `筆跡隨時間消失、中空板跟著消失；游標停著的那一點還在（消失的那段：筆跡 ${gone[0]}（x ${inkX}–${inkX + inkW}）、板子 ${gone[1]}（x ${boardX}）；停著那點：筆跡 ${rest[0].toFixed(2)}、板子 ${rest[1].toFixed(2)}）`);
+    // 呼吸（user 2026-11-21）：游標停著，露出來的板子照樣一直脹縮（每 0.5 秒量一次面積、量一口氣多一點）
+    if (INK.breathe > 0) {
+      const area = [];
+      for (let i = 0; i < Math.ceil(INK.breath * 2) + 1; i++) {
+        area.push(await b.evaluate(() => { const c = /** @type {HTMLCanvasElement} */ (document.querySelector('.bg-lid')), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] < 128) n++; return n; }));
+        await b.waitForTimeout(500);
+      }
+      assert(Math.max(...area) > Math.min(...area) * (1 + INK.breathe), `中空板會呼吸：游標停著、露出來的面積照樣脹縮（${area.join(' ')}）`);
+    }
+    // 選單開著（user 2026-11-21）：右邊內容不能 hover → 不畫新的筆跡；背景跟內容一起模糊＋疊白
+    await openMenu(b);
+    await b.mouse.move(800, 200);
+    await b.mouse.move(1100, 200, { steps: 20 });
+    await b.waitForFunction(() => getComputedStyle(document.querySelector('.bg')).opacity === '0.4');
+    assert(await ink(850, 190, 200, 20) === 0 && await css(b, '.bg', 'filter') === 'blur(4px)', '選單開著：右邊動游標不畫、背景模糊＋疊白（同內容）');
+    // 放大 dialog 開著（報導點一則）＝同選單：不畫、背景跟內容一起模糊＋疊白
+    await b.goto(base + '/pages/press.html');
+    await b.waitForSelector('#site-header .site-bar');
+    await b.click('main a.item-row[data-zoom]');
+    await b.waitForFunction(() => document.querySelector('#figure-dialog[open]') && getComputedStyle(document.querySelector('.bg')).opacity === '0.4');
+    await b.mouse.move(200, 120);
+    await b.mouse.move(1000, 120, { steps: 20 });
+    assert(await ink(200, 110, 800, 20) === 0 && await css(b, '.bg', 'filter') === 'blur(4px)', '放大 dialog 開著：動游標不畫、背景模糊＋疊白（同選單）');
+    await b.emulateMedia({ media: 'print' });
+    assert(await css(b, '.bg', 'display') === 'none', '列印：不印背景');
+    await b.emulateMedia({ media: null });
+    await b.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
+    assert(/^invert\(1\)/.test(await css(b, '.bg-ink', 'filter')) && await css(b, '.bg-lid', 'filter') === 'invert(1)', '深色模式：畫布與蓋板整張反過來');
+    await b.close();
+    // 系統減少動態：背景三層都不放（照樣掛 watch：不打正式後台、收得到錯誤；拿掉空的 bg.js，不然一定沒有 .bg）
+    const r = await browser.newPage({ reducedMotion: 'reduce' });
+    await watch(r);
+    await r.unroute(BG_JS);
+    await r.goto(base + '/index.html');
+    await r.waitForSelector('#site-header .site-bar');
+    assert(await r.$('.bg') === null, '減少動態：沒有筆跡、也沒有中空板');
+    await r.close();
+    // 強制色彩（Windows 高對比佈景）：白色的蓋板不會換成系統色、會蓋掉使用者選的底色 → 也不放
+    const f = await browser.newPage({ forcedColors: 'active' });
+    await watch(f);
+    await f.unroute(BG_JS);
+    await f.goto(base + '/index.html');
+    await f.waitForSelector('#site-header .site-bar');
+    assert(await f.$('.bg') === null, '強制色彩：不放背景');
+    await f.close();
   }
 
   // ── 全站接後台（user 2026-11-21；js/modules/pages/cms-pages.js、ui-labels.js）：自己開一頁、給假的後台資料 ──

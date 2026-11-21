@@ -316,7 +316,8 @@
   html:is(.news-open, .news-closing) .bar-plus { transform: translateX(calc(100% + var(--spacing-gutter))); }
   html.news-open .bar-plus::after { transform: scaleY(0); }
   @media (hover: hover) {
-    .bar-news:hover { color: rgb(var(--theme-fg-rgb), 0.6); }   /* 用顏色不用 opacity／filter：那兩個有 fade 過場，hover 會變成慢慢淡（字與＋都吃 currentColor） */
+    .bar-news:hover { color: rgb(var(--theme-fg-rgb), 0.75); }   /* 用顏色不用 opacity／filter：那兩個有 fade 過場，hover 會變成慢慢淡（字與＋都吃 currentColor）。
+                                                                    0.75（原本 0.6）：游標停在跑馬燈上、底下的背景筆跡疊到最濃（bg.js），0.6 的字對比會掉到 4.5:1 以下 */
   }
 
   /* ── intro 影片 dialog：滿版黑底 ── */

@@ -12,6 +12,7 @@ import { initChrome, closeOverlays, fitBar, syncFigure, syncTheme } from './modu
 import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
+import { initBg } from './modules/ui/bg.js';
 import { initSectionNav } from './modules/ui/section-nav.js';
 import { initSlideshow } from './modules/ui/slideshow.js';
 import { initAlbums } from './modules/ui/album.js';
@@ -70,6 +71,7 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
 
 // ── 開機 ──
 installReducedMotionGsap();
+try { initBg(); } catch (e) { console.warn('[bg] 背景載入失敗', e); }   // 背景：畫布（筆跡）＜ 中空板 ＜ 內文；純裝飾，出錯也不能卡住後面的開機
 initLang();
 initChrome();          // 先於 router：底列動態在首頁要攔 click（preventDefault → router 放行）
 initRouter();
