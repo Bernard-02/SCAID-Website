@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">   <!-- iOS Safari 會自動把電話／email 變成底線連結 -->
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
   <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">   <!-- ?v＝換圖就加一（瀏覽器 favicon 快取很頑固）；先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
   <meta name="description" content="實踐大學AI設計職人學位學程（Bachelor Program in Advanced Integrated Design, Shih Chien University）官方網站">
   <meta property="og:type" content="website">
@@ -13,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
-  <link rel="stylesheet" href="fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">   <!-- 中文字體 Glow Sans TC Compressed：自架的 woff2 切片（scripts/build-fonts.py 產生） -->
+  <link rel="stylesheet" href="fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">   <!-- 中文字體 Glow Sans TC Compressed：自架的 woff2 切片（scripts/build-fonts.py 產生） -->
   <link rel="stylesheet" href="css/output.css">
 </head>
 <!-- data-page 靜態先標：home.css 的首頁規則（logo 置中）在 JS 跑前就生效，不閃 -->
@@ -29,18 +30,15 @@
          （MOCK 示意、跟 pages/news.html 同一份；接 Directus 後由 news 模組填）。背景先白底黑字（user 2026-11-03） -->
     <section class="home-news-list site-container" aria-label="最新動態">
       <ul>
-        <li><p class="text-md" data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</p><div class="home-news-box"></div></li>
-        <li><p class="text-md"><span class="block" data-en="Placeholder: Partner visit: inside an animation studio pipeline">示意：合作企業參訪：動畫工作室的製作流程</span><span class="block" data-en="Placeholder: Year 2 cohort; other years welcome to observe">示意：二年級全體參加，其他年級可旁聽</span></p><div class="home-news-box"></div></li>
-        <li><p class="text-md" data-en="Placeholder: Registration open for the mentor talk Virtual Production 101">示意：業師講座「虛擬製作入門」開放報名</p><div class="home-news-box"></div></li>
-        <li><p class="text-md" data-en="Placeholder: End-of-term show opens on 20 Dec">示意：期末成果展 12 月 20 日開幕</p><div class="home-news-box"></div></li>
-        <li><p class="text-md" data-en="Placeholder: Program website launched">示意：學程網站上線</p><div class="home-news-box"></div></li>
-        <li><p class="text-md" data-en="Placeholder: Recap of the first cohort orientation">示意：第一屆新生說明會回顧</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</p><div class="home-news-box"></div></li>
+        <li><p class="text-md"><span class="block" data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span class="block" data-en="Year 2 cohort; other years welcome to observe">二年級全體參加，其他年級可旁聽</span></p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Program website launched">學程網站上線</p><div class="home-news-box"></div></li>
+        <li><p class="text-md" data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</p><div class="home-news-box"></div></li>
       </ul>
     </section>
   </main>
-
-  <!-- footer 覆蓋層（pages/footer.html，main.js 注入；底列 footer 鈕開） -->
-  <div id="site-footer"></div>
 
   <!-- JavaScript：GSAP CDN → helpers（classic，註冊 plugin）→ main（module） -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>

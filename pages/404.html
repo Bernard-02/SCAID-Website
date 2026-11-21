@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <meta name="robots" content="noindex">
   <title>404 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
-  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -23,16 +24,14 @@
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
         <h1>404</h1>
-        <p class="page-lead" data-en="Page not found">找不到這一頁</p>
-        <a href="../index.html" class="nav-link inline-flex items-center gap-xs mt-md"><span class="icon icon-arrow-left icon-m"></span><span data-en="Back to home">回首頁</span></a>
+        <p data-label="error.lead" class="page-lead" data-en="Page not found">找不到這一頁</p>
+        <a href="../index.html" class="nav-link inline-flex items-center gap-xs mt-md"><span class="icon icon-arrow-left icon-m"></span><span data-label="error.back-home" data-en="Back to home">回首頁</span></a>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
     </div>
   </main>
-
-  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
