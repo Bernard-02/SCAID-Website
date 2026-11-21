@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <title>師資 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
-  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -19,23 +20,26 @@
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；每位老師點進 faculty-detail.html（接 Directus 後帶 ?id=）；直接開 /pages/faculty.html 也能獨立跑。版型同 about（css/components/page.css）。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。全部文字（含名字／單位）中文寫內文、英文寫 data-en（lang.js；user 2026-11-18：名字也跟語言走，不再兩行並排）。
        段落順序：專任 → 兼任 → 業界導師（user 2026-11-18；這頁是寫死的 HTML，順序就是檔案裡的順序）；段落名稱是示意，待學程確認。
-       名字與單位都是 text-md（清單 ul 掛 text-md，項目標題跟著清單的字級，page.css .item-list） -->
+       名字＝標題 text-md、職稱等副標 text-s（清單列的積木，page.css .item-row；user 2026-11-21）。
+       副標＝名字下面一行一個 p（後台 faculty.subtitles，一筆一行、沒填就不出；user 2026-11-21）。
+       接後台：js/modules/ui/item-list-cms.js 照 ul 的 data-cms（faculty:類別）把列換掉（合作企業同一種列）；後台還沒任何一筆／抓不到＝留這份 MOCK -->
   <main id="page-content">
     <div class="site-container site-grid">
       <nav class="section-nav flex" aria-label="本頁段落"></nav>
 
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
-        <h1 data-en="Faculty">師資</h1>
-        <p class="page-lead font-regular" data-en="Placeholder: full-time faculty, part-time faculty and mentors from the six partner companies teach side by side.">示意：專任、兼任教師與 6 家合作企業的業界導師共同授課。</p>
+        <h1 data-label="nav.faculty" data-en="Faculty">師資</h1>
+        <p class="page-lead font-regular" data-en="Full-time faculty, part-time faculty and mentors from the six partner companies teach side by side.">專任、兼任教師與 6 家合作企業的業界導師共同授課。</p>
 
       <section class="page-section">
-        <h2 class="section-title" data-en="Full-time Faculty">專任教師</h2>
-        <ul class="item-list text-md">
+        <h2 data-label="faculty.type.full_time" class="section-title" data-en="Full-time Faculty">專任教師</h2>
+        <ul class="item-list" data-cms="faculty:full_time">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
               <h3 data-en="Lee Chun-Chieh (placeholder)">李俊傑（示意）</h3>
-              <p data-en="Program Director · Professor">學程主任 · 教授</p>
+              <p data-en="Program Director">學程主任</p>
+              <p data-en="Professor">教授</p>
             </div>
           </a></li>
           <li><a class="item-row" href="faculty-detail.html">
@@ -63,8 +67,8 @@
       </section>
 
       <section class="page-section">
-        <h2 class="section-title" data-en="Part-time Faculty">兼任教師</h2>
-        <ul class="item-list text-md">
+        <h2 data-label="faculty.type.part_time" class="section-title" data-en="Part-time Faculty">兼任教師</h2>
+        <ul class="item-list" data-cms="faculty:part_time">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
@@ -97,8 +101,8 @@
       </section>
 
       <section class="page-section">
-        <h2 class="section-title" data-en="Industry Mentors">業界導師</h2>
-        <ul class="item-list text-md">
+        <h2 data-label="faculty.type.mentor" class="section-title" data-en="Industry Mentors">業界導師</h2>
+        <ul class="item-list" data-cms="faculty:mentor">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>
@@ -132,11 +136,9 @@
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
     </div>
   </main>
-
-  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>

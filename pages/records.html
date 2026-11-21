@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <title>榮譽 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
-  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
@@ -17,52 +18,73 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/records.html 也能獨立跑。版型同 about（css/components/page.css）。
-       榮譽（user 2026-11-19）：排法同常見問題（一筆一個 <details> 摺疊、text-s；圓點見 page.css「摺疊」），沒有分類的 Section title → 沒有段落導覽。
-       收著那一列（details.record，page.css）＝左國旗、右邊獎項名稱、獎項下面得獎人；點開＝主辦方、獎別，對齊右邊獎項那一欄，各一行直接寫、不加標籤（同動態的時間／地點）。
-       國旗＝flag-icons 的 SVG（jsDelivr，檔名＝ISO 3166-1 兩碼小寫），彩色、不加框、高＝一行字、對在右邊兩行字的正中；國家名稱寫在旁邊的 .sr-only（報讀用，跟語言切）。
+       榮譽（user 2026-11-19）：一筆一個摺疊＝清單列的積木（page.css .item-row：圖＝國旗、標題 text-md＝獎項名稱、副標 text-s＝得獎人；user 2026-11-21），沒有分類的 Section title → 沒有段落導覽。
+       點開＝主辦方、獎別，對齊右邊獎項那一欄，各一行直接寫、不加標籤（同動態的時間／地點）。
+       國旗＝flag-icons 的 SVG（jsDelivr，檔名＝ISO 3166-1 兩碼小寫），彩色、不加框、高＝一行字、對在右邊文字的正中；國家名稱寫在文字欄的 .sr-only（報讀用，跟語言切）。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
-        <h1 data-en="Records">榮譽</h1>
+        <h1 data-label="nav.records" data-en="Records">榮譽</h1>
 
       <section class="page-section">
-        <details class="record">
-          <summary>
-            <img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/tw.svg" alt="" loading="lazy"><span class="sr-only" data-en="Placeholder: country">示意：國家</span>
-            <span data-en="Placeholder: award name 1">示意：獎項名稱一</span>
-            <span data-en="Placeholder: winner">示意：得獎人</span>
-          </summary>
-          <p class="mt-sm" data-en="Placeholder: organiser">示意：主辦方</p>
-          <p data-en="Placeholder: award category">示意：獎別</p>
-        </details>
-        <details class="record mt-md">
-          <summary>
-            <img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/jp.svg" alt="" loading="lazy"><span class="sr-only" data-en="Placeholder: country">示意：國家</span>
-            <span data-en="Placeholder: award name 2">示意：獎項名稱二</span>
-            <span data-en="Placeholder: winner">示意：得獎人</span>
-          </summary>
-          <p class="mt-sm" data-en="Placeholder: organiser">示意：主辦方</p>
-          <p data-en="Placeholder: award category">示意：獎別</p>
-        </details>
-        <details class="record mt-md">
-          <summary>
-            <img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/de.svg" alt="" loading="lazy"><span class="sr-only" data-en="Placeholder: country">示意：國家</span>
-            <span data-en="Placeholder: award name 3">示意：獎項名稱三</span>
-            <span data-en="Placeholder: winner">示意：得獎人</span>
-          </summary>
-          <p class="mt-sm" data-en="Placeholder: organiser">示意：主辦方</p>
-          <p data-en="Placeholder: award category">示意：獎別</p>
-        </details>
+        <ul class="item-list mt-0">
+          <li><details class="record">
+            <summary class="item-row">
+              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/tw.svg" alt="" loading="lazy">
+              <div>
+                <span class="sr-only" data-en="Country">國家</span>
+                <h3 data-en="Award name 1">獎項名稱一</h3>
+                <p data-en="Winner">得獎人</p>
+              </div>
+            </summary>
+            <div class="fold-body">
+              <div class="fold-meta">
+                <p data-en="Organiser">主辦方</p>
+                <p data-en="Award category">獎別</p>
+              </div>
+            </div>
+          </details></li>
+          <li><details class="record">
+            <summary class="item-row">
+              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/jp.svg" alt="" loading="lazy">
+              <div>
+                <span class="sr-only" data-en="Country">國家</span>
+                <h3 data-en="Award name 2">獎項名稱二</h3>
+                <p data-en="Winner">得獎人</p>
+              </div>
+            </summary>
+            <div class="fold-body">
+              <div class="fold-meta">
+                <p data-en="Organiser">主辦方</p>
+                <p data-en="Award category">獎別</p>
+              </div>
+            </div>
+          </details></li>
+          <li><details class="record">
+            <summary class="item-row">
+              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/de.svg" alt="" loading="lazy">
+              <div>
+                <span class="sr-only" data-en="Country">國家</span>
+                <h3 data-en="Award name 3">獎項名稱三</h3>
+                <p data-en="Winner">得獎人</p>
+              </div>
+            </summary>
+            <div class="fold-body">
+              <div class="fold-meta">
+                <p data-en="Organiser">主辦方</p>
+                <p data-en="Award category">獎別</p>
+              </div>
+            </div>
+          </details></li>
+        </ul>
       </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
     </div>
   </main>
-
-  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>

@@ -4,86 +4,80 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <title>教師 - SCAID</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
-  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=b0241ab2">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
 <body>
 
   <div id="site-header"></div>
 
-  <!-- 教師詳細頁（從 faculty.html 列表點進來，user 2026-11-10 草圖）：左上角返回鈕（詳細頁不放段落導覽，user 2026-11-18）、col 2–7 照片＋名字＋各段條列、右圖同其他內頁。
-       內容為 MOCK 示意；接 Directus 後用 ?id= 抓那位老師、由模組渲染。名字／單位跟語言走（同列表，user 2026-11-18）；段落名稱與順序是示意，待學程確認 -->
+  <!-- 教師詳細頁（從 faculty.html 列表點進來，user 2026-11-10 草圖）：左上角返回鈕（詳細頁不放段落導覽，user 2026-11-18）、col 2–7 內文、右圖同其他內頁。
+       頁頭＝照片在上、下面名字＋副標一行一個（user 2026-11-21：上下排；試過照片放左邊、同列表那一列）——文字就是列表那一列的文字（純文字的 div.item-row＝不能點，名字是這頁的 h1、一樣 text-md）；
+       學歷／經歷…＝同關於的 Subsection title（h3）＋下面一筆一筆：年份一行、下面一行說明（後台 year＋text_*；沒年份的專長＝只有說明那一行），筆與筆之間不空（user 2026-11-21，原本每段一個 Section title＋空行隔開的條列）。
+       內容為 MOCK 示意；接 Directus 後用 ?id= 抓那位老師、由模組渲染。名字／副標跟語言走（同列表，user 2026-11-18）；段落名稱與順序是示意，待學程確認 -->
   <main id="page-content">
     <div class="site-container site-grid">
-      <a href="faculty.html" class="back-btn"><span class="icon icon-play rotate-180" aria-hidden="true"></span><span class="sr-only" data-en="Back to Faculty">返回師資</span></a>
+      <a href="faculty.html" class="back-btn"><span class="icon icon-play rotate-180" aria-hidden="true"></span><span data-label="faculty.back" class="sr-only" data-en="Back to Faculty">返回師資</span></a>
 
       <article class="page-body col-span-full md:col-start-2 md:col-span-6">
         <div class="profile-photo"></div>
-        <h1 data-en="Lee Chun-Chieh (placeholder)">李俊傑（示意）</h1>
-        <p class="profile-sub" data-en="Program Director · Professor">學程主任 · 教授</p>
+        <div class="item-row">
+          <h1 data-en="Lee Chun-Chieh (placeholder)">李俊傑（示意）</h1>
+          <p data-en="Program Director">學程主任</p>
+          <p data-en="Professor">教授</p>
+        </div>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Education">學歷</h2>
-        <ul class="item-list">
-          <li><h3>2008</h3><p data-en="PhD in Digital Arts, Placeholder University">示意大學 數位藝術研究所 博士</p></li>
-          <li><h3>2002</h3><p data-en="BA in Visual Communication Design, Placeholder University">示意大學 視覺傳達設計學系 學士</p></li>
-        </ul>
-      </section>
+        <section class="page-section">
+          <h3 data-label="faculty.cv.education" data-en="Education">學歷</h3>
+          <ul>
+            <li><p>2008</p><p data-en="PhD in Digital Arts, Placeholder University">示意大學 數位藝術研究所 博士</p></li>
+            <li><p>2002</p><p data-en="BA in Visual Communication Design, Placeholder University">示意大學 視覺傳達設計學系 學士</p></li>
+          </ul>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Experience">經歷</h2>
-        <ul class="item-list">
-          <li><h3>2020–</h3><p data-en="Director, Bachelor Program in Advanced Integrated Design, Shih Chien University (placeholder)">實踐大學 AI 設計職人學位學程 主任（示意）</p></li>
-          <li><h3>2012–2020</h3><p data-en="Technical Director, Placeholder Animation Co.">示意動畫公司 技術總監</p></li>
-          <li><h3>2008–2012</h3><p data-en="Compositor, Placeholder Post-production">示意後製公司 合成師</p></li>
-        </ul>
-      </section>
+          <h3 data-label="faculty.cv.experience" data-en="Experience">經歷</h3>
+          <ul>
+            <li><p>2020–</p><p data-en="Director, Bachelor Program in Advanced Integrated Design, Shih Chien University (placeholder)">實踐大學 AI 設計職人學位學程 主任（示意）</p></li>
+            <li><p>2012–2020</p><p data-en="Technical Director, Placeholder Animation Co.">示意動畫公司 技術總監</p></li>
+            <li><p>2008–2012</p><p data-en="Compositor, Placeholder Post-production">示意後製公司 合成師</p></li>
+          </ul>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Expertise">專長</h2>
-        <ul class="item-list">
-          <li><h3 data-en="Generative AI Workflows">生成式 AI 工作流</h3><p data-en="Placeholder: bringing AI pipelines into animation and interactive content">示意：AI 製程導入動畫與互動內容</p></li>
-          <li><h3 data-en="Real-time Rendering and Virtual Production">即時渲染與虛擬製作</h3><p data-en="Placeholder: game engines for film and live exhibition">示意：遊戲引擎於影像與展演的應用</p></li>
-          <li><h3 data-en="Production Pipeline Design">製作管線設計</h3><p data-en="Placeholder: cross-team workflows and toolchains">示意：跨團隊協作流程與工具鏈</p></li>
-        </ul>
-      </section>
+          <h3 data-label="faculty.cv.expertise" data-en="Expertise">專長</h3>
+          <ul>
+            <li data-en="Generative AI Workflows: bringing AI pipelines into animation and interactive content">生成式 AI 工作流：AI 製程導入動畫與互動內容</li>
+            <li data-en="Real-time Rendering and Virtual Production: game engines for film and live exhibition">即時渲染與虛擬製作：遊戲引擎於影像與展演的應用</li>
+            <li data-en="Production Pipeline Design: cross-team workflows and toolchains">製作管線設計：跨團隊協作流程與工具鏈</li>
+          </ul>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Exhibitions">展覽</h2>
-        <ul class="item-list">
-          <li><h3>2024</h3><p data-en="Placeholder: Light Studies, new media solo show, Taipei">示意：《光的練習》新媒體個展，台北</p></li>
-          <li><h3>2022</h3><p data-en="Placeholder: Between Worlds, XR group show, Kaohsiung">示意：XR 聯展《虛實之間》，高雄</p></li>
-        </ul>
-      </section>
+          <h3 data-label="faculty.cv.exhibitions" data-en="Exhibitions">展覽</h3>
+          <ul>
+            <li><p>2024</p><p data-en="Light Studies, new media solo show, Taipei">《光的練習》新媒體個展，台北</p></li>
+            <li><p>2022</p><p data-en="Between Worlds, XR group show, Kaohsiung">XR 聯展《虛實之間》，高雄</p></li>
+          </ul>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Awards">獲獎</h2>
-        <ul class="item-list">
-          <li><h3>2023</h3><p data-en="Placeholder: Best Technical Achievement, animation festival">示意：動畫影展 最佳技術獎</p></li>
-          <li><h3>2019</h3><p data-en="Placeholder: Gold, design award">示意：設計獎 金獎</p></li>
-        </ul>
-      </section>
+          <h3 data-label="faculty.cv.awards" data-en="Awards">獲獎</h3>
+          <ul>
+            <li><p>2023</p><p data-en="Best Technical Achievement, animation festival">動畫影展 最佳技術獎</p></li>
+            <li><p>2019</p><p data-en="Gold, design award">設計獎 金獎</p></li>
+          </ul>
 
-      <section class="page-section">
-        <h2 class="section-title" data-en="Publications">著作</h2>
-        <ul class="item-list">
-          <li><h3>2021</h3><p data-en="Placeholder: AI and the Animation Pipeline, monograph">示意：《AI 與動畫製程》專書</p></li>
-          <li><h3>2018</h3><p data-en="Placeholder: journal article, Real-time Rendering in Live Exhibition">示意：期刊論文〈即時渲染於展演的應用〉</p></li>
-        </ul>
-      </section>
+          <h3 data-label="faculty.cv.publications" data-en="Publications">著作</h3>
+          <ul>
+            <li><p>2021</p><p data-en="AI and the Animation Pipeline, monograph">《AI 與動畫製程》專書</p></li>
+            <li><p>2018</p><p data-en="Journal article, Real-time Rendering in Live Exhibition">期刊論文〈即時渲染於展演的應用〉</p></li>
+          </ul>
+        </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-en="Placeholder: image">示意：圖片</div></div>
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
     </div>
   </main>
-
-  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
