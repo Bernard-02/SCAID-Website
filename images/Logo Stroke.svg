@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1067.29 70">
+<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1042.02 70">
   <g id="Logo">
     <g>
       <path d="M0,0v70h45V0H0ZM22.5,45c-5.52,0-10-4.48-10-10s4.48-10,10-10,10,4.48,10,10-4.48,10-10,10Z"/>
-      <path d="M1022.29,0v70h45V0h-45ZM1044.79,45c-5.52,0-10-4.48-10-10s4.48-10,10-10,10,4.48,10,10-4.48,10-10,10Z"/>
+      <path d="M997.02,0v70h45V0h-45ZM1019.52,45c-5.52,0-10-4.48-10-10s4.48-10,10-10,10,4.48,10,10-4.48,10-10,10Z"/>
       <g>
         <rect x="65" width="20" height="70"/>
-        <rect x="99.81" width="20" height="70"/>
-        <rect x="147.21" width="20" height="70"/>
-        <rect x="200.92" width="20" height="70"/>
-        <rect x="259.18" width="20" height="70"/>
-        <rect x="321.07" width="20" height="70"/>
-        <rect x="386.03" width="20" height="70"/>
-        <rect x="453.66" width="20" height="70"/>
-        <rect x="523.64" width="20" height="70"/>
+        <rect x="98.85" width="20" height="70"/>
+        <rect x="144.94" width="20" height="70"/>
+        <rect x="197.17" width="20" height="70"/>
+        <rect x="253.83" width="20" height="70"/>
+        <rect x="314.02" width="20" height="70"/>
+        <rect x="377.19" width="20" height="70"/>
+        <rect x="442.95" width="20" height="70"/>
+        <rect x="511.01" width="20" height="70"/>
       </g>
       <g>
-        <rect x="982.29" width="20" height="70"/>
-        <rect x="947.48" width="20" height="70"/>
-        <rect x="900.08" width="20" height="70"/>
-        <rect x="846.37" width="20" height="70"/>
-        <rect x="788.11" width="20" height="70"/>
-        <rect x="726.21" width="20" height="70"/>
-        <rect x="661.25" width="20" height="70"/>
-        <rect x="593.63" width="20" height="70"/>
-        <rect x="523.64" width="20" height="70"/>
+        <rect x="957.02" width="20" height="70"/>
+        <rect x="923.17" width="20" height="70"/>
+        <rect x="877.07" width="20" height="70"/>
+        <rect x="824.85" width="20" height="70"/>
+        <rect x="768.19" width="20" height="70"/>
+        <rect x="708" width="20" height="70"/>
+        <rect x="644.83" width="20" height="70"/>
+        <rect x="579.07" width="20" height="70"/>
+        <rect x="511.01" width="20" height="70"/>
       </g>
     </g>
   </g>

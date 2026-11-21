@@ -4,9 +4,9 @@
   html {
     @apply text-base;
     background-color: var(--theme-bg);
-    /* 字重只有 400／700（都有真字檔）：擋瀏覽器描粗假粗體 */
+    /* 字重只有 400／500／700（都有真字檔）：擋瀏覽器描粗假粗體 */
     font-synthesis-weight: none;
-    /* 站內錨點（首頁 footer 鈕 #site-footer）平滑捲；reduce-motion 時下方 blanket 關回 auto */
+    /* 站內錨點平滑捲；reduce-motion 時下方 blanket 關回 auto */
     scroll-behavior: smooth;
   }
 
@@ -22,11 +22,12 @@
   }
 
   /* 行距不寫 leading-*：字級行距綁在 fontSize tuple，@apply text-* 就帶對應 line-height */
-  h1 { @apply text-3xl font-bold; }
-  h2 { @apply text-2xl font-bold; }
-  h3, h4 { @apply text-xl font-bold; }
-  h5 { @apply text-lg font-bold; }
-  h6 { @apply text-md font-bold; }
+  /* title＝Medium、內文＝Regular（user 2026-11-21）：標題不用粗體 */
+  /* 字級＝內頁的文字層級（Page title h1＝lg、Section title h2＝md、Subsection title h3＝s；page.css 那段說明）。
+     xl 以上的字級 user 2026-11-21 先刪掉（原本 h1 3xl、h2 2xl、h3／h4 xl，只有內頁蓋掉才沒看到） */
+  h1 { @apply text-lg font-medium; }
+  h2 { @apply text-md font-medium; }
+  h3, h4, h5, h6 { @apply text-s font-medium; }
   p  { @apply text-s font-regular; }
 
   /* 鍵盤焦點外框（WCAG 2.4.7）；觸控 tap 後 WebKit 仍命中 :focus-visible → helpers.js 標 html.input-touch 關掉 */
