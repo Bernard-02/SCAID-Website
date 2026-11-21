@@ -1,89 +1,126 @@
 # SCAID 網站 Roadmap
 
-2026-11-18 整理。依據：`CLAUDE.md`、`docs/Directus-後台欄位.md`、程式裡的 TODO 與「示意」標記、後台公開 API 當下的實際狀態。
-做完一項就勾掉。設計細節仍以 `CLAUDE.md` 為準，這份只記「還剩什麼」。標 ※ 的是專案裡還沒有任何記錄、這次整理時補列的。
+2026-11-18 整理、2026-11-21 照 user 定的順序重排。依據：`CLAUDE.md`、`docs/Directus-後台欄位.md`、各頁 HTML、後台公開 API 當下的實際狀態。
+做完一項就勾掉。設計細節仍以 `CLAUDE.md` 為準，這份只記「還剩什麼」。
+
+## 順序（user 2026-11-21）
+
+1. **結構**：確定所有頁面的結構
+2. **手機版**
+3. **背景的互動**、**右邊的常駐圖片**
+4. **細節調整**
+5. **接後台**
+6. **上線**
+
+素材（第 7 節）不擋前四步，可以同時收。
 
 ## 現況
 
-- **前台**：首頁＋15 個內頁的版型都在，內容全是示意文字。只有頁尾接了後台。
-- **後台**：Directus 已開（`scaidcms.usc.edu.tw`），9 個集合已建、Public 可讀。除了 `footer`（一筆示意值），**其他 8 個集合都是空的**。
-- **Logo**：靜態 SVG 已換上（頂部＝文字版、頁尾＝直條版）。動態還在選案。
-- **版本控制**：最後一個 commit 是 `868c6cf`。之後改了 31 個檔，另有字體、3 個 UI 模組、2 支後台 script、`curriculum-detail` 等新檔，全部還沒 commit。
-- **測試**：`npm run check:ts` 過；煙霧測試 23:03 全過。
+- **前台**：首頁＋15 個內頁的版型都在。**2026-11-21 全站接上後台**：每頁先顯示 HTML 的示意內容，抓到後台就換成後台的。
+- **後台**：Directus（`scaidcms.usc.edu.tw`）18 個集合（含人名庫／單位庫／媒體庫、介面文字），Public 可讀；各頁的示意文字已寫進後台（只有文字，圖還沒上傳）。
+- **Logo**：靜態 SVG 已換上。動態還在選案。
+- **版本控制**：11-20～22 的改動在 2026-11-22 分 12 批 commit 並 push（字體、token、全站殼、內頁版型、選單與路由、清單頁、其他頁、後台、測試、文件、重編 CSS、背景）。
 
-## 建議順序
+## 1. 結構
 
-1. 先把目前這一大批 commit（第 6 節）。
-2. 後台結構補齊、示意資料寫進後台（第 3 節前置），才有東西可以接。
-3. 一頁一頁接後台（第 3 節）。
-4. 等決定、等素材的項目（第 1、2 節）同時推，不擋第 2、3 步。
-5. 上線前檢查（第 5 節）。
+一頁一頁看過，結構確定就勾。下面是每頁現在的樣子。
 
-## 1. 等你決定
+- [ ] **首頁**：一屏只有置中 logo；點底列動態的＋展開動態清單。
+- [ ] **關於** `about`：導言＋分段（有段落導覽），每段＝標題 → 圖片輪播 → 內文。
+- [ ] **合作企業** `partners`：一家一列（縮圖＋名稱＋副標，跟師資同一種列），整列外連官網。不分段。
+- [ ] **師資** `faculty`：專任／兼任／業界導師三段，一位一列（縮圖＋名字＋副標）→ 詳細頁。
+- [ ] **教師詳細頁** `faculty-detail`：照片＋名字＋各段條列。
+- [ ] **課程** `curriculum`：一個年級一段；一門課一個摺疊（課名＋下面必修／選修），點開＝課程說明。沒有詳細頁（2026-11-21 改，原本分必修／選修兩組、課名連到 `curriculum-detail`）。
+- [ ] **動態** `news`：一則一個摺疊（縮圖＋標題＋分類）；展開＝時間、地點、相簿。不分年份。
+- [ ] **榮譽** `records`：一筆一個摺疊（國旗＋獎項＋得獎人）；展開＝主辦方、獎別。
+- [ ] **報導** `press`：一則一列（標題＋媒體），點了放大看截圖，不展開。
+- [ ] **入學** `admission`：一則一個摺疊（標題＋時間、沒縮圖）；展開＝說明、相簿、附件。
+- [ ] **常見問題** `qa`：依分類分段，一題一個摺疊。
+- [ ] **捐款** `donate`：導言＋用途、方式兩段。原本的「前往捐款」按鈕 user 2026-11-21 拿掉了。
+- [ ] **規章與政策** `regulations`：規章＋使用條款＋隱私權政策併成一頁，分段。
+- [ ] **網站地圖** `sitemap`：連結一串。
+- [ ] **聯絡** `contact`：社群、聯絡資訊、姊妹系所、標章。不分段。
+- [ ] **404**：同內頁版型。
+- [ ] **選單**：主選單 8 項、次選單兩區 5 項＋語言鈕。
 
-- [ ] **Logo 動態選案**：10 案在 https://claude.ai/artifact/Q1YKqtMJACAYVHU9WFeF2p ，選定後再細修（落地見第 4 節）。
-- [ ] **入學頁怎麼挑動態**：`news.admission` 勾選，還是改成看分類。欄位文件標「待確認」，這個不定，入學頁接不了。
-- [ ] **右圖是什麼**：11-13 的初步想法是「資料庫＋每隔幾秒隨機生成一張 ASCII 圖像」，未定案。現在全站右圖是灰底佔位。定了之後手機的縮圖／放大那套複本要改成同一個來源畫三處（`CLAUDE.md` 有記）。
+## 2. 手機版
+
+11-13 的手機稿已經做了一版（左緣段落導覽、右緣縮圖鈕、內文讓出 `--rail-w`）。之後新增或改過的東西還沒有在手機上整輪看過。
+
+- [ ] 每一頁在手機寬看過一輪（照第 1 節的清單）。
+- [ ] 選單開合、內容右推、第一下只收選單。
+- [ ] 首頁動態展開與收合。
+- [ ] 首頁選單開著時糊掉的跑馬燈不右推（user 2026-11-21）→ 手機上會被 play 鈕壓到，要不要手機另外處理（例如手機照舊淡掉）待定。
+- [ ] 右圖縮圖鈕與放大 dialog（‹ X ›）。
+- [ ] 段落輪播、相簿橫向捲、摺疊開合。
+- [ ] 觸控行為：圓點常駐、矩形鈕不出名字、可點範圍夠大。
+- [ ] 實機檢查（iOS Safari、Android Chrome）。
+
+## 3. 背景的互動、右邊的常駐圖片
+
+- [ ] **背景的互動**：專案裡還沒有任何記錄，要先定是什麼（哪一層、哪些頁、對什麼輸入有反應）。
+- [ ] **右圖是什麼**：11-13 的初步想法是「資料庫＋每隔幾秒隨機生成一張 ASCII 圖像」，未定案。現在全站右圖是灰底佔位。
+- [ ] 右圖定了之後，手機的縮圖與放大改成同一個來源畫三處（`CLAUDE.md` 有記；現在是複本，會自己換的圖不適用）。
+- [ ] 兩者在減少動態（`prefers-reduced-motion`）下的樣子。
+
+## 4. 細節調整
+
 - [ ] **中文字形**：既、概、者、神、飯這類「部件是舊寫法」的字要不要也改從 J 版切（`build-fonts.py USE_J`）。
-- [ ] **正式網域**：影響乾淨網址、canonical、og:url（第 5 節）。
-- [ ] **捐款按鈕**：連結先寫在內文裡，還是後台另開欄位。
+- [ ] 社群 icon 圖：現在是方框。
+- [ ] `CLAUDE.md` 專案結構的 `modules/ui/` 清單少了 `album`／`slideshow`／`grid-overlay`／`item-marquee`（概述、`api.js` 已在 2026-11-21 接後台時改掉）。
+- [ ] 其他看到再補。
 
-## 2. 等素材
+## 5. 接後台
 
-- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、課程（含每門課說明）、動態、入學、常見問題、捐款、規章（PDF 或連結）、條款。現在英文全是 Placeholder。
-- [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
-- [ ] **頁尾真實資料**：電話、傳真、地址、社群連結（後台 `footer` 現在是示意值，直接在後台改）。
-- [ ] **社群 icon 圖**：現在是方框。
-- [ ] **intro 影片網址**：填進 `pages/header.html` 的 `.play-btn data-video`，沒填按了不會開。
-- [ ] **正式 favicon、apple-touch-icon、og-image**：現在只有矩形＋圓的 `images/favicon.svg`。
-
-## 3. 接後台（不用等人，可以直接做）
-
-前置：
-
-- [ ] `news` 補欄位：`category_*`、`time_*`、`place_*`、`album`、`attachments`、`admission`。改 `scripts/setup-directus.cjs` 的 SPEC 再跑一次。
-- [ ] `scripts/seed-directus.cjs` 跟上現在各頁的標記（動態改成摺疊、入學改成動態列、課程詳細頁只剩說明），再跑一次把示意資料寫進後台。
-- [ ] `page_sections` 內文的 sanitize（只放行粗體、斜體、h3、清單、連結），不是 `escapeHtml`。
-- [ ] 內容依語言抓 `_zh`／`_en`，英文留空就顯示中文。
-
-各頁（模組放 `js/modules/pages/`，在 `main.js initPageModules` 用動態 import 掛上）：
+2026-11-21 全站接上（user：照 SCCD 加人名庫、ui labels；示意文字實際放進後台，之後在後台改）。入學頁＝勾了 `admission` 的動態（user 定）。
+結構＝`scripts/setup-directus.cjs`、資料＝`scripts/seed-directus.cjs`、前台＝`js/modules/pages/cms-pages.js`＋`ui/ui-labels.js`＋`ui/item-list-cms.js`＋`ui/footer-cms.js`；欄位表＝`docs/Directus-後台欄位.md`。
 
 | 頁 | 集合 | 狀態 |
 |---|---|---|
-| 頁尾 | `footer` | 已接 |
-| 動態 `news.html`、首頁展開清單、底列最新一則 | `news` | 未接 |
-| 入學 `admission.html` | `news`（勾了 `admission` 的）＋`pages` 的標題與導言 | 未接，卡在第 1 節的決定 |
-| 師資 `faculty.html`、`faculty-detail.html?id=` | `faculty` | 未接 |
-| 課程 `curriculum.html`、`curriculum-detail.html?id=` | `courses` | 未接 |
-| 合作企業 `partners.html` | `partners` | 未接 |
-| 榮譽 `records.html` | `records`（後台待建，2026-11-19 新增的頁） | 未接 |
-| 常見問題 `qa.html` | `qa` | 未接 |
-| 規章 `regulations.html` | `regulations` | 未接 |
-| 關於、捐款、條款 | `pages`＋`page_sections` | 未接 |
+| 聯絡 `contact.html` | `footer` | 已接 |
+| 動態 `news.html`、首頁展開清單、底列跑馬燈 | `news` | 已接 |
+| 入學 `admission.html` | `news`（勾了 `admission` 的） | 已接 |
+| 師資 `faculty.html`、`faculty-detail.html?id=` | `faculty`＋人名庫 | 已接 |
+| 課程 `curriculum.html` | `courses` | 已接 |
+| 合作企業 `partners.html` | `partners`＋單位庫 | 已接 |
+| 榮譽 `records.html` | `records`＋單位庫（主辦方） | 已接 |
+| 報導 `press.html` | `press`＋媒體庫 | 已接 |
+| 常見問題 `qa.html` | `qa` | 已接 |
+| 規章與政策 `regulations.html` | `regulations`＋`pages` 的 regulations | 已接 |
+| 關於、捐款；師資、合作企業的導言 | `pages`＋`page_sections` | 已接 |
+| 選單、頁名、固定小標、聯絡欄位名、404 | `ui_labels` | 已接 |
 
-每頁都要做到：列表自己帶 `filter[status][_eq]=published`；後台抓不到時退回 HTML 的示意內容或上次成功的資料；煙霧測試補一組假資料。
+還沒做：
 
-## 4. Logo 動態落地（選定之後）
+- [ ] **圖**：相簿、動態封面、報導截圖、關於的段落輪播、師資照片、企業 logo 都要在後台上傳（現在報導沒截圖＝不能點、關於沒圖＝不出輪播）。入學的附件（PDF）也還沒上傳。
+- [ ] 後台的內容換成真的（現在是搬過去的示意文字；入學的那幾則也同時出現在動態頁）。
+- [ ] 舊欄位確定不要了再刪：`faculty`／`partners` 的 `name_*`、`pages` 的 `title_*`（現在藏著）。
+- [ ] 老師／助教的後台帳號與權限（帳號上限 3）。
 
-- [ ] 選定的那一案做成正式檔案。
-- [ ] 頂部 logo 現在是用 CSS mask 畫一整張 SVG，動不到裡面的每一塊。動態要改成 inline SVG，或同等能逐塊控制的做法。
-- [ ] 定義什麼時候播：進站、首頁置中與上移之間、直條版與文字版什麼情況切換。
-- [ ] 減少動態（`prefers-reduced-motion`）下直接到終態。
-- [ ] 頁尾的直條版要不要跟著動。
+## 6. 上線
 
-## 5. 上線前
-
-- [ ] 正式網域定案後：`router.js CLEAN_URL_HOSTS`（server 的 fallback 要先設好）、`index.html` 的 canonical 與 og:url。
-- [ ] ※ 確認部署到哪台主機、SPA fallback 有沒有生效（`.htaccess` 已備好，只對 Apache 有用）。
-- [ ] ※ `robots.txt`、`sitemap.xml`：現在都沒有。
-- [ ] ※ og:image、各頁自己的 description：現在只有首頁有 description，全站沒有 og:image。
-- [ ] ※ 示意內容清乾淨：全站搜尋「示意」和「Placeholder」應該是 0。
-- [ ] ※ 桌面 Chrome 手動檢查不能左右捲（煙霧測試跑 WebKit，重現不了這個問題）。
-- [ ] ※ 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。
-- [ ] ※ 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做，前台看不出來。
-
-## 6. 收尾
-
-- [ ] 把 `868c6cf` 之後的修改 commit（`scripts/.directus-token` 已在 `.gitignore`）。
-- [ ] `CLAUDE.md` 幾處過時：概述還寫「後台尚未開」、專案結構裡 `api.js` 還標 placeholder、`modules/ui/` 清單少了 `album`／`slideshow`／`grid-overlay`。
+- [ ] **正式網域**定案：`router.js CLEAN_URL_HOSTS`（server 的 fallback 要先設好）、`index.html` 的 canonical 與 og:url。
+- [ ] 確認部署到哪台主機、SPA fallback 有沒有生效（`.htaccess` 已備好，只對 Apache 有用）。
+- [ ] `robots.txt`、`sitemap.xml`：現在都沒有。
+- [ ] og:image、各頁自己的 description：現在只有首頁有 description，全站沒有 og:image。
+- [ ] 示意內容清乾淨：全站搜尋「示意」和「Placeholder」應該是 0。
+- [ ] 桌面 Chrome 手動檢查不能左右捲（煙霧測試跑 WebKit，重現不了這個問題）。
+- [ ] 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。
+- [ ] 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做，前台看不出來。
 - [ ] `docs/IT-請求-安裝Directus.txt`：後台已開，確認結案後可以移走或標記完成。
+
+## 7. 等素材（不擋前面，可以同時收）
+
+- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、課程（含每門課說明）、動態、榮譽、報導、入學、常見問題、捐款、規章（PDF 或連結）、使用條款與隱私權政策。現在英文全是 Placeholder。
+- [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
+- [ ] **聯絡頁真實資料**：電話、傳真、地址、社群連結（後台 `footer` 現在是示意值，直接在後台改）。
+- [ ] **intro 影片網址**：填進 `pages/header.html` 的 `.play-btn data-video`，沒填按了不會開。
+- [ ] **正式 favicon、apple-touch-icon、og-image**：現在只有矩形＋圓的 `images/favicon.svg`。
+
+## 還沒排進順序
+
+- [ ] **Logo 動態**：提案在 https://claude.ai/artifact/Q1YKqtMJACAYVHU9WFeF2p （第四輪 2026-11-21：前半段整條帶切成直條照舊，後半段改打字機，3 案待挑），選定後做成正式檔案。頂部 logo 現在用 CSS mask 畫一整張 SVG，動不到裡面每一塊，要改成 inline SVG 或同等做法；還要定什麼時候播、減少動態下直接到終態。
+
+## 隨時
+
+- [ ] 每做完一批就 commit（`scripts/.directus-token` 已在 `.gitignore`）。
