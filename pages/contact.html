@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
+  <title>聯絡 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/contact.html 也能獨立跑。版型同 about（css/components/page.css）。
+       原本的 footer 覆蓋層搬成選單最後一頁（user 2026-11-21）；不分段＝沒有段落導覽。
+       內容走後台：footer-cms.js 抓 Directus 單例 footer 換掉下面的 MOCK（抓不到就留著）；data-cms＝欄位掛點，class 名 JS 也在用。
+       文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <main id="page-content">
+    <div class="site-container site-grid">
+      <article class="page-body col-span-full md:col-start-2 md:col-span-6">
+        <h1 data-label="nav.contact" data-en="Contact">聯絡</h1>
+
+        <div class="footer-body text-md mt-md">
+          <!-- TODO 社群 icon 圖：先放方框（連結走後台 social） -->
+          <div class="footer-social">
+            <a href="#" class="footer-social-box" aria-label="社群一（示意）"></a>
+            <a href="#" class="footer-social-box" aria-label="社群二（示意）"></a>
+          </div>
+          <dl class="footer-contact">
+            <div data-cms="email"><dt data-label="contact.email" data-en="E-Mail">電子郵件</dt><dd><a href="mailto:scaid@g2.usc.edu.tw">scaid@g2.usc.edu.tw</a></dd></div>
+            <div data-cms="tel"><dt data-label="contact.tel" data-en="Tel">電話</dt><dd data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</dd></div>
+            <div data-cms="fax"><dt data-label="contact.fax" data-en="Fax">傳真</dt><dd data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</dd></div>
+            <div data-cms="address"><dt data-label="contact.address" data-en="Add">地址</dt><dd data-en="Address (placeholder)">地址（示意）</dd></div>
+          </dl>
+          <!-- 姊妹系所（user 2026-11-21）：寫全名、一行一個＝內頁的連結清單（.link-list，hover 圓點在清單最右邊；原本縮寫 SCD／SCCD…排一列）。
+               後台 footer.links 一列一筆（label_zh／label_en／url）。TODO 全名待 user 確認，SCAC 的正式名稱還不確定（先標示意） -->
+          <ul class="footer-links link-list">
+            <!-- SCA 建築系、SCAC 建築職人學程共用建築系網站（user 2026-11-10） -->
+            <li><a class="nav-link" href="https://www.scdesign.usc.edu.tw/" target="_blank" rel="noopener" data-en="College of Design">設計學院</a></li>
+            <li><a class="nav-link" href="https://sccd.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Communications Design">媒體傳達設計學系</a></li>
+            <li><a class="nav-link" href="https://scfd.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Fashion Design">服裝設計學系</a></li>
+            <li><a class="nav-link" href="https://scid.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Industrial Design">工業產品設計學系</a></li>
+            <li><a class="nav-link" href="https://www.arch.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Architecture">建築設計學系</a></li>
+            <li><a class="nav-link" href="https://www.arch.usc.edu.tw/" target="_blank" rel="noopener" data-en="SCAC program">建築職人學程</a></li>
+            <li><a class="nav-link" href="https://www.usc.edu.tw/" target="_blank" rel="noopener" data-en="Shih Chien University">實踐大學</a></li>
+          </ul>
+          <div class="footer-badge" aria-hidden="true"></div><!-- 標章：後台 badge 有圖就換成 <img class="footer-badge"> -->
+        </div>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>

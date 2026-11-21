@@ -1,7 +1,7 @@
 /**
- * footer 內容 ← Directus 單例 `footer`（欄位與後台建法：docs/Directus-後台欄位.md）。
- * 抓不到（網域未設／斷線／集合還沒建）＝留 footer.html 的 MOCK 靜態字；抓到＝後台為準，空欄位整列收掉。
- * 欄位標籤（電子郵件／電話…）與 logo 鎖定版是版面，留在 HTML。
+ * 聯絡頁內容 ← Directus 單例 `footer`（欄位與後台建法：docs/Directus-後台欄位.md；原本是 footer 覆蓋層，user 2026-11-21 搬成聯絡頁，後台名照舊）。
+ * 進聯絡頁才呼叫（main.js initPageModules）。抓不到（網域未設／斷線／集合還沒建）＝留 contact.html 的 MOCK 靜態字；抓到＝後台為準，空欄位整列收掉。
+ * 欄位標籤（電子郵件／電話…）是版面，留在 HTML。
  */
 import { CMS_API_BASE, assetUrl, fetchCmsJson } from '../../config/api.js';
 import { escapeHtml } from './escape-html.js';
@@ -24,7 +24,7 @@ function setText(el, zh, en) {
 }
 
 export async function loadFooterCms() {
-  const root = document.querySelector('.site-footer');
+  const root = document.querySelector('#page-content .footer-body');
   if (!root) return;
   let d;
   try { d = await fetchCmsJson(`${CMS_API_BASE}/footer?fields=*,badge.id,badge.title`); }
@@ -48,9 +48,14 @@ export async function loadFooterCms() {
     social.innerHTML = list(d.social).map(s => `<a ${ext(s?.url)} class="footer-social-box" aria-label="${escapeHtml(s?.label)}"></a>`).join('');
     show(social, social.children.length);
   }
+  // 姊妹系所（user 2026-11-21）：全名、一行一個＝連結清單（.link-list 裡的 a.nav-link）；中文寫內文、英文寫 data-en（最後 applyLang 套），英文空退中文。
+  // 舊資料只有 label（縮寫）＝先照它顯示
   const links = root.querySelector('.footer-links');
   if (links) {
-    links.innerHTML = list(d.links).map(l => `<li><a ${ext(l?.url)}>${escapeHtml(l?.label)}</a></li>`).join('');
+    links.innerHTML = list(d.links).map(l => {
+      const zh = l?.label_zh || l?.label || '';
+      return `<li><a class="nav-link" ${ext(l?.url)} data-en="${escapeHtml(l?.label_en || zh)}">${escapeHtml(zh)}</a></li>`;
+    }).join('');
     show(links, links.children.length);
   }
 
@@ -58,10 +63,6 @@ export async function loadFooterCms() {
   const badge = root.querySelector('.footer-badge'), src = assetUrl(d.badge);
   if (src && badge) badge.outerHTML = `<img class="footer-badge" src="${escapeHtml(src)}" alt="${escapeHtml(d.badge.title)}">`;
   else show(badge, false);
-
-  const copy = root.querySelector('.footer-copyright');
-  show(copy, d.copyright_zh);
-  setText(copy, d.copyright_zh, d.copyright_en);
 
   applyLang(root);
 }

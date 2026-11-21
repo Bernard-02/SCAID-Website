@@ -11,8 +11,8 @@ import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
 // <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
-const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'curriculum-detail', 'news', 'records', 'admission',
-               'qa', 'donate', 'regulations', 'terms', 'sitemap', '404'];
+const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'news', 'records', 'press', 'admission',
+               'qa', 'donate', 'regulations', 'sitemap', 'contact', '404'];
 const routes = {
   '/':           { page: 'index', htmlFile: 'index.html' },
   '/index.html': { page: 'index', htmlFile: 'index.html' },
@@ -62,9 +62,9 @@ function announceAndFocusMain(main) {
   main.focus({ preventScroll: true });
 }
 
-// header／footer 的 .nav-link active 態：href 對到當前頁 → .active ＋ aria-current（片段 async 載入完 main.js 也呼叫一次）
+// 選單的 .nav-link active 態：href 對到當前頁 → .active ＋ aria-current（片段 async 載入完 main.js 也呼叫一次）
 export function updateNavActive(page = document.body.dataset.page) {
-  document.querySelectorAll('#site-header a.nav-link, #site-footer a.nav-link').forEach(a => {
+  document.querySelectorAll('#site-header a.nav-link').forEach(a => {
     const route = resolveRoute(new URL(a.getAttribute('href'), window.location.href).pathname);
     const on = !!route && route.page === page?.replace(/-detail$/, '');
     a.classList.toggle('active', on);
@@ -74,7 +74,7 @@ export function updateNavActive(page = document.body.dataset.page) {
 
 // ── 內容替換。navSeq：快速連點時只讓最後一次導航生效（每個 await 後比對，舊的放棄不 swap）──
 let navSeq = 0;
-// 目前頁（page id＋search；'/' 與 '/index.html' 是不同路由物件，不能比物件）：popstate 比對用——同頁只換 hash（首頁 footer 錨點）也會觸發 popstate，不能重載
+// 目前頁（page id＋search；'/' 與 '/index.html' 是不同路由物件，不能比物件）：popstate 比對用——同頁只換 hash 也會觸發 popstate，不能重載
 let current = { page: '', search: '' };
 
 // 換頁 transition（user 2026-11-03）：fade out → 換內容 → fade in。html.page-leaving 讓 main 淡出（chrome.css），
@@ -95,12 +95,18 @@ async function loadPage(route, search = '', fromUserNav = false) {
     const fetching = fetch(sitePath(route.htmlFile));
     const shifted = Math.abs(new DOMMatrix(getComputedStyle(main).transform).m41) > 0.5;
     if (root.classList.contains('menu-open') || shifted) {
-      closeOverlays();
+      // 去內頁：只收選單、首頁展開的動態先不收（user 2026-11-21）——動態開著時 logo 已經在頂，這裡收了它會先回畫面中間、換頁再上移一次；
+      // 清單跟著一般換頁淡出，換完 initPageModules 才收。回首頁才連動態一起收
+      closeOverlays(route.page === 'index');
       await wait(prefersReducedMotion() ? 0 : DUR.medium * 1000);
       if (isStale()) return;
     }
+    // 首頁（logo 在畫面正中）→ 內頁（user 2026-11-21）：logo 先上移到頂、移完內容才淡入。首頁那一屏是空的 → 不等它淡出，
+    // 關掉過場直接藏起來、抓到就換內容（data-page 一換 logo 開始上移），page-leaving 留到 logo 移完才拿掉
+    const logoFirst = document.body.dataset.page === 'index' && route.page !== 'index' && !root.classList.contains('news-open') && !prefersReducedMotion();
+    if (logoFirst) main.style.transition = 'none';
     root.classList.add('page-leaving');
-    const [res] = await Promise.all([fetching, wait(prefersReducedMotion() ? 0 : DUR.fade * 1000)]);
+    const [res] = await Promise.all([fetching, wait(prefersReducedMotion() || logoFirst ? 0 : DUR.fade * 1000)]);
     if (isStale()) return;
     if (!res.ok) throw new Error(`Failed to load ${route.htmlFile}`);
     const html = await res.text();
@@ -120,6 +126,12 @@ async function loadPage(route, search = '', fromUserNav = false) {
     current = { page: route.page, search };
     initPageModules(route.page, new URLSearchParams(search), fromUserNav);
     if (fromUserNav) announceAndFocusMain(main);
+    if (logoFirst) {
+      void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
+      main.style.transition = '';
+      await wait(DUR.slow * 1000);    // logo 上移（chrome.css .site-logo）
+      if (isStale()) return;
+    }
     root.classList.remove('page-leaving');   // 淡入
   } catch (err) {
     console.error('[router]', err);
@@ -129,6 +141,8 @@ async function loadPage(route, search = '', fromUserNav = false) {
     } else {
       root.classList.remove('page-leaving');   // 連 404 都載不到：至少別讓畫面停在淡出
     }
+  } finally {
+    main.style.transition = '';   // logoFirst 半路放棄（被新的導航取代／出錯）也要接回去
   }
 }
 

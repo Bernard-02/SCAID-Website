@@ -1,13 +1,13 @@
 <header class="site-chrome">
   <!-- 無障礙：鍵盤 Tab 第一站，跳過導航直達主內容（#page-content 跨 SPA 換頁恆在） -->
-  <a href="#page-content" class="skip-link">跳到主要內容</a>
+  <a href="#page-content" class="skip-link" data-label="common.skip" data-en="Skip to main content">跳到主要內容</a>
 
   <!-- Logo（全站固定、頂到最頂、置中；首頁未展開時 home.css 放到畫面正中央、transition 位移）。
        圖＝images/Logo Text.svg（兩端矩形夾英中名，中英並列不跟語言切），chrome.css 用 mask 畫 -->
   <a href="../index.html" class="site-logo">
     <!-- logo 背後的毛玻璃（iOS 那種，user 2026-11-18）：只罩 logo 外圍一圈、邊緣羽化；內容捲上來才疊半透明白（chrome.css .top-blur） -->
     <span class="top-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
-    <span class="sr-only" data-en="Home">回首頁</span>
+    <span data-label="nav.home" class="sr-only" data-en="Home">回首頁</span>
     <span class="logo-text" aria-hidden="true"></span>
   </a>
 
@@ -15,60 +15,68 @@
   <div class="site-menu no-scrollbar" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單">
     <nav class="site-menu-nav">
       <ul class="menu-main">
-        <li><a href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
-        <li><a href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
-        <li><a href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
-        <li><a href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
-        <li><a href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
-        <li><a href="records.html" class="nav-link" data-zh="榮譽" data-en="Records">榮譽</a></li>
-        <li><a href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+        <li><a data-label="nav.about" href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
+        <li><a data-label="nav.partners" href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
+        <li><a data-label="nav.faculty" href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
+        <li><a data-label="nav.curriculum" href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
+        <li><a data-label="nav.news" href="news.html" class="nav-link" data-zh="動態" data-en="News">動態</a></li>
+        <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="榮譽" data-en="Records">榮譽</a></li>
+        <li><a data-label="nav.press" href="press.html" class="nav-link" data-zh="報導" data-en="Press">報導</a></li>
+        <li><a data-label="nav.admission" href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+      </ul>
+      <!-- 次選單分兩區（user 2026-11-21）：常見問題、捐款、聯絡一區，規章、地圖一區（兩區 user 2026-11-21 對調）；區之間的間距同最後一項 → 語言鈕 -->
+      <ul class="menu-sub">
+        <li><a data-label="nav.qa" href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
+        <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
+        <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-zh="聯絡" data-en="Contact">聯絡</a></li><!-- 原本的 footer 覆蓋層（user 2026-11-21） -->
       </ul>
       <ul class="menu-sub">
-        <li><a href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
-        <li><a href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
-        <li><a href="regulations.html" class="nav-link" data-zh="規章" data-en="Regulations">規章</a></li>
-        <li><a href="terms.html" class="nav-link" data-zh="條款" data-en="Terms">條款</a></li>
-        <li><a href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
+        <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
+        <li><a data-label="nav.sitemap" href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
       </ul>
-      <!-- 語言切換（所有 section 鈕最下方）：顯示「要切過去」的語言，文字由 lang.js 填 -->
-      <button type="button" class="lang-btn" aria-label="切換為英文">EN</button>
+      <!-- 深色模式＋語言切換（所有 section 鈕最下方，兩顆之間＝選項間距、不是分區的 gap；user 2026-11-21）。
+           深色模式鈕＝icon（半實心圓，深色時轉半圈），開關狀態走 aria-pressed（chrome.js）；語言鈕顯示「要切過去」的語言，文字由 lang.js 填 -->
+      <div class="menu-tools">
+        <button type="button" class="theme-btn" aria-pressed="false"><span class="icon icon-theme" aria-hidden="true"></span><span data-label="menu.dark-mode" class="sr-only" data-en="Dark mode">深色模式</span></button>
+        <button type="button" class="lang-btn" aria-label="切換為英文">EN</button>
+      </div>
     </nav>
   </div>
 
-  <!-- 底列（全站固定、貼底）：左 menu／intro，中 最新動態＋（畫面正中），右 footer。矩形鈕 hover／鍵盤聚焦才在旁邊多出名字（跟語言走；
-       平常視覺隱藏但仍是報讀名稱，所以不另掛 aria-label）；menu／footer 鈕打開時矩形中央白圓點。行為 js/modules/ui/chrome.js -->
+  <!-- 底列（全站固定、貼底）：左 menu／intro，中 最新動態＋（畫面正中），右空著（原本 footer 鈕，user 2026-11-21 搬進選單＝聯絡頁；留欄＝動態照樣置中）。
+       矩形鈕 hover／鍵盤聚焦才在旁邊多出名字（跟語言走；平常視覺隱藏但仍是報讀名稱，所以不另掛 aria-label）；menu 鈕打開時矩形中央白圓點。行為 js/modules/ui/chrome.js -->
   <div class="site-bar">
     <div class="bar-left">
       <button type="button" class="bar-btn menu-btn" aria-expanded="false" aria-controls="site-menu">
-        <span class="bar-rect"></span><span class="bar-label" data-zh="選單" data-en="menu">選單</span>
+        <!-- 選單鈕背後的毛玻璃（同 logo 的 .top-blur，user 2026-11-21）：選單捲到鈕底下的選項漸進模糊（chrome.css .bar-blur） -->
+        <span class="bar-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
+        <span class="bar-rect"></span><span data-label="bar.menu" class="bar-label" data-zh="選單" data-en="menu">選單</span>
       </button>
       <!-- TODO intro 影片：data-video 填網址才會開 dialog 播 -->
       <button type="button" class="bar-btn play-btn" data-video="">
-        <span class="icon icon-play"></span><span class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
+        <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
       </button>
     </div>
-    <!-- MOCK 最新一則動態（接 Directus 後填），永遠在畫面正中、寬＝--col-w（首頁動態圖片寬）。
-         首頁：點了原地展開清單、標題退掉、＋滑到右端放大變－（chrome.js 攔）；內頁：連到動態頁。選單開著時收成只剩＋。
-         hover 別的鈕名字出來、側邊放不下才縮這塊（中心不動）；文字放不下就跑馬燈（fitBar） -->
+    <!-- MOCK 動態跑馬燈（user 2026-11-21）：最近幾則的標題排成一排一直跑、左右兩端淡掉（跟 index.html 清單同一份示意；接 Directus 後填，
+         換內容時把 [data-dup] 拿掉再叫 fitBar）。永遠在畫面正中；跑馬燈＋「＋」一起＝--col-w＝logo 寬。
+         首頁：點了原地展開清單——跑馬燈先淡出、＋同時往右滑到欄外變－，清單才升上來（chrome.js 攔）；內頁：整塊淡掉。選單開著時跑馬燈淡掉只剩＋。
+         hover 別的鈕名字出來、側邊放不下才縮這塊（中心不動） -->
     <a href="news.html" class="bar-news">
-      <span class="bar-news-track"><span class="bar-news-copy" data-en="Placeholder: 2026 admission info session, online on 22 Nov">示意：115 學年度招生說明會，11 月 22 日線上舉行</span></span><span class="bar-plus" aria-hidden="true"></span>
+      <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span><span class="bar-plus" aria-hidden="true"></span>
     </a>
-    <button type="button" class="bar-btn footer-btn" aria-expanded="false" aria-controls="site-footer">
-      <span class="bar-label" data-zh="聯絡" data-en="contact">聯絡</span><span class="bar-rect"></span>
-    </button>
   </div>
 
   <!-- 手機：內頁右圖的縮圖鈕（user 2026-11-13 手機稿；桌面右圖在 main 裡，page.css .page-figure）。固定在畫面右緣「捲軸那一塊」、
-       上下在畫面中線，右緣對齊 footer 鈕；點了開 #figure-dialog 放大。
+       上下在畫面中線，右緣對齊內容右內距；點了開 #figure-dialog 放大。
        縮圖與放大的內容由 chrome.js syncFigure 從當頁 .page-figure 複製，該頁有圖才標 .has-figure 現身 -->
   <button type="button" class="figure-btn md:hidden" aria-haspopup="dialog">
-    <span class="figure-thumb" aria-hidden="true"></span><span class="sr-only" data-en="View image">看圖片</span>
+    <span class="figure-thumb" aria-hidden="true"></span><span data-label="common.view-image" class="sr-only" data-en="View image">看圖片</span>
   </button>
 
   <!-- intro 影片：原生 <dialog>，Esc／右上鈕關 -->
   <dialog class="intro-dialog" id="intro-dialog" aria-label="intro">
     <video controls playsinline></video>
-    <button type="button" class="bar-btn intro-close"><span class="bar-label" data-zh="關閉" data-en="close">關閉</span><span class="bar-rect"></span></button>
+    <button type="button" class="bar-btn intro-close"><span data-label="common.close" class="bar-label" data-zh="關閉" data-en="close">關閉</span><span class="bar-rect"></span></button>
   </dialog>
 
   <!-- 右圖放大（手機，右緣縮圖鈕開）：原生 <dialog> 白底蓋滿畫面、圖置中；點任何地方／Esc 關（fade in／out）。

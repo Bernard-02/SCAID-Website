@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}</script>
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
+  <title>報導 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/press.html 也能獨立跑。版型同 about（css/components/page.css）。
+       報導（user 2026-11-21；主選單在榮譽下面）：排法同入學（一則一列、沒縮圖；標題 text-md、媒體 text-s），外面＝報導標題＋媒體，但不展開——
+       點了＝放大 dialog 直接看那則報導的截圖（a.item-row[data-zoom] 的 href＝截圖；chrome.js 攔下來開 openFigure，沒 JS 就直接開圖）。
+       沒有分類的 Section title → 沒有段落導覽。截圖暫時是 Lorem Picsum。
+       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <main id="page-content">
+    <div class="site-container site-grid">
+      <article class="page-body col-span-full md:col-start-2 md:col-span-6">
+        <h1 data-label="nav.press" data-en="Press">報導</h1>
+
+      <section class="page-section">
+        <ul class="item-list mt-0">
+          <li><a class="item-row" data-zoom href="https://picsum.photos/seed/scaid-press-1/900/1200">
+            <h3 data-en="Article headline 1">報導標題一</h3>
+            <p data-en="Media outlet">媒體名稱</p>
+          </a></li>
+          <li><a class="item-row" data-zoom href="https://picsum.photos/seed/scaid-press-2/900/1200">
+            <h3 data-en="Article headline 2">報導標題二</h3>
+            <p data-en="Media outlet">媒體名稱</p>
+          </a></li>
+          <li><a class="item-row" data-zoom href="https://picsum.photos/seed/scaid-press-3/900/1200">
+            <h3 data-en="Article headline 3">報導標題三</h3>
+            <p data-en="Media outlet">媒體名稱</p>
+          </a></li>
+        </ul>
+      </section>
+      </article>
+
+      <!-- TODO 圖片待 user 給 -->
+      <div class="page-figure hidden md:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>
