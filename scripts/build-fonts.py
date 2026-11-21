@@ -9,6 +9,9 @@ TC 版缺字用 J 版補（user 2026-11-18）：TC 版少了「教清真值告�
 TC 有收但畫成另一個字的（為→爲、即→卽…，見 USE_J）也放進這片、不從 TC 切。
 兩版的度量與字寬完全一樣，混排不會跳；J 來的字是日本寫法（新字形），TC 其他字是傳承字形。
 
+字距照 logo 的中文（user 2026-11-21，見 TRACKING）：切片時把每個字的字寬加寬，等於只對中文字體下 letter-spacing——
+CSS 的 letter-spacing 分不出中英文，會連 JetBrains Mono 的英數一起拉開（logo 那一行裡的「AI」就是原本的字距）。
+
 ponytail: 只切 Google 那組列到的字（約 1.4 萬個，跟原本用的 Noto Sans TC 涵蓋相當）；字體另外還有約 1.5 萬個罕用字沒切，
 遇到會退回系統字體。真的需要再把剩下的字照碼位順序補切幾片（woff2 會從 6MB 變 15MB 左右）。
 
@@ -28,7 +31,7 @@ from fontTools import subset
 from fontTools.ttLib import TTFont
 
 FAMILY = 'Glow Sans TC Compressed'
-WEIGHTS = {400: 'Regular', 700: 'Bold'}   # CSS font-weight → otf 檔名的字重；網站只用這兩個（variables.css --font-weight-*）
+WEIGHTS = {400: 'Regular', 500: 'Medium', 700: 'Bold'}   # CSS font-weight → otf 檔名的字重；網站只用這三個（variables.css --font-weight-*；title Medium、內文 Regular，user 2026-11-21）
 OUT = Path(__file__).resolve().parent.parent / 'fonts' / 'glow-sans-tc-compressed'
 # 要帶現代瀏覽器的 UA，Google 才回 woff2＋unicode-range 切片版
 GF_CSS = 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC'
@@ -36,7 +39,11 @@ UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 # TC 有收、卻畫成「另一個字」的樣子（為→爲、即→卽…：傳承字形把兩個碼位併成舊寫法那個）→ 這些也改用 J 版（user 2026-11-18）。
 # 名單怎麼來的：拿 TC 每個字的外框去比 J，跟 J 裡另一個碼位的一般漢字一模一樣的就是。
 # 之後還想把哪個字換成 J 版的寫法，加進這串重跑就好（J 是日本寫法：海、漢、器、類這類字換過去反而不像台灣寫法，別整批換）
-USE_J = '為即偽查緒鄉俱媯溈蒍晩'
+USE_J = '為即偽查緒鄉俱媯溈蒍晩程'
+# 字距（字體單位，1000＝1em）：每個字的字寬多加這麼多＝字後面多留的空（同 CSS letter-spacing，加在右邊、行首不動）。
+# 205 是量 images/Logo Text.svg 中文那一行來的：那行是 Glow Sans J Compressed Medium（外框比對誤差 0.06%），
+# 相鄰兩字原點相距 1.005em，字體原本字寬 0.8em → 多 0.205em。logo 的字距再改就重量、改這個數字重跑
+TRACKING = 205
 
 
 def google_slices():
@@ -76,10 +83,27 @@ def cut(job):
     sub = subset.Subsetter(opts)
     sub.populate(unicodes=cps)
     sub.subset(font)
+    # 字距：字寬記在兩個地方，都要改——hmtx，還有 CFF 外框自己記的寬（WebKit 照後者排，只改 hmtx 量出來還是原本的 0.8em）。
+    # CFF 的字寬＝預設寬 defaultWidthX，或「基準寬 nominalWidthX＋外框開頭記的差」→ 兩個都加 TRACKING＝每個字都加寬，外框不用動。
+    # 零寬的（組合用符號）不加：外框開頭那個差扣回來（開頭不是「0 − 基準寬」就是結構跟預期不同，停下來看）
+    top = font['CFF '].cff.topDictIndex[0]
+    hmtx = font['hmtx']
+    for name, (adv, lsb) in hmtx.metrics.items():
+        if adv:
+            hmtx.metrics[name] = (adv + TRACKING, lsb)
+        else:
+            cs = top.CharStrings[name]
+            cs.decompile()
+            assert cs.program[0] == -cs.private.nominalWidthX, f'{name}：零寬字的外框開頭不是字寬'
+            cs.program[0] -= TRACKING
+    for fd in top.FDArray:
+        fd.Private.defaultWidthX += TRACKING
+        fd.Private.nominalWidthX += TRACKING
     subset.save_font(font, dst, opts)
 
 
 def main(src_dir):
+    sys.stdout.reconfigure(errors='replace')   # Windows 主控台（cp950）印不出「・」這類字，最後那行摘要會炸
     src = {w: {lang: str(Path(src_dir) / f'GlowSans{lang}-Compressed-{name}.otf') for lang in ('TC', 'J')}
            for w, name in WEIGHTS.items()}
 
