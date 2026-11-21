@@ -13,6 +13,8 @@
  *   gsap.to(el, { yPercent: 0, duration: DUR.reveal, ease: EASE.enter });
  */
 
+import { prefersReducedMotion } from './reduce-motion.js';
+
 const rootStyle = getComputedStyle(document.documentElement);
 
 // 讀 CSS 變數的秒數（"0.3s" → 0.3）；讀不到時 fallback = variables.css 同值，保證 robust
@@ -40,3 +42,14 @@ export const EASE = {
   sway:      'sine.inOut',   // atlas 永久擺動
   wipe:      'wipe',         // nav chip / clip 擦除 / 回彈：慢起步、快衝、長收尾（＝CSS --ease-wipe；CustomEase 註冊在 helpers.js）
 };
+
+/**
+ * 整個畫面的切換走網站 fade（深色模式、語言；user 2026-11-21）：View Transition 把切換前、後的畫面各拍一張交叉淡化，
+ * 時長與曲線吃 --dur-fade（chrome.css ::view-transition-*）——顏色變數、mask 上色的 logo、換掉的文字都不用各自寫過場。
+ * DOM 是下一幀才改（先拍舊畫面）。瀏覽器不支援／減少動態＝直接切。
+ * @param {() => void} apply 真的去改 DOM 的那一步
+ */
+export function fadeSwap(apply) {
+  if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) document.startViewTransition(apply);
+  else apply();
+}

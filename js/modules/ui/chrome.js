@@ -1,9 +1,9 @@
 /**
- * 全站殼行為（結構 pages/header.html／footer.html，樣式 css/components/chrome.css）：
- * 選單開關、footer 覆蓋層、intro 影片 dialog、底列量測（兩側等寬＋動態跑馬燈）、首頁動態原地展開、手機的右圖縮圖鈕＋放大 dialog。
- * 全部 document 委派＝片段注入前後都綁得到；狀態掛 <html> class（menu-open／footer-open／news-open）
+ * 全站殼行為（結構 pages/header.html，樣式 css/components/chrome.css）：
+ * 選單開關、intro 影片 dialog、底列量測（兩側等寬＋動態跑馬燈）、首頁動態原地展開、手機的右圖縮圖鈕＋放大 dialog。
+ * 全部 document 委派＝片段注入前後都綁得到；狀態掛 <html> class（menu-open／news-open）
  */
-import { DUR } from './motion.js';
+import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 
 const html = document.documentElement;
@@ -11,7 +11,7 @@ const html = document.documentElement;
 function setExpanded(sel, open) {
   document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-expanded', String(open)));
 }
-// 選單與 footer 互斥（footer 蓋在選單上、選單被 footer 蓋住都沒意義）。打開中的鈕名字常駐 → 側邊變寬，重量底列
+// 選單開關：menu 鈕撐成選單欄那格／縮回來 → 重量底列
 // 收選單後內容先鎖住不捲（html.menu-closing，chrome.css）：第一下滾輪／觸控只負責關選單、內容不動（user 2026-11-18）。
 // 鎖至少撐到選單滑完（--dur-medium）；同一個手勢後面還在送事件（觸控板慣性可拖到 1 秒）就一直往後推，停了 LOCK_TAIL 才解
 const LOCK_TAIL = 250;
@@ -23,21 +23,14 @@ function lockScroll(ms) {
   menuClosingTimer = setTimeout(() => html.classList.remove('menu-closing'), menuUnlockAt - performance.now());
 }
 function setMenu(open) {
-  if (open) setFooter(false);
   const was = html.classList.contains('menu-open');
   html.classList.toggle('menu-open', open);
   setExpanded('.menu-btn', open);
-  fitBar();
   if (was && !open) { menuUnlockAt = 0; lockScroll(prefersReducedMotion() ? 0 : DUR.medium * 1000); }
   else if (open) { clearTimeout(menuClosingTimer); html.classList.remove('menu-closing'); menuUnlockAt = 0; }
-}
-function setFooter(open) {
-  if (open) setMenu(false);
-  html.classList.toggle('footer-open', open);
-  setExpanded('.footer-btn', open);
   fitBar();
 }
-// 首頁動態展開：logo 上移、清單從畫面底下升上來、底列＋滑到右端變－（home.css／chrome.css）。
+// 首頁動態展開：底列跑馬燈先淡出，logo 上移、清單從畫面底下升上來（晚 --news-wait 才動，home.css），底列＋變－（chrome.css）。
 // 收合＝反向（user 2026-11-19）：news-open 先拿掉（logo 回中間、－變回＋），清單掛著 html.news-closing 往下滑出畫面，
 // 滑完才真的藏起來、捲回頂。捲到一半收的話，畫面上緣以上的部分先切掉（--news-cut），不然往下滑時會從上面跑出來
 let newsClosingTimer = 0;
@@ -61,18 +54,29 @@ function setNews(open) {
     list.style.setProperty('--news-drop', `${window.innerHeight - Math.max(0, top)}px`);     // 看得到的頂端到畫面底緣的距離＝要滑多遠
     html.classList.add('news-closing');
   }
-  // 底列：標題寬度瞬間放回（＋在右端、標題還透明＝看不出來）再讓＋滑回來；寬度一邊長、＋一邊滑會疊成 bounce（chrome.css .bar-news-track）。
-  // 沒有 transitionend → 跑馬燈自己重量
-  const track = /** @type {HTMLElement | null} */ (document.querySelector('.bar-news-track'));
-  if (track) track.style.transition = 'none';
   html.classList.remove('news-open');
-  if (track) { void track.offsetWidth; track.style.transition = ''; fitBar(); }
   if (slide) newsClosingTimer = setTimeout(endNewsClosing, DUR.slow * 1000);
   else window.scrollTo(0, 0);
 }
 
-// 換頁／Esc：選單、footer、首頁展開全收（main.js initPageModules 每次換頁呼叫）
-export function closeOverlays() { setMenu(false); setFooter(false); setNews(false); }
+// 深色模式（user 2026-11-21；variables.css :root[data-theme="dark"]）：選單 EN 上面那顆切、記 localStorage。
+// 一進頁的套用在各頁 <head> 的 inline script（CSS 之前，免得閃白）；這裡只管切換與鈕的 aria-pressed（header 注入後 main.js 也呼叫一次）
+const THEME_KEY = 'scaid:theme';
+export function syncTheme() {
+  document.querySelectorAll('.theme-btn').forEach(b => b.setAttribute('aria-pressed', String(html.dataset.theme === 'dark')));
+}
+function toggleTheme() {
+  const dark = html.dataset.theme !== 'dark';
+  try { localStorage.setItem(THEME_KEY, dark ? 'dark' : ''); } catch {}
+  // 切換＝整個畫面 fade 過去（user 2026-11-21；motion.js fadeSwap）
+  fadeSwap(() => {
+    if (dark) html.dataset.theme = 'dark'; else delete html.dataset.theme;
+    syncTheme();
+  });
+}
+
+// 換頁／Esc：選單、首頁展開全收（main.js initPageModules 每次換頁呼叫）。news＝false：只收選單、首頁展開先留著（router.js 換頁前用）
+export function closeOverlays(news = true) { setMenu(false); if (news) setNews(false); }
 
 // intro：data-video 有網址才開 <dialog> 播；關掉就停並卸載
 function openIntro(btn) {
@@ -142,35 +146,29 @@ function closeFigure() {
 }
 
 // 底列量測（chrome.css .site-bar）：
-// 1) 兩側欄最小寬＝左右內容較寬者（--side-min）→ 兩側等寬＝動態永遠畫面正中；hover 名字出來側邊放不下才縮動態。
-//    選單開著不量：menu 鈕撐成選單欄那格（chrome.css），量進去會把中欄擠掉；就讓它溢出側欄，中間只剩＋照樣置中
-// 2) 動態標題放不下＝加 .is-marquee 跑馬燈（複製第二份接力）；放得下就拆。標題收著（選單開／首頁展開）不量。
-//    量之前先拿掉 class（跑時 copy 有 padding-right，會量進去）
+// 1) 兩側欄最小寬＝左欄內容寬（--side-min；右欄空著，原本 footer 鈕）→ 兩側等寬＝動態永遠畫面正中；hover 名字出來側邊放不下才縮動態。
+//    選單開著不量：menu 鈕撐成選單欄那格（chrome.css），量進去會把中欄擠掉；就讓它溢出側欄（跑馬燈那時已淡掉）
+// 2) 動態跑馬燈（user 2026-11-21：好幾則標題排成一排一直跑，chrome.css .bar-news-track）：複製第二份接力（還沒有才做）；
+//    一圈的時間照內容寬算＝速度固定（標題幾則、中英怎麼換、字體載入前後都一樣快）→ 盯著 copy 的寬，變了重算
+export const MARQUEE_SPEED = 2.5;   // 每秒走幾個 em（清單列的跑馬燈也用這個速度，item-marquee.js）
+const marqueeSize = new ResizeObserver(([e]) => {
+  const copy = /** @type {HTMLElement} */ (e.target), track = copy.parentElement;
+  if (track) track.style.setProperty('--marquee-dur', `${copy.offsetWidth / (MARQUEE_SPEED * parseFloat(getComputedStyle(track).fontSize))}s`);
+});
 export function fitBar() {
   const bar = /** @type {HTMLElement | null} */ (document.querySelector('.site-bar'));
   if (!bar) return;
-  const left = /** @type {HTMLElement} */ (bar.querySelector('.bar-left'));
-  const right = /** @type {HTMLElement} */ (bar.querySelector('.footer-btn'));
-  if (html.classList.contains('menu-open')) return;
-  bar.style.setProperty('--side-min', Math.max(left.offsetWidth, right.offsetWidth) + 'px');
-
-  if (html.classList.contains('news-open')) return;
-  const track = bar.querySelector('.bar-news-track');
-  // 標題退掉／回來的過場中寬度是中間值，量了會誤判要跑馬燈（－↔＋ 時多出一份標題）→ 等 transitionend 再量
-  if (track.getAnimations().some(a => a instanceof CSSTransition && a.transitionProperty === 'max-width')) return;
-  const copy = /** @type {HTMLElement} */ (track.querySelector('.bar-news-copy'));
-  let dup = track.querySelector('[data-dup]');
-  track.classList.remove('is-marquee');
-  const over = copy.scrollWidth > track.clientWidth;
-  if (over && !dup) {
-    const d = /** @type {HTMLElement} */ (copy.cloneNode(true));
-    d.setAttribute('data-dup', '');
-    d.setAttribute('aria-hidden', 'true');
-    track.appendChild(d);
-    dup = d;
+  const track = bar.querySelector('.bar-news-track'), copy = track?.querySelector('.bar-news-copy');
+  if (track && copy && !track.querySelector('[data-dup]')) {
+    const dup = /** @type {HTMLElement} */ (copy.cloneNode(true));
+    dup.setAttribute('data-dup', '');
+    dup.setAttribute('aria-hidden', 'true');
+    track.appendChild(dup);
+    marqueeSize.observe(copy);
   }
-  if (!over && dup) dup.remove();
-  track.classList.toggle('is-marquee', over);
+  const left = /** @type {HTMLElement} */ (bar.querySelector('.bar-left'));
+  if (html.classList.contains('menu-open')) return;
+  bar.style.setProperty('--side-min', left.offsetWidth + 'px');
 }
 
 export function initChrome() {
@@ -178,7 +176,7 @@ export function initChrome() {
     const t = e.target instanceof Element ? e.target : null;
     if (!t) return;
     if (t.closest('.menu-btn')) { setMenu(!html.classList.contains('menu-open')); return; }
-    if (t.closest('.footer-btn')) { setFooter(!html.classList.contains('footer-open')); return; }
+    if (t.closest('.theme-btn')) { toggleTheme(); return; }
     if (t.closest('.intro-close')) { /** @type {HTMLDialogElement} */ (document.getElementById('intro-dialog')).close(); return; }
     const play = t.closest('.play-btn');
     if (play instanceof HTMLElement) { openIntro(play); return; }
@@ -187,16 +185,18 @@ export function initChrome() {
     if (t.closest('.figure-next')) { stepFigure(1); return; }
     const shot = t.closest('.album button');
     if (shot) { openFigure(shot.querySelector('img'), e, galleryOf(shot)); return; }
+    // 清單列掛 data-zoom（報導，user 2026-11-21）：不換頁、不另開，放大 dialog 直接看 href 那張圖（報導的截圖）
+    const zoom = t.closest('a[data-zoom]');
+    if (zoom instanceof HTMLAnchorElement) { e.preventDefault(); openFigure(Object.assign(new Image(), { src: zoom.href, alt: zoom.querySelector('h3')?.textContent ?? '' }), e); return; }
     if (t.closest('#figure-dialog')) { closeFigure(); return; }   // 放大後點任何地方都關（X 也是）
-    // 「聯絡」連結（網站地圖）＝開頁尾覆蓋層，不跳 hash（user 2026-11-18）
-    if (t.closest('a[href="#contact"]')) { e.preventDefault(); setFooter(true); return; }
     // 點選單連結：這裡不收，交給 router.js loadPage 先收選單、收完才淡出換頁（user 2026-11-18）；修飾鍵另開分頁的不路由＝選單留著
     if (t.closest('.site-menu a')) return;
-    // 首頁：動態原地展開、不走 router（preventDefault → router 看到 defaultPrevented 放行）；footer 開著先收
+    // 首頁：動態原地展開、不走 router（preventDefault → router 看到 defaultPrevented 放行）
+    // 選單開著時動態是糊掉的內容（chrome.css，user 2026-11-21）：點它＝第一下只收選單、不展開／收合（同右邊內容）。
+    // 滑鼠點不到它（不吃指標，下面 pointerdown 那條收）；這裡接的是沒經過聚焦的 click（程式、輔助科技）
     if (t.closest('.bar-news') && document.body.dataset.page === 'index') {
       e.preventDefault();
-      setFooter(false);
-      setNews(!html.classList.contains('news-open'));
+      if (html.classList.contains('menu-open')) setMenu(false); else setNews(!html.classList.contains('news-open'));
     }
   });
   // 打開的那則（details[open]）點封面縮圖＝放大封面（user 2026-11-18）。走 capture：那時 open 還是點之前的狀態
@@ -204,9 +204,10 @@ export function initChrome() {
   document.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
     const cover = t?.closest('details[open]:not(.is-closing) > summary .item-thumb');
-    if (!cover) return;
+    const img = cover?.querySelector('img');   // 裡面有圖的才是封面（榮譽的國旗本身就是 .item-thumb＝點了照常收合）
+    if (!cover || !img) return;
     e.preventDefault(); e.stopPropagation();
-    openFigure(cover.querySelector('img'), e, galleryOf(cover));
+    openFigure(img, e, galleryOf(cover));
   }, true);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeOverlays();
@@ -215,8 +216,10 @@ export function initChrome() {
   });
   // 選單開著時對右邊內容做任何操作＝第一下只收選單、內容不動（user 2026-11-18）：在 #page-content 按下（滑鼠／觸控）、鍵盤聚焦進去、
   // 選單外滾輪／觸控滑動（內容本來就鎖住捲不動，見 chrome.css .menu-open overflow）。不用 scroll 事件：換頁回頂那類程式捲動會誤收。
-  // 內容裡的連結：pointerdown 先收、click 才進 router → router 看內容還沒滑回去就等它滑完再淡出（順序同點選單連結）
-  const inContent = (/** @type {Event} */ e) => e.target instanceof Element && e.target.closest('#page-content');
+  // 選單開著內容不吃指標（chrome.css，user 2026-11-21）→ 按在右邊時 target 是 body／html；連結也點不到＝第一下真的只收選單。
+  // 首頁底列的動態也算內容（同樣不吃指標）→ 按在它上面時 target 是底列本身（.site-bar；底列的空白處一起算，那裡也在選單外）
+  const inContent = (/** @type {Event} */ e) => e.target === document.body || e.target === html
+    || (e.target instanceof Element && (e.target.matches('.site-bar') || !!e.target.closest('#page-content, .bar-news')));
   // 選單那一欄不算內容：target 在 .site-menu 裡，或指標 x 在選單右緣左邊（選單透明、空隙處事件會穿到底下的內容）
   const inMenuColumn = (/** @type {Event} */ e) => {
     if (e.target instanceof Element && e.target.closest('.site-menu')) return true;
@@ -249,8 +252,14 @@ export function initChrome() {
   const onScroll = () => html.classList.toggle('is-scrolled', window.scrollY > 0);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-  // 標題退掉／回來的過場走完才量（過場中寬度是中間值）
-  document.addEventListener('transitionend', (e) => {
-    if (e.propertyName === 'max-width' && e.target instanceof Element && e.target.classList.contains('bar-news-track')) fitBar();
+  // 鈕的名字寬是補間的（chrome.css .bar-label：旁邊的 play 滑過去，user 2026-11-21）→ 補間那段每幀重量底列：
+  // 側邊放不下名字時動態跟著一點一點縮／放回來，不會等名字長完才跳
+  let fitUntil = 0;
+  const fitLoop = () => { fitBar(); if (performance.now() < fitUntil) requestAnimationFrame(fitLoop); else fitUntil = 0; };
+  document.addEventListener('transitionrun', (e) => {
+    if (e.propertyName !== 'grid-template-columns' || !(e.target instanceof Element) || !e.target.matches('.bar-label')) return;
+    const looping = fitUntil > 0;
+    fitUntil = performance.now() + DUR.fade * 1000 + 100;   // 補間的時長（--dur-fade）＋一點餘裕，最後一幀量到定位後的寬
+    if (!looping) requestAnimationFrame(fitLoop);
   });
 }

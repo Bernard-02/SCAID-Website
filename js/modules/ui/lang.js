@@ -3,6 +3,8 @@
  * 標記法：中文直接寫在內文，英文寫 data-en；第一次套用時把中文記到 data-zh，之後來回切都有得換（textContent，不吃 HTML →
  * 內含子元素的要拆成各自的 span）。頁面內容之後接 Directus 再依 lang 抓對應欄位。
  */
+import { fadeSwap } from './motion.js';
+
 const KEY = 'scaid:lang';
 
 export function getLang() {
@@ -28,7 +30,7 @@ export function initLang() {
   document.addEventListener('click', (e) => {
     if (!(e.target instanceof Element) || !e.target.closest('.lang-btn')) return;
     try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}
-    applyLang();
+    fadeSwap(() => applyLang());   // 切語言＝整個畫面 fade 過去（user 2026-11-21）
   });
   applyLang();
 }

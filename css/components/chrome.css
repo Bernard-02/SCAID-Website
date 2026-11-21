@@ -1,6 +1,6 @@
-/* 全站殼（結構 pages/header.html／footer.html，行為 js/modules/ui/chrome.js）：
-   logo 固定頂部置中、透明左欄全屏選單（內容往右推、logo 不動）、固定底列、footer 覆蓋層、intro 影片 dialog。
-   狀態全掛 <html> class：menu-open／footer-open／news-open（首頁，home.css） */
+/* 全站殼（結構 pages/header.html，行為 js/modules/ui/chrome.js）：
+   logo 固定頂部置中、透明左欄全屏選單（內容往右推、logo 不動）、固定底列、intro 影片 dialog。
+   狀態全掛 <html> class：menu-open／news-open（首頁，home.css） */
 
 @layer components {
   /* 內容讓出頂部 logo 區與底列；選單開著時右推 --shift（logo 不跟著動，user 2026-11-03） */
@@ -10,19 +10,30 @@
     transform: translateX(var(--shift, 0px));
     transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade);
   }
-  /* 換頁 transition＝fade out → 換內容 → fade in（router.js：換頁前加 html.page-leaving 淡出、換完拿掉＝淡入） */
-  html.page-leaving #page-content { opacity: 0; }
+  /* 換頁 transition＝fade out → 換內容 → fade in（router.js：換頁前加 html.page-leaving 淡出、換完拿掉＝淡入）。
+     每個 fade 都帶模糊（user 2026-11-21；variables.css --transition-fade）：藏著的那一態 opacity 0＋blur，全站同一套寫法 */
+  html.page-leaving #page-content { opacity: 0; filter: blur(var(--blur)); }
   /* 選單開著：內容左緣推到選單右緣（＝play 鈕那條線）。內容自己帶左內距 → 推「選單寬 − 內距」，不重複算 padding（user 2026-11-03）。
      開著＋收回去那 --dur-medium（html.menu-closing，chrome.js setMenu）內容鎖住不捲：第一下滾輪／觸控只關選單、內容不動（user 2026-11-18） */
   html.menu-open { --shift: calc(var(--menu-w) - var(--container-padding)); }
+  /* 首頁展開的動態不右推（user 2026-11-21）：清單留在 logo 底下、底列的－留在圖片右邊，只模糊＋疊白（下面那條）。
+     手機清單滿版 → 選單直接疊在糊掉的清單上 */
+  html.menu-open.news-open { --shift: 0px; }
   html:is(.menu-open, .menu-closing) { overflow: hidden; }
+  /* 選單開著右邊內容不吃指標（user 2026-11-21）：不能 hover、點了事件穿到 body → 第一下只收選單（chrome.js pointerdown），點到連結也不會換頁。
+     首頁底列的動態也是（user 2026-11-21：動態當內容處理，同其他頁）——點下去落在底列本身，chrome.js 一樣當成點內容；內頁它本來就藏著 */
+  html.menu-open :is(#page-content, .bar-news) { pointer-events: none; }
+  /* 選單開著內容模糊＋整片疊白，右圖照常（user 2026-11-21；段落導覽另外整個收掉，page.css）。
+     疊白＝內容 opacity 0.4（白底上＝蓋 60% 白，同 logo 後面毛玻璃那層 .top-blur::after）→ 選單開著那層收掉，整片一樣白、看不出 logo 那一塊 */
+  #page-content .site-container > :not(.page-figure, .section-nav) { transition: var(--transition-fade); }
+  html.menu-open #page-content .site-container > :not(.page-figure, .section-nav) { filter: blur(var(--blur)); opacity: 0.4; }
   /* 整站不能左右捲。右推會把內容推出畫面右緣，桌面 Chrome 在選單關掉、內容回原位之後還留著那段可捲寬度
      （觸控板／shift＋滾輪捲得過去）→ 根元素直接擋掉橫向捲動。只擋 x：直向捲動與 sticky 照常（捲的還是 viewport） */
   html { overflow-x: hidden; }
 
   /* ── Logo：兩端矩形夾英中名（images/Logo Text.svg），全站同一種（首頁也是，user 2026-11-03）。頂到最頂、置中、寬＝--logo-w
      （手機扣內距吃滿、桌面同動態欄；variables.css，底列骨牌與圓點大小也從它算）；首頁未展開時 home.css 用變數放到畫面正中央、transition 位移。
-     footer 另一版（長條 Logo Stroke.svg＋英中名在下）見下方 .footer-logo ── */
+     ── */
   .site-logo {
     position: fixed;
     z-index: 30;
@@ -34,26 +45,28 @@
     color: var(--theme-fg);
     transition: top var(--dur-slow) var(--ease-standard), transform var(--dur-slow) var(--ease-standard);
   }
-  /* logo 背後的毛玻璃（類 iOS，user 2026-11-18：只要 logo 邊緣、不要整條頂部）：logo 外擴 --f、左右與下緣羽化（logo 頂到最頂，上緣不用）。
-     羽化寬 --w 從外緣往內算、比 --f 寬＝伸進 logo 裡（外擴小、羽化長，user 2026-11-18）。
-     跟著 logo 走（首頁置中↔上移、footer 開著一起藏）；z -1＝在 logo 字後面。預設只有漸進模糊，
+  /* logo 背後的毛玻璃（類 iOS，user 2026-11-18：只要 logo 邊緣、不要整條頂部）：logo 外擴 --f、四邊都羽化（user 2026-11-21；原本上緣不羽化，
+     首頁 logo 在畫面正中時上緣是一條硬邊）。羽化寬 --w 從外緣往內算、比 --f 寬＝伸進 logo 裡（外擴小、羽化長，user 2026-11-18）。
+     上緣例外：logo 在頂的時候往上擴 --w＝上緣那段羽化整段在畫面外、logo 第一行後面照樣是全實的玻璃（羽化伸進 logo 的那截在頂端沒有用，只會讓玻璃變薄）；
+     首頁 logo 在正中＝往上也只擴 --f，四邊一樣（home.css），跟著 logo 上移一起過場。
+     跟著 logo 走（首頁置中↔上移）；z -1＝在 logo 字後面。預設只有漸進模糊，
      內容捲上來（html.is-scrolled，chrome.js）再疊半透明底色，內容不跟 logo 打架 */
-  .top-blur {
+  .top-blur, .bar-blur {   /* .bar-blur＝選單鈕背後的同一套（下面底列那段） */
     --f: var(--spacing-lg);
     --w: calc(var(--f) * 1.5);
     position: absolute;
     z-index: -1;
-    inset: 0 calc(-1 * var(--f)) calc(-1 * var(--f));
     pointer-events: none;
   }
+  .top-blur { inset: calc(-1 * var(--w)) calc(-1 * var(--f)) calc(-1 * var(--f)); transition: top var(--dur-slow) var(--ease-standard); }   /* 過場同 .site-logo 上移 */
   /* 漸進模糊（羽化）：單層 blur＋遮罩只是糊／不糊交叉淡化（有重影）→ 疊 6 層（header.html 的 <i>），模糊每層加倍（0.25→8px），
      第 i 層從外緣往內 i 格開始淡入、淡兩格才全實（一格＝--w/7，跟鄰層重疊＝更柔）；後層糊的是前層糊過的＝越往 logo 越糊。
-     遮罩＝左右、下緣兩條漸層取交集。遮罩不能掛在 .top-blur 本身：mask 會變 backdrop root，子層就糊不到底下內容 */
-  .top-blur > i, .top-blur::after {
+     遮罩＝左右、上下兩條漸層取交集。遮罩不能掛在 .top-blur 本身：mask 會變 backdrop root，子層就糊不到底下內容 */
+  :is(.top-blur, .bar-blur) > i, :is(.top-blur, .bar-blur)::after {
     --a: calc(var(--i) * var(--w) / 7);        /* 從這裡開始淡入 */
     --b: calc(var(--a) + var(--w) * 2 / 7);    /* 到這裡全實 */
     --mx: linear-gradient(to right, transparent var(--a), #000 var(--b), #000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
-    --my: linear-gradient(#000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
+    --my: linear-gradient(transparent var(--a), #000 var(--b), #000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
     position: absolute;
     inset: 0;
     -webkit-mask: var(--mx), var(--my);
@@ -61,11 +74,11 @@
             mask: var(--mx), var(--my);
             mask-composite: intersect;
   }
-  .top-blur > i {
+  :is(.top-blur, .bar-blur) > i {
     -webkit-backdrop-filter: blur(calc(0.25px * pow(2, var(--i))));
             backdrop-filter: blur(calc(0.25px * pow(2, var(--i))));
   }
-  .top-blur::after {
+  :is(.top-blur, .bar-blur)::after {
     --a: 0px;
     --b: var(--w);   /* 底色整個羽化寬一起淡 */
     content: '';
@@ -74,18 +87,19 @@
     transition: var(--transition-fade);
   }
   html.is-scrolled .top-blur::after { opacity: 0.6; }
+  /* 選單開著／放大 dialog 開著整片內容已經疊白（#page-content 那幾條）→ 這塊不重複疊（user 2026-11-21） */
+  html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .top-blur::after { opacity: 0; }
 
-  /* SVG 用 mask 畫（同 .icon）：顏色吃 currentColor＝跟 theme 走；aspect-ratio＝各自的 viewBox */
-  .logo-text, .logo-strip {
+  /* SVG 用 mask 畫（同 .icon）：顏色吃 currentColor＝跟 theme 走；aspect-ratio＝viewBox */
+  .logo-text {
     display: block;
     width: 100%;
     background: currentColor;
     -webkit-mask: var(--logo) center / contain no-repeat;
             mask: var(--logo) center / contain no-repeat;
   }
-  .logo-text  { --logo: url('../images/Logo Text.svg');   aspect-ratio: 1067.29 / 116.32; }
-  .logo-strip { --logo: url('../images/Logo Stroke.svg'); aspect-ratio: 1067.29 / 70; }
-  /* 矩形中央白圓點＝骨牌的圓孔（直徑＝高的 20/70，同 block.svg）：底列 menu／footer 鈕在各自打開時才現 */
+  .logo-text { --logo: url('../images/Logo Text.svg'); aspect-ratio: var(--logo-vb-w) / var(--logo-vb-h); }   /* ＝viewBox（variables.css） */
+  /* 矩形中央白圓點＝骨牌的圓孔（直徑＝高的 20/70，同 block.svg）：底列 menu 鈕在選單打開時才現 */
   .bar-rect::after {
     content: '';
     position: absolute;
@@ -97,13 +111,12 @@
     background: var(--theme-bg);
     transform: translate(-50%, -50%);
   }
-  .bar-rect::after { opacity: 0; }
+  .bar-rect::after { opacity: 0; filter: blur(var(--blur)); transition: var(--transition-fade); }   /* 現／隱＝fade（user 2026-11-21，名字也是） */
   html.menu-open .menu-btn .bar-rect::after,
-  html.footer-open .footer-btn .bar-rect::after,
-  html:not(.input-touch) .bar-btn:focus-visible .bar-rect::after { opacity: 1; }
+  html:not(.input-touch) .bar-btn:focus-visible .bar-rect::after { opacity: 1; filter: none; }
   /* hover 也現圓點（user 2026-11-18）；觸控不算，理由同名字（點完 :hover 會黏著） */
   @media (hover: hover) {
-    .bar-btn:hover .bar-rect::after { opacity: 1; }
+    .bar-btn:hover .bar-rect::after { opacity: 1; filter: none; }
   }
 
   /* ── 選單：透明、固定寬 --menu-w；預設滑出左側。照 user 截圖：主選單在上、次選單＋語言鈕推到底，字級同底列 ── */
@@ -114,13 +127,16 @@
     left: 0;
     z-index: 40;
     width: var(--menu-w);
-    padding: var(--top-h) var(--container-padding) var(--bar-h);
+    /* 底：語言鈕 → menu 鈕的距離＝nav 的 gap（同次選單分區、聯絡 → 語言鈕；user 2026-11-21）。底列那一行的高＝骨牌（比名字、play 高） */
+    padding: var(--top-h) var(--container-padding) calc(var(--bar-pad) + var(--block-h) + var(--spacing-lg));
     overflow-y: auto;
     color: var(--theme-fg);
     transform: translateX(-100%);
-    transition: transform var(--dur-medium) var(--ease-wipe);
+    opacity: 0;   /* 進出場＝滑＋fade 一起（user 2026-11-21）：時長／曲線同滑動，兩個才對得上（同首頁動態清單的做法） */
+    filter: blur(var(--blur));
+    transition: transform var(--dur-medium) var(--ease-wipe), opacity var(--dur-medium) var(--ease-wipe), filter var(--dur-medium) var(--ease-wipe);
   }
-  html.menu-open .site-menu { transform: none; }
+  html.menu-open .site-menu { transform: none; opacity: 1; filter: none; }
   .site-menu-nav {
     @apply text-s md:text-md;
     min-height: 100%;
@@ -128,14 +144,18 @@
     flex-direction: column;
     gap: var(--spacing-lg);
   }
-  /* 選項間距（user 2026-11-18 加寬）。.link-list＝內頁的同款可點清單（curriculum 課名 → curriculum-detail），間距跟選單同一條 */
+  /* 選項間距（user 2026-11-18 加寬）。.link-list＝內頁的同款可點清單（網站地圖、聯絡頁姊妹系所、入學附件），間距跟選單同一條 */
   .menu-main, .menu-sub, .link-list { display: flex; flex-direction: column; gap: var(--spacing-xs); }
-  .menu-sub { margin-top: auto; }
-  .lang-btn { align-self: flex-start; }
+  .menu-main + .menu-sub { margin-top: auto; }   /* 次選單兩區一起推到底；區之間＝nav 的 gap（同聯絡 → 語言鈕） */
+  /* 深色模式＋語言鈕一組（user 2026-11-21）：兩顆之間＝選項間距；組跟上面次選單之間才是分區的 gap（nav 的 gap） */
+  .menu-tools { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-xs); }
+  .theme-btn { display: flex; align-items: center; min-height: 1lh; }   /* 高＝一行字，跟 EN 同高 */
+  .theme-btn .icon { transition: transform var(--dur-medium) var(--ease-standard); }
+  html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝實心那半邊轉到右邊 */
   /* 選中／hover＝文字右邊中線一顆圓點（user 2026-11-18，方塊試過後改回圓點）：大小同骨牌圓孔（--dot-size）；絕對定位＝出現不推版面。
-     footer 裡的連結（社群方塊、email／電話、姊妹系所）hover 也是這顆（user 2026-11-18，取代變淡） */
-  .nav-link, .lang-btn, .footer-body a { position: relative; }
-  .nav-link::after, .lang-btn::after, .footer-body a::after {
+     聯絡頁的連結（社群方塊、email、姊妹系所；.footer-body，page.css）hover 也是這顆（user 2026-11-18，取代變淡） */
+  .nav-link, .lang-btn, .theme-btn, .footer-body a { position: relative; }
+  .nav-link::after, .lang-btn::after, .theme-btn::after, .footer-body a::after {
     content: '';
     position: absolute;
     left: 100%;
@@ -147,14 +167,16 @@
     background: currentColor;
     transform: translateY(-50%);
     opacity: 0;
+    filter: blur(var(--blur));
+    transition: var(--transition-fade);   /* hover 出來的圓點也是 fade＋模糊（user 2026-11-21；原本瞬間出） */
   }
-  .nav-link.active::after { opacity: 1; }
+  .nav-link.active::after { opacity: 1; filter: none; }
   @media (hover: hover) {
-    .nav-link:hover::after, .lang-btn:hover::after, .footer-body a:hover::after { opacity: 1; }
+    .nav-link:hover::after, .lang-btn:hover::after, .theme-btn:hover::after, .footer-body a:hover::after { opacity: 1; filter: none; }
   }
 
-  /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 footer]；整列貼底 --bar-pad（跟 footer 內容底線同一條）。
-     兩側等寬（--side-min＝左右內容較寬者，chrome.js fitBar 量）＝動態永遠畫面正中；
+  /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 空著]（原本 footer 鈕，user 2026-11-21 搬進選單＝聯絡頁）；整列貼底 --bar-pad。
+     兩側等寬（--side-min＝左欄內容寬，chrome.js fitBar 量）＝動態永遠畫面正中；
      中欄最寬 --col-w（＝首頁動態圖片寬），側邊名字出來放不下時才縮中欄 ── */
   .site-bar {
     @apply text-s md:text-md;
@@ -174,51 +196,61 @@
     color: var(--theme-fg);
   }
   .bar-left { justify-self: start; display: flex; align-items: center; gap: var(--bar-gap); }
-  .footer-btn { justify-self: end; }
   @media (min-width: 768px) {
     .site-bar { --bar-gap: var(--spacing-md); }
   }
 
-  /* 矩形鈕＝矩形＋名字。名字平常視覺隱藏（仍是無障礙名稱、跟語言走，lang.js），hover／鍵盤聚焦才排進版面 */
+  /* 矩形鈕＝矩形＋名字。名字平常視覺隱藏（仍是無障礙名稱、跟語言走，lang.js），hover／鍵盤聚焦才排進版面；
+     menu 鈕的名字永遠不出（user 2026-11-21：hover、點開選單都不要文字說明；原本 hover 出、選單開著常駐），只剩報讀名稱 */
   .bar-btn { display: inline-flex; align-items: center; gap: 0.5em; flex: none; color: inherit; }
   /* 矩形＝logo 兩端那顆骨牌（website-icons/block.svg）：寬高 45:70，大小＝logo 上那顆（--block-h，user 2026-11-18；原本 1.25em 同 play icon） */
   .bar-rect { --h: var(--block-h); position: relative; display: block; width: calc(var(--h) * 45 / 70); height: var(--h); background: currentColor; }
-  .bar-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  /* 選單開著 menu 名字常駐；其餘 hover／鍵盤聚焦才出。觸控不算（user 2026-11-13 手機版）：點完 :hover／:focus-visible 會黏在鈕上
-     → 選單關了名字還留著，所以 hover 只給滑鼠、聚焦排除 html.input-touch（helpers.js） */
-  html:not(.input-touch) .bar-btn:focus-visible .bar-label,
-  html.menu-open .menu-btn .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  /* 名字收著＝寬 0＋透明、留在版面流裡（左右負 margin 抵掉 .bar-btn 的 gap＝不佔位；名字在矩形左邊或右邊都適用）。
+     現／隱＝fade（user 2026-11-21，矩形的圓點也是），寬跟著一起長出來／收回去＝旁邊的 play 是滑過去的、不是跳過去
+     （user 2026-11-21；原本出來＝馬上佔位、收＝淡完才收寬）。寬 0 ↔ 內容寬要能補間 → grid 一欄 0fr ↔ 1fr（max-width 不知道內容多寬、補不準）；
+     minmax(0, …)：字是匿名 grid item、設不了 min-width，欄的下限寫 0 才收得到 0。補間期間 chrome.js 每幀重量底列 */
+  .bar-label {
+    display: grid; grid-template-columns: minmax(0, 0fr);
+    margin-inline: -0.25em; overflow: hidden; white-space: nowrap; opacity: 0; filter: blur(var(--blur));
+    transition: var(--transition-fade), grid-template-columns var(--dur-fade) var(--ease-standard), margin var(--dur-fade) var(--ease-standard);
+  }
+  /* hover／鍵盤聚焦才出（menu 鈕除外，見上）。觸控不算（user 2026-11-13 手機版）：點完 :hover／:focus-visible 會黏在鈕上
+     → 名字一直留著，所以 hover 只給滑鼠、聚焦排除 html.input-touch（helpers.js） */
+  html:not(.input-touch) .bar-btn:not(.menu-btn):focus-visible .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
   @media (hover: hover) {
-    .bar-btn:hover .bar-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+    .bar-btn:not(.menu-btn):hover .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
   }
   /* 觸控：矩形鈕本體很小（寬 ≈0.8em）→ ::before 把可點範圍往外撐，畫面不變。左右各撐半個 menu／play 間距＝兩顆的範圍相接不重疊 */
   @media (pointer: coarse) {
     .site-bar .bar-btn { position: relative; }
     .bar-btn::before { content: ''; position: absolute; inset: -1em calc(var(--bar-gap, 1rem) / -2); }
   }
-  /* footer 開著：底列只剩 footer 鈕（白圓點），照一開始的排法（user 2026-11-03） */
-  html.footer-open :is(.bar-left, .bar-news) { opacity: 0; visibility: hidden; }
-  /* 底列中間的動態只在首頁（user 2026-11-10）：內頁同 footer 開著的退場 */
-  body:not([data-page="index"]) .bar-news { opacity: 0; visibility: hidden; }
+  /* 底列中間的動態只在首頁（user 2026-11-10）：內頁淡出（同 intro） */
+  body:not([data-page="index"]) .bar-news { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }
   /* intro（play）也只在首頁（user 2026-11-18）：同款淡出淡入，淡完才 hidden；位置照留＝選單開時 menu 鈕那格不變 */
   .play-btn { transition: var(--transition-fade), visibility 0s; }
-  body:not([data-page="index"]) .play-btn { opacity: 0; visibility: hidden; transition: var(--transition-fade), visibility 0s var(--dur-fade); }
-  /* footer 開關時 menu／play／動態走網站 transition 淡出淡入（user 2026-11-03）：淡出時 visibility 等淡完才 hidden
-     （之後點不到、不報讀）；淡入時 visibility 立刻回來。.bar-news 的同款寫在它自己的規則 */
-  .bar-left { transition: var(--transition-fade), visibility 0s; }
-  html.footer-open .bar-left { transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  body:not([data-page="index"]) .play-btn { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   .play-btn .icon { font-size: 1.25em; }
-  /* 選單開著：menu 鈕撐成選單欄那一格（名字算在格子裡），play 自然排在格子後面＝選單右緣——
-     名字中英怎麼換都不影響 play（user 2026-11-03）。min-width 過場＝play 滑過去。
+  /* 選單開著：menu 鈕撐成選單欄那一格，play 自然排在格子後面＝選單右緣（user 2026-11-03）。min-width 過場＝play 滑過去。
      ⚠️ 起點要寫明 0：flex 子項 min-width 預設 auto，auto→長度不能過場＝play 直接跳過去 */
-  .menu-btn { justify-content: flex-start; min-width: 0; transition: min-width var(--dur-medium) var(--ease-wipe); }
+  .menu-btn { position: relative; justify-content: flex-start; min-width: 0; transition: min-width var(--dur-medium) var(--ease-wipe); }
+  /* 選單鈕背後的毛玻璃（user 2026-11-21）：同 logo 那塊（.top-blur，上面；header.html 一樣 6 層 <i>）。畫面矮、選單放不下時選項會捲到
+     選單鈕底下 → 靠近就漸進模糊＋疊半透明底色，不跟鈕和名字打架。範圍＝鈕（選單開著撐成選單欄那格）往上、往右各外擴 --f 並羽化，
+     左、下到畫面邊（不用羽化）。只在選單開著／收回去那段出現；平常沒有東西會捲到鈕底下 */
+  .bar-blur { display: none; inset: calc(-1 * var(--f)) calc(-1 * var(--f)) calc(-1 * var(--bar-pad)) calc(-1 * var(--container-padding)); }
+  html:is(.menu-open, .menu-closing) .bar-blur { display: block; }
+  .bar-blur > i, .bar-blur::after {
+    --mx: linear-gradient(to right, #000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
+    --my: linear-gradient(transparent var(--a), #000 var(--b));
+  }
+  .bar-blur::after { opacity: 0.6; }
   html.menu-open .menu-btn { min-width: calc(var(--menu-w) - var(--container-padding) - var(--bar-gap)); }
 
-  /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊 footer 鈕、上下在畫面中線
+  /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊內容右內距、上下在畫面中線
      （＝桌面右圖那條水平線；手機沒有自製捲軸，z 同捲軸），點了開 .figure-dialog 放大（桌面右圖在 main 裡，page.css .page-figure；HTML 掛 md:hidden）。
      內文右邊讓出 --rail-w（page.css .page-body）→ 不壓字。固定在殼上、不放 #page-content 裡（裡面不能有 fixed）；
      內容由 chrome.js syncFigure 從當頁 .page-figure 複製，有圖才 .has-figure。
-     進出場走網站 transition：沒圖／footer 開／選單開（內容右推過來會被它壓到）／換頁淡出，淡完才 hidden ── */
+     進出場走網站 transition：沒圖／選單開（內容右推過來會被它壓到）／換頁淡出，淡完才 hidden ── */
   .figure-btn {
     position: fixed;
     z-index: 35;
@@ -229,49 +261,49 @@
     transform: translateY(-50%);
     opacity: 0;
     visibility: hidden;
+    filter: blur(var(--blur));
     transition: var(--transition-fade), visibility 0s var(--dur-fade);
   }
-  .figure-btn.has-figure { opacity: 1; visibility: visible; transition: var(--transition-fade), visibility 0s; }
-  html:is(.footer-open, .menu-open, .page-leaving) .figure-btn { opacity: 0; visibility: hidden; transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  .figure-btn.has-figure { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
+  html:is(.menu-open, .page-leaving) .figure-btn { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   .figure-btn::before { content: ''; position: absolute; inset: calc(var(--spacing-xs) * -1); }   /* 可點範圍往外撐，畫面不變 */
   .figure-thumb { display: block; width: 100%; height: 100%; overflow: hidden; }
   /* 複本縮成方形縮圖：圖片裁切填滿；佔位的字藏掉只留灰底 */
   .figure-thumb > * { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--light-gray); font-size: 0; }
 
-  /* 動態：中欄滿寬。內容＝[左墊][標題][＋][右墊]，兩墊等分剩餘＝置中。
-     選單開著／首頁展開：標題退掉（只剩＋）；首頁展開再加：右墊收 0（＋滑到右端）再推出欄外一個 gutter（不擋動態圖片）、
-     豎線收掉變－，大小同＋。
-     標題放不下時 chrome.js 標 .is-marquee 跑馬燈（兩份 copy 接力） */
-  .bar-news { min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
-  html.footer-open .bar-news, body:not([data-page="index"]) .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
-  /* 首頁展開＋選單開著（桌面）：動態跟清單一起右推，－才會繼續在圖片右邊。手機清單滿版、推了－會出畫面 → 不推 */
-  @media (min-width: 768px) {
-    html.news-open.menu-open .bar-news { transform: translateX(var(--shift)); }
-  }
-  .bar-news::before, .bar-news::after {
-    content: '';
-    flex: 1 1 0;
-    transition: flex-grow var(--dur-medium) var(--ease-standard);
-  }
+  /* 動態（首頁）：中欄＝跑馬燈——好幾則標題排成一排一直跑、左右兩端淡掉（user 2026-11-21；原本只放最新一則、放不下才跑）。
+     跑馬燈＋「＋」一起＝中欄＝--col-w＝logo 寬：跑馬燈在左、＋在右端（右緣對齊 logo 右緣）
+     （手機：左右讓給 menu／intro 鈕之後剩下的寬，仍在畫面正中）。
+     首頁展開／清單收回去的途中（news-closing）：跑馬燈淡掉——展開時它先淡完清單才升上來（home.css --news-wait），
+     收合反過來：清單滑走了才淡回來。
+     首頁展開：＋往右滑到欄外一個 gutter（不擋動態圖片）、豎線收掉變－；滑的時機、時長、曲線＝跑馬燈淡出那一段（user 2026-11-21），
+     收合時跟跑馬燈淡回來一起滑回去。
+     跑馬燈＝兩份 copy 接力（第二份 chrome.js fitBar 複製）；copy 至少跟框一樣寬＝標題再少、兩份也接得起來；
+     一圈的時間 --marquee-dur 照內容寬算（chrome.js）＝速度固定 */
+  .bar-news { position: relative; min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
+  body:not([data-page="index"]) .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
+  /* 首頁選單開著：動態當內容處理（user 2026-11-21；原本跑馬燈淡掉只剩＋、＋／－照常清楚）——模糊＋疊 60% 白（同上面 #page-content 那條），
+     點它＝只收選單（chrome.js）。位置不動（先試過跟內容一起右推，user 2026-11-21：不用動）；
+     首頁展開時清單也不右推（最上面 --shift 那條）→ －本來就在圖片右邊，不用跟 */
+  html.menu-open body[data-page="index"] .bar-news { filter: blur(var(--blur)); opacity: 0.4; }
+  /* 深色模式／語言切換（View Transition，檔尾 ::view-transition-*）時動態自己一組（user 2026-11-21）：整個畫面的舊那張是靜止的截圖，
+     跑馬燈在交叉淡化那段看起來會停一下 → 動態不放舊的那張、新的那張（活的）直接顯示＝照常一直跑；
+     顏色改由它自己的 color 過場淡過去（同時長、同曲線＝跟畫面一起變）。color 的過場只在切換那段掛：平常 hover 換色要馬上換（下面 :hover） */
+  .bar-news { view-transition-name: bar-news; }
+  html:active-view-transition .bar-news { transition: color var(--dur-fade) var(--ease-standard); }
   .bar-news-track {
-    flex: 0 1 auto;
+    --edge: 2em;   /* 兩端淡掉的寬 */
+    flex: 1 1 0;
     min-width: 0;
-    max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
     display: flex;
-    transition: max-width var(--dur-medium) var(--ease-standard), opacity var(--dur-base) var(--ease-standard);
+    -webkit-mask: linear-gradient(to right, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
+            mask: linear-gradient(to right, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
+    transition: var(--transition-fade);
   }
-  .bar-news-copy { flex: none; }
-  .bar-news-track.is-marquee .bar-news-copy { padding-right: 2em; animation: bar-marquee 10s linear infinite; }
-  .bar-plus {
-    position: relative;
-    flex: none;
-    width: 1.5em;
-    height: 1.5em;
-    margin-left: 0.5em;
-    transition: transform var(--dur-medium) var(--ease-standard), margin-left var(--dur-medium) var(--ease-standard);
-  }
+  .bar-news-copy { flex: none; min-width: 100%; display: flex; gap: 2em; padding-right: 2em; animation: bar-marquee var(--marquee-dur, 40s) linear infinite; }
+  .bar-plus { position: relative; flex: none; width: 1.5em; height: 1.5em; margin-left: 0.5em; transition: transform var(--dur-fade) var(--ease-standard); }
   .bar-plus::before, .bar-plus::after {
     content: '';
     position: absolute;
@@ -280,53 +312,12 @@
   }
   .bar-plus::before { left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; }
   .bar-plus::after { top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; }
-  html:is(.menu-open, .news-open) .bar-news-track { max-width: 0; opacity: 0; }
-  /* 首頁展開：＋先滑（右墊收 0、推出欄外），標題的「寬度」等滑完才收（delay 一個 --dur-medium）——那時＋已在右端，收寬度動不到它。
-     不然寬度收（把＋往左拉半個標題寬）跟右墊收（往右推）疊在一起、而且 max-width 從 100% 起算要降到標題實際寬才真的開始縮＝
-     往左那段起步晚，看起來先右、被拉回、再右（user 2026-11-19 看到的 bounce）。標題的透明度照舊在第一段就淡掉。
-     收合反過來：寬度由 chrome.js setNews 瞬間放回（標題還透明、＋在右端＝看不出來）再滑回來 */
-  html.news-open .bar-news-track { transition: max-width var(--dur-medium) var(--ease-standard) var(--dur-medium), opacity var(--dur-base) var(--ease-standard); }
-  html:is(.menu-open, .news-open) .bar-plus { margin-left: 0; }
-  html.news-open .bar-news::after { flex-grow: 0; }
-  html.news-open .bar-plus { transform: translateX(calc(100% + var(--spacing-gutter))); }
+  html:is(.news-open, .news-closing) .bar-news-track { opacity: 0; filter: blur(var(--blur)); }
+  html:is(.news-open, .news-closing) .bar-plus { transform: translateX(calc(100% + var(--spacing-gutter))); }
   html.news-open .bar-plus::after { transform: scaleY(0); }
   @media (hover: hover) {
-    .bar-news:hover { filter: opacity(0.6); }   /* 用 filter 不用 opacity：opacity 有 fade 過場，hover 會變成慢慢淡 */
+    .bar-news:hover { color: rgb(var(--theme-fg-rgb), 0.6); }   /* 用顏色不用 opacity／filter：那兩個有 fade 過場，hover 會變成慢慢淡（字與＋都吃 currentColor） */
   }
-
-  /* ── footer 覆蓋層：白底、可內捲；版面照截圖（logo 鎖定版置中頂、左欄資訊） ── */
-  .site-footer {
-    position: fixed;
-    inset: 0;
-    z-index: 45;
-    display: none;
-    flex-direction: column;
-    overflow-y: auto;
-    padding: 0 var(--container-padding) var(--bar-pad);   /* 頂到最頂；底＝底列那條線（底列只剩右下 footer 鈕，左欄內容不會打架） */
-    background: var(--theme-bg);
-    color: var(--theme-fg);
-  }
-  html.footer-open { overflow: hidden; }
-  html.footer-open .site-footer { display: flex; }
-  html.footer-open .site-logo { visibility: hidden; }   /* footer 自帶鎖定版（長條＋英中名在下，跟全站 logo 不同形） */
-  .footer-logo { @apply text-xs md:text-s font-bold; flex: none; width: min(60vw, 32rem); margin: 0 auto; }
-  .footer-logo .logo-strip { margin-bottom: var(--spacing-xs); }
-  .footer-body {
-    @apply text-s md:text-md;
-    margin-top: auto;              /* 內容貼底，copyright 對齊底列那條線 */
-    padding-top: var(--spacing-3xl);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-xl);
-  }
-  .footer-social { display: flex; gap: var(--spacing-lg); }
-  .footer-social-box { display: block; width: 1em; height: 1em; border: 1px solid currentColor; }
-  .footer-contact { display: flex; flex-direction: column; gap: var(--spacing-md); }
-  .footer-links { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
-  .footer-links a::after { margin-left: calc((var(--spacing-sm) - var(--dot-size)) / 2); }   /* 圓點放在跟下一個的間距正中（照 0.5em 桌面會碰到下一個字） */
-  .footer-badge { width: 9.5rem; height: 3.75rem; background: var(--light-gray); }
-  img.footer-badge { width: auto; max-width: 100%; background: none; }   /* 後台標章圖：高同佔位、寬照比例 */
 
   /* ── intro 影片 dialog：滿版黑底 ── */
   .intro-dialog {
@@ -337,15 +328,17 @@
     margin: 0;
     padding: 0;
     border: 0;
-    background: var(--theme-fg);
-    color: var(--theme-bg);
+    background: var(--color-black);   /* 影片底永遠是黑的，不跟深色模式反過來 */
+    color: var(--color-white);
   }
-  .intro-dialog::backdrop { background: var(--theme-fg); }
+  .intro-dialog::backdrop { background: var(--color-black); }
   .intro-dialog video { width: 100%; height: 100%; object-fit: contain; }
   .intro-close { position: absolute; top: var(--spacing-md); right: var(--container-padding); }
 
-  /* ── 右圖放大 dialog（手機，右緣縮圖鈕開；user 2026-11-13）：白底蓋滿畫面、圖在 logo 區與底列區之間置中。
-     inset 0 撐滿＝跟著實際可視範圍（同 footer 覆蓋層），不靠 ::backdrop 補；fade in 走 keyframes、fade out 由 chrome.js 加 .is-closing 淡完才關。
+  /* ── 右圖放大 dialog（手機，右緣縮圖鈕開；user 2026-11-13）：蓋滿畫面、圖在 logo 區與底列區之間置中。
+     背後＝後面的內容模糊＋疊 60% 白（同選單開著那組：--blur、opacity 0.4；user 2026-11-21，原本白底整個蓋掉），logo 照常清楚：
+     所以不是 dialog 自己 backdrop-filter（top layer 會連 logo 一起糊），而是 dialog 開著時糊 logo 以外的內容與殼（下面 :has 那條）。
+     inset 0 撐滿＝跟著實際可視範圍，不靠 ::backdrop 補；fade in 走 keyframes、fade out 由 chrome.js 加 .is-closing 淡完才關。
      ⚠️ display 只能寫在 [open]：寫在 .figure-dialog 會蓋掉瀏覽器「沒開＝display none」 ── */
   .figure-dialog {
     inset: 0;
@@ -356,13 +349,15 @@
     margin: 0;
     padding: var(--top-h) var(--container-padding) var(--bar-h);
     border: 0;
-    background: var(--theme-bg);
+    background: none;
     color: var(--theme-fg);
     transition: var(--transition-fade);
   }
   .figure-dialog::backdrop { background: none; }
+  .site-bar { transition: var(--transition-fade); }
+  html:has(#figure-dialog[open]:not(.is-closing)) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb) { filter: blur(var(--blur)); opacity: 0.4; }
   .figure-dialog[open] { display: flex; align-items: center; justify-content: center; animation: fade-in var(--dur-fade) var(--ease-standard); }
-  .figure-dialog.is-closing { opacity: 0; }
+  .figure-dialog.is-closing { opacity: 0; filter: blur(var(--blur)); }
   /* 放大的右圖（灰底佔位那種）：方形，寬＝內容寬，矮畫面（橫拿）改吃可用高。樣子同桌面右圖（page.css .page-figure > *）。
      放大的照片（相簿、封面）：照原比例，寬／高都不超過可用範圍 */
   .figure-dialog-body > :not(img) { width: min(100vw - 2 * var(--container-padding), 100svh - var(--top-h) - var(--bar-h)); }
@@ -381,7 +376,21 @@
 @keyframes bar-marquee {
   to { transform: translateX(-100%); }
 }
-/* 網站 transition 的 keyframes 版（元素從 display none 出現時 transition 起不來，例：dialog 打開） */
+/* 深色模式／語言切換＝整個畫面新舊兩張交叉淡化（View Transition，motion.js fadeSwap；user 2026-11-21）：時長、曲線吃網站 fade。
+   淡的時候底下照樣點得到（預設那層會把點擊吃掉）。換成自己的 keyframes＝帶模糊（舊的那張淡出變糊、新的那張從糊淡進來） */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--dur-fade); animation-timing-function: var(--ease-standard); }
+::view-transition-old(root) { animation-name: fade-out; }
+::view-transition-new(root) { animation-name: fade-in; }
+::view-transition { pointer-events: none; }
+/* 首頁底列的動態（.bar-news 自己一組，理由見那條）：不放靜止的舊截圖，活的那張直接顯示、不淡；
+   這組自己沒有任何動畫（位置大小也沒變）＝整個切換的時長還是只看上面 root 那兩張 */
+::view-transition-old(bar-news) { display: none; }
+::view-transition-group(bar-news), ::view-transition-old(bar-news), ::view-transition-new(bar-news) { animation: none; }
+
+/* 網站 transition 的 keyframes 版（元素從 display none 出現時 transition 起不來，例：dialog 打開）：一樣帶模糊 */
 @keyframes fade-in {
-  from { opacity: 0; }
+  from { opacity: 0; filter: blur(var(--blur)); }
+}
+@keyframes fade-out {
+  to { opacity: 0; filter: blur(var(--blur)); }
 }

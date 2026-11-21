@@ -29,6 +29,7 @@
   /* chevron base 朝左，方向用 Tailwind rotate：rotate-180＝右、rotate-90＝上、-rotate-90＝下 */
   .icon-chevron     { --icon: url('../website-icons/chevron_left_list.svg'); }
   .icon-close       { --icon: url('../website-icons/close.svg'); }
+  .icon-theme       { --icon: url('../website-icons/theme.svg'); }   /* 深色模式鈕：半實心圓 */
   /* 方塊 icon（user 2026-11-18 命名）＝logo 兩端那顆「骨牌」：直立矩形＋中央圓孔，比例 45:70（放進 1em 方框會左右留白） */
   .icon-block       { --icon: url('../website-icons/block.svg'); }
 }

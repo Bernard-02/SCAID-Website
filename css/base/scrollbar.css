@@ -10,16 +10,17 @@ html::-webkit-scrollbar { display: none; }
   width: 10px;
   height: 0;
   background: var(--theme-fg);
-  z-index: 35;            /* 蓋內容與 logo（30），在選單（40）／footer（45）／底列（60）下 */
+  z-index: 35;            /* 蓋內容與 logo（30），在選單（40）／底列（60）下 */
   touch-action: none;
   user-select: none;
   will-change: transform, height;
   display: none;          /* JS 偵測到可捲才顯示 */
+  animation: fade-in var(--dur-fade) var(--ease-standard);   /* 出現＝淡入（user 2026-11-21）：display none → block 時 animation 會從頭跑；keyframes 在 chrome.css */
 }
 @media (max-width: 767px) {
   #custom-scrollbar-thumb { display: none !important; }
 }
 
-/* 內部捲動容器（選單／footer 覆蓋層）：藏捲軸、功能照舊 */
+/* 內部捲動容器（選單）：藏捲軸、功能照舊 */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }

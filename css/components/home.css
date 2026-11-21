@@ -7,6 +7,13 @@
     --logo-top: 50%;
     --logo-tf: translate(-50%, -50%);
   }
+  /* logo 在正中：背後的毛玻璃往上也只外擴 --f＝四邊一樣羽化（在頂時往上擴 --w、上緣的羽化在畫面外；chrome.css .top-blur） */
+  html:not(.news-open) body[data-page="index"] .top-blur { top: calc(-1 * var(--f)); }
+  /* 展開的順序（user 2026-11-21）：底列跑馬燈先淡出（--dur-fade，chrome.css .bar-news-track），淡完 logo 與清單才一起往上
+     → 兩個都晚 --news-wait 才動。收合不等（news-open 一拿掉就走），跑馬燈等清單滑走才淡回來。減少動態＝不等 */
+  :root { --news-wait: var(--dur-fade); }
+  @media (prefers-reduced-motion: reduce) { :root { --news-wait: 0s; } }
+  html.news-open body[data-page="index"] :is(.site-logo, .top-blur) { transition-delay: var(--news-wait); }
   /* 首頁 main 撐滿一屏（未展開時是空的，頁面不捲） */
   body[data-page="index"] #page-content { min-height: 100svh; }
 
@@ -14,7 +21,7 @@
      出現＝從畫面底下往上滑進來、邊滑邊淡入，不是直接跳出來（user 2026-11-19）：起點＝清單上緣在畫面底緣，時長與曲線同 logo 上移那一段
      （--dur-slow／--ease-standard，chrome.css .site-logo）＝兩個一起往上。display none → block 起不了 transition，所以用 keyframes */
   .home-news-list { display: none; }
-  html.news-open .home-news-list { display: block; animation: news-rise var(--dur-slow) var(--ease-standard) backwards; }
+  html.news-open .home-news-list { display: block; animation: news-rise var(--dur-slow) var(--ease-standard) var(--news-wait) backwards; }   /* backwards：等的那段停在起點（畫面底下、透明） */
   /* 收合＝反向：往下滑出畫面、邊滑邊淡出（同一組時長／曲線，跟 logo 回中間一起）。滑的距離與要切掉的上半截由 chrome.js setNews 量了寫進來
      （捲到一半收的話，畫面上緣以上的部分要先切掉，不然會跟著從上面滑進畫面） */
   html.news-closing .home-news-list {
@@ -31,13 +38,15 @@
     margin-top: var(--spacing-sm);
     background: var(--light-gray);
     border: 1px solid currentColor;
+    overflow: hidden;
   }
+  .home-news-box img { display: block; width: 100%; height: 100%; object-fit: cover; }   /* 後台那則的圖（cms-pages.js）；沒圖＝灰底 */
 }
 
 /* 首頁動態清單進場：從畫面底緣升到定位（清單定位後的上緣＝--top-h）、同時淡入；退場反過來滑到畫面底緣以下、同時淡出 */
 @keyframes news-rise {
-  from { transform: translateY(calc(100svh - var(--top-h))); opacity: 0; }
+  from { transform: translateY(calc(100svh - var(--top-h))); opacity: 0; filter: blur(var(--blur)); }
 }
 @keyframes news-fall {
-  to { transform: translateY(var(--news-drop, 100svh)); opacity: 0; }
+  to { transform: translateY(var(--news-drop, 100svh)); opacity: 0; filter: blur(var(--blur)); }
 }
