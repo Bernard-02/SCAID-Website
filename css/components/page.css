@@ -153,6 +153,19 @@
     .item-row :is(h1, h3, p).is-marquee { --marquee-fade-l: var(--edge); }
   }
   .item-thumb { aspect-ratio: 1; background: var(--light-gray); }
+  /* 清單列 hover（整個 box，文字那邊也算；user 2026-11-22，PC）＝圖片上浮一塊流動的中空板（thumb-board.js 畫：條紋玻璃——圖切成直條、
+     每條各自錯開、格線一直在游移）。畫布疊在縮圖上（列裡絕對定位、JS 每幀對齊縮圖）；
+     進出場＝網站 fade：藏著＝透明＋--blur、現身＝毛玻璃那一點糊（--frost；user 2026-11-22「加上 blur」）；clip-path 把糊切在縮圖框裡 */
+  .thumb-board {
+    --frost: 1.5px;   /* 毛玻璃多糊：同背景筆跡（bg.css .bg-ink） */
+    position: absolute;
+    pointer-events: none;
+    clip-path: inset(0);
+    opacity: 0;
+    filter: blur(var(--blur));
+    transition: var(--transition-fade);
+  }
+  .thumb-board.is-on { opacity: 1; filter: blur(var(--frost)); }
   /* 整列是連結的：hover 不變淡，整列最右邊、整列高的正中出一顆圓點（user 2026-11-18，方塊試過後改回圓點）——
      大小同選單 hover 的那顆（--dot-size＝骨牌圓孔）。絕對定位＝出現不推版面 */
   a.item-row::after {

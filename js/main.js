@@ -18,6 +18,7 @@ import { initSlideshow } from './modules/ui/slideshow.js';
 import { initAlbums } from './modules/ui/album.js';
 import { initAccordion } from './modules/ui/accordion.js';
 import { initItemMarquee } from './modules/ui/item-marquee.js';
+import { initThumbBoard } from './modules/ui/thumb-board.js';
 import { applyUiLabels } from './modules/ui/ui-labels.js';
 
 // 片段注入：pages/header.html → #site-header
@@ -79,6 +80,7 @@ initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
 initAccordion();        // 摺疊（<details>）展開／收起的動畫
 initItemMarquee();      // 清單列的標題／副標：放不下右邊淡掉、hover 跑馬燈
+initThumbBoard();       // 清單列的圖片：hover 浮一塊流動的中空板
 loadPartial('site-header', 'pages/header.html').then(() => {
   updateNavActive(); syncFigure(); syncTheme(); applyLang(); fitBar();
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
