@@ -153,7 +153,8 @@
   .theme-btn .icon { transition: transform var(--dur-medium) var(--ease-standard); }
   html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝實心那半邊轉到右邊 */
   /* 選中／hover＝文字右邊中線一顆圓點（user 2026-11-18，方塊試過後改回圓點）：大小同骨牌圓孔（--dot-size）；絕對定位＝出現不推版面。
-     聯絡頁的連結（社群方塊、email、姊妹系所；.footer-body，page.css）hover 也是這顆（user 2026-11-18，取代變淡） */
+     聯絡頁的連結（社群方塊、email、姊妹系所；.footer-body，page.css）hover 也是這顆（user 2026-11-18，取代變淡）。
+     選單裡的選項改成跟清單一樣（user 2026-11-22，見下面 .site-menu 那兩條）；內頁的連結清單、聯絡頁照舊圓點 */
   .nav-link, .lang-btn, .theme-btn, .footer-body a { position: relative; }
   .nav-link::after, .lang-btn::after, .theme-btn::after, .footer-body a::after {
     content: '';
@@ -170,9 +171,11 @@
     filter: blur(var(--blur));
     transition: var(--transition-fade);   /* hover 出來的圓點也是 fade＋模糊（user 2026-11-21；原本瞬間出） */
   }
-  .nav-link.active::after { opacity: 1; filter: none; }
+  /* 選單的選項 hover＝跟清單一樣蓋黑收直條（user 2026-11-22；item-marquee.js strike，hover 著才在、離開拿掉），不出圓點。
+     選中的那一項＝收完的那根直條常駐（同打開的手風琴直條留著）：字尾後面隔一根直條寬、寬 0.4em、高＝字高（同 strike 收完的直條），hover 它不重做 */
+  .site-menu .nav-link.active::after { width: 0.4em; height: 1em; aspect-ratio: auto; margin-left: 0.4em; border-radius: 0; opacity: 1; filter: none; }
   @media (hover: hover) {
-    .nav-link:hover::after, .lang-btn:hover::after, .theme-btn:hover::after, .footer-body a:hover::after { opacity: 1; filter: none; }
+    :is(.nav-link, .footer-body a):not(.site-menu *):hover::after { opacity: 1; filter: none; }
   }
 
   /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 空著]（原本 footer 鈕，user 2026-11-21 搬進選單＝聯絡頁）；整列貼底 --bar-pad。

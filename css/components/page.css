@@ -178,7 +178,7 @@
      展開／收起有動畫（accordion.js 把 details 的高度補間；user 2026-11-18）：圓點是整塊高的 50% → 跟著補間一起走，不用另外過場。
      畫在 details::after（絕對定位＝不佔位，pointer-events none＝點它等於點那一列）。文字右邊讓出 --row-pad 不壓到圓點 */
   .page-body details { position: relative; }
-  .page-body summary { display: block; padding-right: var(--row-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條） */
+  .page-body summary { position: relative; display: block; padding-right: var(--row-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條）；relative＝hover 的帶與直條（下面）對它定位 */
   .page-body summary::-webkit-details-marker { display: none; }
   /* 榮譽（user 2026-11-19）：清單列（上面積木那段）的圖＝國旗、標題＝獎項名稱、副標＝得獎人；展開的內容（主辦方、獎別）對齊右邊獎項那一欄。
      國旗 4:3、寬 2em（text-s 的 2em × 3/4＝一行字高）、彩色、不加框、上下置中對在右邊文字的正中
@@ -201,15 +201,23 @@
   }
   /* 清單的圓點（整列連結、摺疊、連結清單；user 2026-11-21）：能 hover 的（PC）平常不出，hover／鍵盤聚焦才出、摺疊點開後常駐；
      觸控（手機）沒有 hover → 一直出，當「點得開」的提示。現／隱都走網站 fade＋模糊（user 2026-11-21；連結的原本瞬間出）。
-     收的時候 open 等縮完才拿掉 → accordion.js 一開始就標 .is-closing，這裡當它已經關了 */
+     收的時候 open 等縮完才拿掉 → accordion.js 一開始就標 .is-closing，這裡當它已經關了。
+     PC 的清單列與摺疊不出圓點，改下面的直條（user 2026-11-22）；連結清單照舊圓點 */
   :is(a.item-row, .page-body details, .page-body .link-list .nav-link)::after { opacity: 1; filter: none; transition: var(--transition-fade); }
   @media (hover: hover) {
-    :is(a.item-row, .page-body details, .page-body .link-list .nav-link)::after { opacity: 0; filter: blur(var(--blur)); }
-    :is(a.item-row:hover, a.item-row:focus-visible,
-        .page-body .link-list .nav-link:hover, .page-body .link-list .nav-link:focus-visible,
-        .page-body details:hover, .page-body details:has(> summary:focus-visible),
-        .page-body details[open]:not(.is-closing))::after { opacity: 1; filter: none; }
+    .page-body .link-list .nav-link::after { opacity: 0; filter: blur(var(--blur)); }
+    .page-body .link-list .nav-link:is(:hover, :focus-visible)::after { opacity: 1; filter: none; }
+    :is(a.item-row, .page-body details)::after { display: none; }
   }
+  /* 清單列與摺疊（手風琴）hover／鍵盤聚焦（user 2026-11-22，PC；item-marquee.js strike）：每行字先被一條字高的帶蓋住（.item-cover），
+     再一起往右收成一根直條（寬 0.4em、高＝字高；user 2026-11-22：以文字的高度為主、不用跟 logo 一樣），停在字尾後面隔一根直條寬——
+     標題、每個副標（常見問題＝問題）都有；問題折行時只有最後一行留直條、前幾行的收到沒有。
+     帶與直條都是 JS 動畫時插進列裡的 span（不放進 h3／p／問題的字裡：lang.js 換語言會洗掉）、量好位置；hover 著就留著，離開直接拿掉（不淡，user 2026-11-22）；
+     摺疊打開著＝直條一直留著（user 2026-11-22），收起來又沒 hover 著才拿掉。
+     z 1＝蓋過放不下那幾行（mask 自成一層）；標題放不下（右邊淡掉）＝直條停在框外、落在 --row-pad 裡 */
+  .item-cover { position: absolute; z-index: 1; background: currentColor; pointer-events: none; }   /* 看得到的那段用 clip-path 切（item-marquee.js），不縮放 */
+  /* 被收起來的那則（開別則時一起收）：一開始收就藏直條；真的拿掉要等縮完拿掉 open 的 toggle（item-marquee.js） */
+  .page-body details.is-closing > summary:not(:hover, :focus-visible) > .item-cover { display: none; }
 
   /* 動態／入學（user 2026-11-18）：每則＝一個摺疊，收著的樣子同師資那一列（縮圖＋標題＋分類，summary 掛 .item-row）；
      動態頁：外面＝標題＋分類，展開＝.fold-meta（時間／地點）→ 相簿。入學頁：外面＝標題＋時間，展開＝說明文字（p）→ 相簿 → 附件（.link-list 連結清單、粗體）。有才出。
