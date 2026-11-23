@@ -65,11 +65,13 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   syncFigure();         // 右圖的 object：畫布重找這一頁右圖那一格；手機右緣那顆鈕看這一頁有沒有右圖
   applyLang();          // 新換進來的內容若有 data-zh 也套語言
   // ── 後台（Directus，user 2026-11-21 全站接上）：抓不到／還沒填＝留 HTML 的示意 ──
-  applyUiLabels(document.getElementById('page-content') || document);   // 介面文字（頁名、固定小標）
-  if (page === 'contact') import('./modules/ui/footer-cms.js').then(m => m.loadFooterCms());   // 聯絡頁＝Directus 單例 footer
+  // 回傳＝後台這幾支都換完（router 等它才淡入，免得示意內容先閃一下）
+  const cms = [applyUiLabels(document.getElementById('page-content') || document)];   // 介面文字（頁名、固定小標）
+  if (page === 'contact') cms.push(import('./modules/ui/footer-cms.js').then(m => m.loadFooterCms()));   // 聯絡頁＝Directus 單例 footer
   // 縮圖＋標題＋副標的列表（師資、合作企業）＝Directus；頁面有 ul.item-list[data-cms] 才載
-  if (document.querySelector('#page-content .item-list[data-cms]')) import('./modules/ui/item-list-cms.js').then(m => m.loadItemListCms());
-  import('./modules/pages/cms-pages.js').then(m => m.loadPage(page, params));   // 其他各頁的內容
+  if (document.querySelector('#page-content .item-list[data-cms]')) cms.push(import('./modules/ui/item-list-cms.js').then(m => m.loadItemListCms()));
+  cms.push(import('./modules/pages/cms-pages.js').then(m => m.loadPage(page, params)));   // 其他各頁的內容
+  return Promise.allSettled(cms);
 }
 
 // ── 開機 ──

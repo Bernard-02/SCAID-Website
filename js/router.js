@@ -128,14 +128,15 @@ async function loadPage(route, search = '', fromUserNav = false) {
     document.body.dataset.page = route.page;
     current = { page: route.page, search };
     logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（邊上移邊換）
-    initPageModules(route.page, new URLSearchParams(search), fromUserNav);
+    // 後台的內容換好才淡入（user 2026-11-22：沒資料的老師，HTML 示意的學歷會先閃一下再被收掉）；後台慢就最多等 1.5 秒、先顯示示意
+    const cmsReady = Promise.race([initPageModules(route.page, new URLSearchParams(search), fromUserNav), wait(1500)]);
     if (fromUserNav) announceAndFocusMain(main);
     if (logoFirst) {
       void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
       main.style.transition = '';
-      await wait(DUR.slow * 1000);    // logo 上移（chrome.css .site-logo）
-      if (isStale()) return;
     }
+    await Promise.all([cmsReady, wait(logoFirst ? DUR.slow * 1000 : 0)]);   // logoFirst：logo 上移（chrome.css .site-logo）
+    if (isStale()) return;
     root.classList.remove('page-leaving');   // 淡入
   } catch (err) {
     console.error('[router]', err);
