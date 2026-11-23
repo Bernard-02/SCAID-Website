@@ -3,12 +3,18 @@
   <a href="#page-content" class="skip-link" data-label="common.skip" data-en="Skip to main content">跳到主要內容</a>
 
   <!-- Logo（全站固定、頂到最頂、置中；首頁未展開時 home.css 放到畫面正中央、transition 位移）。
-       圖＝images/Logo Text.svg（兩端矩形夾英中名，中英並列不跟語言切），chrome.css 用 mask 畫 -->
+       兩個骨牌（.logo-block）夾一段 stroke 區，照分鏡動（user 2026-11-22；js/modules/ui/logo.js）。stroke 區有三種內容：
+       一根根直條（.logo-bars，17 根輪著用）／系名的三行字（.logo-text＝images/Logo Text.svg，中英並列不跟語言切）／右圖 object 的名字（.logo-word）；
+       換內容都經過一條實心的帶（.logo-band：左、中、右三塊）。.logo-ruler＝量 object 名字多長用的，看不到 -->
   <a href="../index.html" class="site-logo">
     <!-- logo 背後的毛玻璃（iOS 那種，user 2026-11-18）：只罩 logo 外圍一圈、邊緣羽化；內容捲上來才疊半透明白（chrome.css .top-blur） -->
     <span class="top-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
     <span data-label="nav.home" class="sr-only" data-en="Home">回首頁</span>
     <span class="logo-text" aria-hidden="true"></span>
+    <span class="logo-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="logo-word" aria-hidden="true"></span><span class="logo-word logo-ruler" aria-hidden="true"></span>
+    <span class="logo-band" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="logo-block" aria-hidden="true"></span><span class="logo-block" aria-hidden="true"></span>
   </a>
 
   <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->

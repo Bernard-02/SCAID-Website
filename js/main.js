@@ -9,6 +9,7 @@ import { sitePath } from './modules/ui/site-base.js';
 import { runPageCleanups } from './modules/ui/page-cleanup.js';
 import { installReducedMotionGsap } from './modules/ui/reduce-motion.js';
 import { initChrome, closeOverlays, fitBar, syncFigure, syncTheme } from './modules/ui/chrome.js';
+import { initLogo } from './modules/ui/logo.js';
 import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
@@ -84,5 +85,6 @@ initThumbBoard();       // 清單列的圖片：hover 浮一塊流動的中空�
 loadPartial('site-header', 'pages/header.html').then(() => {
   updateNavActive(); syncFigure(); syncTheme(); applyLang(); fitBar();
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
+  initLogo();            // logo 的進場動畫：演完才把其他東西放出來（html.is-intro，各頁 <head> 的 inline script 先掛上）
   import('./modules/pages/cms-pages.js').then(m => m.loadBarNews());     // 底列動態跑馬燈＝後台最近幾則
 });

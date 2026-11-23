@@ -13,6 +13,9 @@
   /* 換頁 transition＝fade out → 換內容 → fade in（router.js：換頁前加 html.page-leaving 淡出、換完拿掉＝淡入）。
      每個 fade 都帶模糊（user 2026-11-21；variables.css --transition-fade）：藏著的那一態 opacity 0＋blur，全站同一套寫法 */
   html.page-leaving #page-content { opacity: 0; filter: blur(var(--blur)); }
+  /* 進場（user 2026-11-22）：logo 的進場動畫演完，其他東西才 fade in。各頁 <head> 的 inline script 在畫出來之前就掛上 html.is-intro（不閃），
+     logo.js 演完拿掉。data-logo-still＝煙霧測試不演 logo 的那個開關：連這段淡入也不要（斷言一載入就量得到終態） */
+  html.is-intro:not([data-logo-still]) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb, .site-chrome > .object-canvas) { opacity: 0; filter: blur(var(--blur)); pointer-events: none; }
   /* 選單開著：內容左緣推到選單右緣（＝play 鈕那條線）。內容自己帶左內距 → 推「選單寬 − 內距」，不重複算 padding（user 2026-11-03）。
      開著＋收回去那 --dur-medium（html.menu-closing，chrome.js setMenu）內容鎖住不捲：第一下滾輪／觸控只關選單、內容不動（user 2026-11-18） */
   html.menu-open { --shift: calc(var(--menu-w) - var(--container-padding)); }
@@ -31,15 +34,20 @@
      （觸控板／shift＋滾輪捲得過去）→ 根元素直接擋掉橫向捲動。只擋 x：直向捲動與 sticky 照常（捲的還是 viewport） */
   html { overflow-x: hidden; }
 
-  /* ── Logo：兩端矩形夾英中名（images/Logo Text.svg），全站同一種（首頁也是，user 2026-11-03）。頂到最頂、置中、寬＝--logo-w
-     （手機扣內距吃滿、桌面同動態欄；variables.css，底列骨牌與圓點大小也從它算）；首頁未展開時 home.css 用變數放到畫面正中央、transition 位移。
+  /* ── Logo：文字版（images/Logo Text.svg：兩端骨牌夾英中名）與 stroke 版（images/Logo Stroke.svg：17 根直條）兩張圖疊著，照分鏡互換（user 2026-11-22；logo.js）：
+     首頁在兩版之間來回、內頁固定 stroke 版。頂到最頂、置中、寬＝--logo-w（手機扣內距吃滿、桌面同動態欄；variables.css，底列骨牌與圓點大小也從它算）；
+     首頁未展開時 home.css 用變數放到畫面正中央、transition 位移。
+     座標一律用 SVG viewBox 的單位：--u＝一單位多長，logo.js 只給無單位的數字（--tall、--x、--y、--w、--h）＝版面寬怎麼變都不用 JS 重量。
+     高跟著 --tall 走（0＝stroke 版一行高、1＝文字版三行高），背後的毛玻璃跟著長。
      ── */
   .site-logo {
+    --u: calc(var(--logo-w) / var(--logo-vb-w));
     position: fixed;
     z-index: 30;
     left: 50%;
     top: var(--logo-top, 0);
     width: var(--logo-w);
+    height: calc(var(--u) * (var(--logo-stroke-vb-h) + (var(--logo-vb-h) - var(--logo-stroke-vb-h)) * var(--tall, 0)));
     transform: var(--logo-tf, translateX(-50%));
     display: block;
     color: var(--theme-fg);
@@ -90,15 +98,45 @@
   /* 選單開著／放大 dialog 開著整片內容已經疊白（#page-content 那幾條）→ 這塊不重複疊（user 2026-11-21） */
   html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .top-blur::after { opacity: 0; }
 
-  /* SVG 用 mask 畫（同 .icon）：顏色吃 currentColor＝跟 theme 走；aspect-ratio＝viewBox */
+  /* SVG 用 mask 畫（同 .icon）：顏色吃 currentColor＝跟 theme 走；aspect-ratio＝viewBox。兩版疊在框的左上（左骨牌同位置）；
+     現在出哪一版、帶蓋到哪由 logo.js 每一幀給（硬切、不淡）。
+     mask 寬一律＝框寬、高照圖的比例、貼左上（user 2026-11-22：兩版寬度不一樣）：原本 center / contain，框高被捨成整數像素時
+     contain 改看高、寬跟著少幾 px 再置中，哪一版變窄看縮放比例（150% 文字版窄 4px、100% stroke 版窄 6px），也跟 logo.js 畫的骨牌對不齊 */
   .logo-text {
-    display: block;
-    width: 100%;
+    --logo: url('../images/Logo Text.svg');
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: var(--logo-vb-w) / var(--logo-vb-h);   /* ＝viewBox（variables.css） */
     background: currentColor;
-    -webkit-mask: var(--logo) center / contain no-repeat;
-            mask: var(--logo) center / contain no-repeat;
+    -webkit-mask: var(--logo) 0 0 / 100% auto no-repeat;
+            mask: var(--logo) 0 0 / 100% auto no-repeat;
+    opacity: 0;
   }
-  .logo-text { --logo: url('../images/Logo Text.svg'); aspect-ratio: var(--logo-vb-w) / var(--logo-vb-h); }   /* ＝viewBox（variables.css） */
+  /* stroke 區的零件（2026-11-22 起 stroke 版不再是一張圖，是 logo.js 排的直條：長度要跟著右圖 object 的名字變）：
+     直條（17 根輪著用）、帶（實心，連骨牌旁邊的間隙一起蓋：左、中、右三塊）、兩個骨牌（website-icons/block.svg，45×70）。位置都由 logo.js 給 */
+  .logo-bars i, .logo-band i, .logo-block { position: absolute; left: calc(var(--u) * var(--x, 0)); top: calc(var(--u) * var(--y, 0)); background: currentColor; }
+  .logo-bars i { width: calc(var(--u) * 20); height: calc(var(--u) * var(--logo-stroke-vb-h)); opacity: 0; }
+  .logo-band i { width: calc(var(--u) * var(--w, 0)); height: calc(var(--u) * var(--h, 0)); }
+  .logo-block {
+    width: calc(var(--u) * 45);
+    height: calc(var(--u) * var(--logo-stroke-vb-h));
+    -webkit-mask: url('../website-icons/block.svg') center / 100% 100% no-repeat;
+            mask: url('../website-icons/block.svg') center / 100% 100% no-repeat;
+  }
+  /* 右圖 object 的名字：一行、上下置中在 stroke 的高裡；字的大小照系名那張圖（英文大寫高 25、中文一個字約 30） */
+  .logo-word {
+    position: absolute;
+    left: calc(var(--u) * var(--x, 0));
+    top: calc(var(--u) * var(--logo-stroke-vb-h) / 2);
+    transform: translateY(-50%);
+    font-size: calc(var(--u) * 34.2);
+    line-height: 1;
+    white-space: nowrap;
+    text-transform: uppercase;
+    opacity: 0;
+  }
+  .logo-word.is-zh { font-size: calc(var(--u) * 29.85); font-weight: var(--font-weight-medium); }
+  .logo-ruler { left: 0; visibility: hidden; pointer-events: none; }
   /* 矩形中央白圓點＝骨牌的圓孔（直徑＝高的 20/70，同 block.svg）：底列 menu 鈕在選單打開時才現 */
   .bar-rect::after {
     content: '';

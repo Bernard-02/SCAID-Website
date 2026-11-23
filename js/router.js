@@ -5,6 +5,7 @@
 
 import { initPageModules, cleanupPageModules } from './main.js';
 import { closeOverlays } from './modules/ui/chrome.js';
+import { logoToStroke, logoPage } from './modules/ui/logo.js';
 import { SITE_BASE_PATHNAME, sitePath } from './modules/ui/site-base.js';
 import { DUR } from './modules/ui/motion.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
@@ -93,6 +94,8 @@ async function loadPage(route, search = '', fromUserNav = false) {
     // 選單開著點連結：先收選單（內容滑回原位，--dur-medium），收完才淡出（user 2026-11-18）。fetch 先發不等。
     // 內容裡的連結：chrome.js 在 pointerdown 就把選單收了，click 進來時 class 已沒了但內容還在滑 → 看 transform 還沒回 0 也等
     const fetching = fetch(sitePath(route.htmlFile));
+    // 離開首頁：logo 停止來回，正好是文字版就先變回 stroke 才換頁（user 2026-11-22；logo.js）。跟下面的收選單、淡出並行
+    const strokeFirst = document.body.dataset.page === 'index' && route.page !== 'index' ? logoToStroke() : null;
     const shifted = Math.abs(new DOMMatrix(getComputedStyle(main).transform).m41) > 0.5;
     if (root.classList.contains('menu-open') || shifted) {
       // 去內頁：只收選單、首頁展開的動態先不收（user 2026-11-21）——動態開著時 logo 已經在頂，這裡收了它會先回畫面中間、換頁再上移一次；
@@ -106,7 +109,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
     const logoFirst = document.body.dataset.page === 'index' && route.page !== 'index' && !root.classList.contains('news-open') && !prefersReducedMotion();
     if (logoFirst) main.style.transition = 'none';
     root.classList.add('page-leaving');
-    const [res] = await Promise.all([fetching, wait(prefersReducedMotion() || logoFirst ? 0 : DUR.fade * 1000)]);
+    const [res] = await Promise.all([fetching, wait(prefersReducedMotion() || logoFirst ? 0 : DUR.fade * 1000), strokeFirst]);
     if (isStale()) return;
     if (!res.ok) throw new Error(`Failed to load ${route.htmlFile}`);
     const html = await res.text();
@@ -124,6 +127,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
     main.className = newMain.className || '';
     document.body.dataset.page = route.page;
     current = { page: route.page, search };
+    logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（邊上移邊換）
     initPageModules(route.page, new URLSearchParams(search), fromUserNav);
     if (fromUserNav) announceAndFocusMain(main);
     if (logoFirst) {

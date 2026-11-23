@@ -70,6 +70,7 @@
      設計重出圖、viewBox 變了＝只改這兩個（煙霧測試直接讀 SVG 檔比對）。比例對不上的話圖會縮在框裡、看起來比動態窄 */
   --logo-vb-w: 1042.02;
   --logo-vb-h: 115.88;
+  --logo-stroke-vb-h: 70;   /* images/Logo Stroke.svg（內頁那版、沒字）的 viewBox 高；寬要跟上面同一個（兩版的骨牌才疊得齊） */
   /* logo 兩端那顆骨牌（Logo Text.svg：骨牌高 70）：底列 menu 鈕同大（user 2026-11-18）。
      所有 hover／選中的圓點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18） */
   --block-h: calc(var(--logo-w) * 70 / var(--logo-vb-w));
