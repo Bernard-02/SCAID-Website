@@ -77,11 +77,11 @@
 
   /* ===== Layout ===== */
   --spacing-gutter: 1rem;      /* .site-grid gap（Tailwind gap-gutter） */
-  --container-padding: 1rem;    /* .site-container 左右 */
+  --container-padding: 1rem;    /* .site-container 左右：照 Apple iOS 的 layout margin（user 2026-11-22）＝一般 iPhone 16、大尺寸 20（下面 ≥414） */
   --top-h: 6rem;                /* 頂部 logo 鎖定版區高（chrome.css .site-logo，頂到最頂）：#page-content padding-top */
   --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
-  --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊 */
+  --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
   --logo-w: calc(100vw - 2 * var(--container-padding));   /* 全站 logo 寬（chrome.css .site-logo）：手機扣左右內距吃滿 */
   --thumb-w: 2rem;              /* 手機內頁右緣的右圖縮圖鈕邊長（chrome.css .figure-btn） */
@@ -126,6 +126,11 @@
 }
 
 /* ===== 桌面 ≥768 ===== */
+/* ===== 大尺寸手機 ≥414（iPhone Plus／Max）：左右內距 20（Apple 的 layout margin；user 2026-11-22）。要寫在 ≥768 前面＝桌面蓋得掉 ===== */
+@media (min-width: 414px) {
+  :root { --container-padding: 1.25rem; }
+}
+
 @media (min-width: 768px) {
   :root {
     --font-size-lg: 2rem;       /* 32px（user 2026-11-21，原本 1.6rem） */

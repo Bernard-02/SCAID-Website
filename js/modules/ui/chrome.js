@@ -7,6 +7,7 @@ import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 
 const html = document.documentElement;
+const phoneMenu = matchMedia('(max-width: 767px)');   // ＝chrome.css 手機全螢幕選單那段的斷點
 
 function setExpanded(sel, open) {
   document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-expanded', String(open)));
@@ -191,6 +192,8 @@ export function initChrome() {
     if (t.closest('#figure-dialog')) { closeFigure(); return; }   // 放大後點任何地方都關（X 也是）
     // 點選單連結：這裡不收，交給 router.js loadPage 先收選單、收完才淡出換頁（user 2026-11-18）；修飾鍵另開分頁的不路由＝選單留著
     if (t.closest('.site-menu a')) return;
+    // 手機選單全螢幕（chrome.css，user 2026-11-22）：點選單的空白處＝收選單。用 click 不用 pointerdown：拖著捲選單不會觸發
+    if (t.closest('.site-menu') && !t.closest('button') && phoneMenu.matches) { setMenu(false); return; }
     // 首頁：動態原地展開、不走 router（preventDefault → router 看到 defaultPrevented 放行）
     // 選單開著時動態是糊掉的內容（chrome.css，user 2026-11-21）：點它＝第一下只收選單、不展開／收合（同右邊內容）。
     // 滑鼠點不到它（不吃指標，下面 pointerdown 那條收）；這裡接的是沒經過聚焦的 click（程式、輔助科技）

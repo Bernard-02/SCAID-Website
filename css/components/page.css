@@ -35,7 +35,7 @@
   .section-nav { transition: var(--transition-fade), visibility 0s; }
   html.menu-open .section-nav { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   .section-nav {
-    @apply text-s md:text-md;
+    @apply text-md;
     grid-area: 1 / 1;          /* 明確放 col 1 row 1：詳細頁的返回鈕也在這格，不能被自動排擠到別欄 */
     position: sticky;
     --dot-pad: 0.25em;         /* 一格上下內距（.section-nav-dot）；錨點上移這麼多＝矩形本身對齊 h1 */
@@ -76,7 +76,7 @@
      圖示＝反過來的 play（朝左三角，HTML 掛 icon-play rotate-180；user 2026-11-18），大小同底列的 play 鈕。
      字級同段落導覽、左緣對齊導覽矩形（＝menu 鈕）；padding＋負 margin＝點擊範圍放大但 icon 位置不動 */
   .back-btn {
-    @apply text-s md:text-md;
+    @apply text-md;
     --pad: 0.5em;
     grid-area: 1 / 1;
     justify-self: start;
@@ -230,7 +230,7 @@
   .album-strip::-webkit-scrollbar { display: none; }
   .album-strip > button { flex: none; display: block; height: var(--album-h); background: var(--light-gray); cursor: zoom-in; scroll-snap-align: start; }   /* 只管圖，chevron 是 .album 直接的子 button */
   .album-strip img { display: block; height: 100%; width: auto; }
-  .album-chev { @apply text-s md:text-md; display: none; flex: none; align-items: center; justify-content: center; }
+  .album-chev { @apply text-md; display: none; flex: none; align-items: center; justify-content: center; }
   .album-chev .icon { font-size: 1.25em; }
   .album.has-chev .album-chev { display: flex; }
   .album-prev { order: -1; }

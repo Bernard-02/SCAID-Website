@@ -1,7 +1,7 @@
 /* Container 與版面 grid（手機優先） */
 
 @layer components {
-  /* 左右 --container-padding（手機 16 / 桌面 60） */
+  /* 左右 --container-padding（手機 16、≥414 大尺寸手機 20 / 桌面 60；照 Apple） */
   .site-container {
     @apply w-full px-container-padding mx-auto;
   }

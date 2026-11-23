@@ -138,7 +138,7 @@
   }
   html.menu-open .site-menu { transform: none; opacity: 1; filter: none; }
   .site-menu-nav {
-    @apply text-s md:text-md;
+    @apply text-md;   /* 手機比照 PC 用同一階（user 2026-11-22，原本手機 s）：手機多大＝調 variables.css 的手機 md，不另開字級 */
     min-height: 100%;
     display: flex;
     flex-direction: column;
@@ -179,7 +179,7 @@
      兩側等寬（--side-min＝左欄內容寬，chrome.js fitBar 量）＝動態永遠畫面正中；
      中欄最寬 --col-w（＝首頁動態圖片寬），側邊名字出來放不下時才縮中欄 ── */
   .site-bar {
-    @apply text-s md:text-md;
+    @apply text-md;
     position: fixed;
     left: 0;
     right: 0;
@@ -252,6 +252,15 @@
   html.menu-open .bar-blur > i, html.menu-open .bar-blur::after { opacity: 1; visibility: visible; transition: opacity var(--dur-medium) var(--ease-wipe), visibility 0s; }
   html.menu-open .bar-blur::after { opacity: 0.6; }
   html.menu-open .menu-btn { min-width: calc(var(--menu-w) - var(--container-padding) - var(--bar-gap)); }
+  /* 手機選單＝全螢幕（user 2026-11-22；桌面照舊左邊一欄）：選單吃滿畫面、內容不右推（原地模糊＋疊白，選單直接疊在上面）；
+     menu 鈕不撐（沒有選單右緣可對，play 留在原位）；鈕背後的毛玻璃拉到畫面右緣（選項整排都會捲過底列）。
+     點選單的空白處＝收選單（chrome.js；原本點右邊內容收，那塊現在被選單蓋住） */
+  @media (max-width: 767px) {
+    .site-menu { width: 100%; }
+    html.menu-open { --shift: 0px; }
+    html.menu-open .menu-btn { min-width: 0; }
+    .bar-blur { width: 100vw; }   /* left 已貼畫面左緣 → right 被忽略、右緣＝畫面右緣 */
+  }
 
   /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊內容右內距、上下在畫面中線
      （＝桌面右圖那條水平線；手機沒有自製捲軸，z 同捲軸），點了開 .figure-dialog 放大（桌面右圖在 main 裡，page.css .page-figure；HTML 掛 md:hidden）。
@@ -372,7 +381,7 @@
   .figure-dialog-body > img { display: block; width: auto; height: auto; max-width: calc(100vw - 2 * var(--container-padding)); max-height: calc(100svh - var(--top-h) - var(--bar-h)); }
   /* 控制列 ‹ X ›（user 2026-11-18；原本是底列那種矩形鈕）：畫面正中、底貼 --bar-pad、高同底列那一行（同底列的排法）。
      只有一張（右圖、封面）時左右不出（.has-nav 由 chrome.js 依張數標）；到頭的那邊半透明 */
-  .figure-nav { @apply text-s md:text-md; position: absolute; left: 50%; bottom: var(--bar-pad); transform: translateX(-50%); display: flex; align-items: center; gap: var(--spacing-md); height: max(1.5em, var(--block-h)); }
+  .figure-nav { @apply text-md; position: absolute; left: 50%; bottom: var(--bar-pad); transform: translateX(-50%); display: flex; align-items: center; gap: var(--spacing-md); height: max(1.5em, var(--block-h)); }
   .figure-nav button { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; }
   .figure-nav :is(.figure-prev, .figure-next) .icon { font-size: 1.25em; }   /* play icon，大小同底列 play 鈕（user 2026-11-19） */
   .figure-dialog:not(.has-nav) :is(.figure-prev, .figure-next) { display: none; }
