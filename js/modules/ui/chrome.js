@@ -5,6 +5,7 @@
  */
 import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
+import { syncObject, openObject, closeObject } from './object.js';
 
 const html = document.documentElement;
 const phoneMenu = matchMedia('(max-width: 767px)');   // ＝chrome.css 手機全螢幕選單那段的斷點
@@ -91,20 +92,26 @@ function openIntro(btn) {
   dialog.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); }, { once: true });
 }
 
-// 內頁右圖的手機版（user 2026-11-13；chrome.css .figure-btn／.figure-dialog）：桌面右圖在 main 裡，手機是畫面右緣中線上的縮圖鈕、點了開 dialog 放大。
-// 縮圖與放大的內容＝當頁 .page-figure 內容的複本 → 換頁（main.js initPageModules）、header 片段注入後都要 sync；
-// 之後接 Directus 把右圖換掉時也要再呼叫一次。該頁沒圖（首頁）＝鈕不現身
+// 內頁的右圖＝殼上的 object 畫布（user 2026-11-22；object.js）。桌面：疊在當頁右圖那一格（page.css .page-figure）上；
+// 手機（user 2026-11-13 的縮圖鈕；2026-11-22 改成 object 可以打開、關閉）：畫面右緣中線上的鈕，點了開 dialog、把畫布搬進去，關掉搬回來。
+// 換頁（main.js initPageModules）、header 片段注入後都要 sync：畫布重找這一頁的那一格；該頁沒有右圖（首頁）＝鈕不現身
 const figureDialog = () => /** @type {HTMLDialogElement | null} */ (document.getElementById('figure-dialog'));
 export function syncFigure() {
   const btn = document.querySelector('.figure-btn'), dialog = figureDialog();
   if (!btn || !dialog) return;   // header 片段還沒注入
   if (dialog.open) dialog.close();   // 開著時換頁（上一頁／下一頁）
-  const src = document.querySelector('#page-content .page-figure > *');
-  btn.classList.toggle('has-figure', !!src);
+  btn.classList.toggle('has-figure', !!document.querySelector('#page-content .page-figure'));
   dialog.classList.remove('has-nav');
-  for (const box of [btn.querySelector('.figure-thumb'), dialog.querySelector('.figure-dialog-body')]) {
-    box.replaceChildren(...(src ? [src.cloneNode(true)] : []));
-  }
+  syncObject();
+}
+/** 手機那顆鈕：開 dialog 看 object @param {MouseEvent} e */
+function openObjectDialog(e) {
+  const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
+  if (!dialog || !box) return;
+  figureItems = []; dialog.classList.remove('has-nav');
+  openObject(box);
+  dialog.showModal();
+  if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();   // 同 openFigure：滑鼠／觸控點開的不亮焦點框
 }
 // 開放大 dialog：內容開的時候才放（那個節點的複本）——右緣縮圖鈕＝當頁右圖；動態那則（打開的）點封面縮圖或相簿哪張＝
 // 同一組「封面（第一張）＋相簿」可左右切（user 2026-11-19；原本點封面只有那一張）。多於一張才出 ‹ ›（.has-nav）；到頭的那邊 disabled
@@ -181,7 +188,8 @@ export function initChrome() {
     if (t.closest('.intro-close')) { /** @type {HTMLDialogElement} */ (document.getElementById('intro-dialog')).close(); return; }
     const play = t.closest('.play-btn');
     if (play instanceof HTMLElement) { openIntro(play); return; }
-    if (t.closest('.figure-btn')) { openFigure(document.querySelector('#page-content .page-figure > *'), e); return; }
+    if (t.closest('.figure-btn')) { openObjectDialog(e); return; }
+    if (t.closest('.object-canvas')) return;   // dialog 裡的 object：點它＝露出名字、拖＝轉視角（object.js），不算「點任何地方都關」
     if (t.closest('.figure-prev')) { stepFigure(-1); return; }
     if (t.closest('.figure-next')) { stepFigure(1); return; }
     const shot = t.closest('.album button');
@@ -212,6 +220,8 @@ export function initChrome() {
     e.preventDefault(); e.stopPropagation();
     openFigure(img, e, galleryOf(cover));
   }, true);
+  // 放大 dialog 關了（X、點旁邊、Esc、換頁）：object 的畫布搬回殼上。close 不冒泡 → 用 capture 接
+  document.addEventListener('close', (e) => { if (e.target === figureDialog()) closeObject(); }, true);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeOverlays();
     // 放大 dialog 開著：左右鍵切上一張／下一張
@@ -222,7 +232,7 @@ export function initChrome() {
   // 選單開著內容不吃指標（chrome.css，user 2026-11-21）→ 按在右邊時 target 是 body／html；連結也點不到＝第一下真的只收選單。
   // 首頁底列的動態也算內容（同樣不吃指標）→ 按在它上面時 target 是底列本身（.site-bar；底列的空白處一起算，那裡也在選單外）
   const inContent = (/** @type {Event} */ e) => e.target === document.body || e.target === html
-    || (e.target instanceof Element && (e.target.matches('.site-bar') || !!e.target.closest('#page-content, .bar-news')));
+    || (e.target instanceof Element && (e.target.matches('.site-bar') || !!e.target.closest('#page-content, .bar-news, .object-canvas')));
   // 選單那一欄不算內容：target 在 .site-menu 裡，或指標 x 在選單右緣左邊（選單透明、空隙處事件會穿到底下的內容）
   const inMenuColumn = (/** @type {Event} */ e) => {
     if (e.target instanceof Element && e.target.closest('.site-menu')) return true;

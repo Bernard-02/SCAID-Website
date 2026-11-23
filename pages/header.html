@@ -17,6 +17,11 @@
     <span class="logo-block" aria-hidden="true"></span><span class="logo-block" aria-hidden="true"></span>
   </a>
 
+  <!-- 右圖的 object（user 2026-11-22；js/modules/ui/object.js）：一個 3D 模型用同一種 stroke 的疏密排出來，定時換下一個。
+       放在殼上＝換頁不重來。桌面：固定疊在當頁右圖那一格（page.css .page-figure，那一格只是佔位置）；
+       手機：平常不出，點右緣那顆鈕才搬進放大 dialog 裡 -->
+  <canvas class="object-canvas" role="img" aria-label=""></canvas>
+
   <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->
   <div class="site-menu no-scrollbar" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單">
     <nav class="site-menu-nav">
@@ -72,9 +77,9 @@
     </a>
   </div>
 
-  <!-- 手機：內頁右圖的縮圖鈕（user 2026-11-13 手機稿；桌面右圖在 main 裡，page.css .page-figure）。固定在畫面右緣「捲軸那一塊」、
-       上下在畫面中線，右緣對齊內容右內距；點了開 #figure-dialog 放大。
-       縮圖與放大的內容由 chrome.js syncFigure 從當頁 .page-figure 複製，該頁有圖才標 .has-figure 現身 -->
+  <!-- 手機：右圖 object 的開關（user 2026-11-13 手機稿；2026-11-22 改成 object 可以打開、關閉、不常駐）。固定在畫面右緣「捲軸那一塊」、
+       上下在畫面中線，右緣對齊內容右內距；點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）。
+       鈕上畫的是幾根 stroke 圍成的圓（chrome.css .figure-thumb）；該頁有右圖那一格才標 .has-figure 現身 -->
   <button type="button" class="figure-btn md:hidden" aria-haspopup="dialog">
     <span class="figure-thumb" aria-hidden="true"></span><span data-label="common.view-image" class="sr-only" data-en="View image">看圖片</span>
   </button>

@@ -10,6 +10,7 @@ import { runPageCleanups } from './modules/ui/page-cleanup.js';
 import { installReducedMotionGsap } from './modules/ui/reduce-motion.js';
 import { initChrome, closeOverlays, fitBar, syncFigure, syncTheme } from './modules/ui/chrome.js';
 import { initLogo } from './modules/ui/logo.js';
+import { initObject } from './modules/ui/object.js';
 import { initLang, applyLang } from './modules/ui/lang.js';
 import { initCustomScrollbar } from './modules/ui/custom-scrollbar.js';
 import { initGridOverlay } from './modules/ui/grid-overlay.js';
@@ -61,7 +62,7 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   initSectionNav();     // 內頁段落導覽
   initSlideshow();      // 段落圖片輪播（有 .slideshow 的頁）
   initAlbums();         // 相簿一排橫捲＋chevron（有 .album 的頁）
-  syncFigure();         // 手機：右緣縮圖鈕換成這一頁的右圖（先於 applyLang：複本也要套語言）
+  syncFigure();         // 右圖的 object：畫布重找這一頁右圖那一格；手機右緣那顆鈕看這一頁有沒有右圖
   applyLang();          // 新換進來的內容若有 data-zh 也套語言
   // ── 後台（Directus，user 2026-11-21 全站接上）：抓不到／還沒填＝留 HTML 的示意 ──
   applyUiLabels(document.getElementById('page-content') || document);   // 介面文字（頁名、固定小標）
@@ -85,6 +86,7 @@ initThumbBoard();       // 清單列的圖片：hover 浮一塊流動的中空�
 loadPartial('site-header', 'pages/header.html').then(() => {
   updateNavActive(); syncFigure(); syncTheme(); applyLang(); fitBar();
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
+  initObject();          // 右圖的 object（殼上的畫布；模型清單載到才開始）
   initLogo();            // logo 的進場動畫：演完才把其他東西放出來（html.is-intro，各頁 <head> 的 inline script 先掛上）
   import('./modules/pages/cms-pages.js').then(m => m.loadBarNews());     // 底列動態跑馬燈＝後台最近幾則
 });

@@ -324,9 +324,38 @@
   .figure-btn.has-figure { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   html:is(.menu-open, .page-leaving) .figure-btn { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   .figure-btn::before { content: ''; position: absolute; inset: calc(var(--spacing-xs) * -1); }   /* 可點範圍往外撐，畫面不變 */
-  .figure-thumb { display: block; width: 100%; height: 100%; overflow: hidden; }
-  /* 複本縮成方形縮圖：圖片裁切填滿；佔位的字藏掉只留灰底 */
-  .figure-thumb > * { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--light-gray); font-size: 0; }
+  /* 鈕上的圖：幾根 stroke 圍成的圓（直條紋＋圓形遮罩）＝「點了會出現一個 stroke 排出來的東西」。純 CSS：object 沒打開時不跑、不載模型 */
+  .figure-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(90deg, currentColor 0 10%, transparent 10% 22.5%);
+    -webkit-mask: radial-gradient(circle closest-side, #000 96%, transparent 100%);
+            mask: radial-gradient(circle closest-side, #000 96%, transparent 100%);
+  }
+
+  /* ── 右圖的 object（user 2026-11-22；object.js）：一張畫布放在殼上，換頁不重來。
+     桌面：fixed，位置大小由 object.js 每一幀照當頁右圖那一格（page.css .page-figure > *）擺——選單開著那一格縮小、移位，它跟著走。
+     該頁沒有右圖（首頁）＝淡掉。手機：平常不出，右緣那顆鈕點了才搬進放大 dialog（下面 .figure-dialog-body 那條），關掉搬回來。
+     z 在內容上、logo 下；顏色吃 --theme-fg ── */
+  .object-canvas {
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    top: 0;
+    color: var(--theme-fg);
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(var(--blur));
+    transition: var(--transition-fade), visibility 0s var(--dur-fade);
+    touch-action: none;   /* 拖＝轉視角（object.js），不捲頁面 */
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .object-canvas.is-dragging { cursor: grabbing; }
+  .object-canvas.is-on { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
+  .figure-dialog-body > .object-canvas { position: static; background: none; opacity: 1; visibility: visible; filter: none; }
 
   /* 動態（首頁）：中欄＝跑馬燈——好幾則標題排成一排一直跑、左右兩端淡掉（user 2026-11-21；原本只放最新一則、放不下才跑）。
      跑馬燈＋「＋」一起＝中欄＝--col-w＝logo 寬：跑馬燈在左、＋在右端（右緣對齊 logo 右緣）
@@ -413,7 +442,7 @@
   }
   .figure-dialog::backdrop { background: none; }
   .site-bar { transition: var(--transition-fade); }
-  html:has(#figure-dialog[open]:not(.is-closing)) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb) { filter: blur(var(--blur)); opacity: 0.4; }
+  html:has(#figure-dialog[open]:not(.is-closing)) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb, .site-chrome > .object-canvas.is-on) { filter: blur(var(--blur)); opacity: 0.4; }
   .figure-dialog[open] { display: flex; align-items: center; justify-content: center; animation: fade-in var(--dur-fade) var(--ease-standard); }
   .figure-dialog.is-closing { opacity: 0; filter: blur(var(--blur)); }
   /* 放大的右圖（灰底佔位那種）：方形，寬＝內容寬，矮畫面（橫拿）改吃可用高。樣子同桌面右圖（page.css .page-figure > *）。

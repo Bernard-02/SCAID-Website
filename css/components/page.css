@@ -260,8 +260,9 @@
   /* 封面縮圖有圖就鋪滿（動態；打開那則點它放大） */
   .item-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-  /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。TODO 圖片待 user 給，現在是灰底佔位。
-     手機不出（HTML 掛 hidden md:block）：內容被複製到右緣縮圖鈕與放大 dialog（chrome.js syncFigure）→ 放大那份吃同一個樣子。
+  /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。
+     2026-11-22 起右圖＝殼上的 object 畫布（chrome.css .object-canvas、object.js）：這一格只負責「佔位置」，看不到（下面 visibility: hidden），
+     畫布每一幀照它的位置大小擺。手機不出（HTML 掛 hidden md:block）：改由右緣那顆鈕把畫布搬進放大 dialog，畫布在裡面吃同一個方形。
      水平位置（user 2026-11-19）＝「內容區右緣～畫面右緣（100vw）」那段空間的正中：wrapper 佔 col 8–12，左邊用負 margin 吃掉一個 gutter
      （＝從 col 7 右緣起）、右邊負 margin 吃掉容器內距（＝到 100vw），圖在 wrapper 裡 margin auto 置中；圖本身仍是 4 欄寬的方形 */
   .page-figure { position: sticky; top: 50%; height: 0; align-self: start; margin-left: calc(-1 * var(--spacing-gutter)); margin-right: calc(-1 * var(--container-padding)); }
@@ -273,6 +274,7 @@
     justify-content: center;
     background: var(--light-gray);
   }
+  .page-figure > * { visibility: hidden; }   /* 只佔位置：畫的是殼上的 object 畫布 */
   /* 選單開著內容整個右推 --shift（chrome.css #page-content）→ 剩餘空間（內容右緣～100vw）跟著少掉 shift，它的正中往右移 shift/2：
      右圖反向位移 −shift/2（抵銷一半的右推）＝中心跟著新空間重新置中，同時寬少掉 --shift（方形，高跟著縮）＝兩邊留白跟原本一樣寬
      （user 2026-11-19；原本是右緣不動）；位移與寬的過場跟右推同一組時長與曲線 → 全程都在當下那段空間的正中。
