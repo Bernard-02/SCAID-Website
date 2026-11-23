@@ -1,29 +1,34 @@
-/* 背景（user 2026-11-21）：畫布（筆跡）＜ 中空板 ＜ 內文。三層包在 .bg 裡，由 js/modules/ui/bg.js 放進 <body> 最前面：
+/* 背景（user 2026-11-21）：畫布（筆跡）＜ 中空板 ＜ 內文。兩層包在 .bg 裡，由 js/modules/ui/bg.js 放進 <body> 最前面：
    固定滿版、不吃指標、z -1＝在所有內容後面。由下往上：
-   .bg-ink 畫布（炭筆筆跡，已經是隔著板子看的樣子：糊＋每一格折射錯位）→ .bg-board 中空板 →
-   .bg-lid 蓋板（底色蓋住板子，bg.js 在筆跡周圍挖洞＝板子只在筆跡周圍出現、跟著筆跡消失） */
+   .bg-ink 畫布（炭筆筆跡，已經是隔著板子看的樣子：糊＋每一格折射錯位）→ .bg-board 中空板本身（格線、反光）。
+   板子是下筆的當下才生出來的、一塊一塊各有各的格（user 2026-11-22）；兩張都只在筆跡周圍有東西、跟著筆跡消失 */
 
 @layer components {
   body { isolation: isolate; }   /* body 自己一個 stacking context：z -1 的幾層才會在 body 底色上面、不是掉到它後面 */
   .bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; transition: var(--transition-fade); }
   .bg > * { position: absolute; inset: 0; width: 100%; height: 100%; }
-  /* 選單或放大 dialog 開著：背景當內容處理（同 chrome.css #page-content 那兩條：模糊＋疊 60% 白）；bg.js 這段也不畫新的筆跡
-     （user 2026-11-21：原本照樣清楚地畫，糊掉的內容襯著看起來像浮在內容上面）。selector 的寫法同 chrome.css .top-blur::after 那條 */
+  /* 選單或放大 dialog 開著：背景當內容處理（同 chrome.css #page-content 那兩條：模糊＋疊 60% 白；
+     user 2026-11-21：原本照樣清楚地畫，糊掉的內容襯著看起來像浮在內容上面）。選單開著照樣可以畫（user 2026-11-22），
+     畫出來的筆跡也是這個樣子；dialog 開著 bg.js 不畫新的。selector 的寫法同 chrome.css .top-blur::after 那條 */
   html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .bg { filter: blur(var(--blur)); opacity: 0.4; }
   /* 深色模式／語言切換的 View Transition：.bg 刻意留在整張截圖裡、不掛 view-transition-name（CLAUDE.md「會自己動的東西」那條的例外）。
-     具名的群組畫在 root 上面＝不透明的蓋板把整個畫面蓋住；壓到 root 底下又被不透明的 root 截圖擋掉。
+     具名的群組畫在 root 上面＝不透明的畫布把整個畫面蓋住；壓到 root 底下又被不透明的 root 截圖擋掉。
      切換鈕都在選單裡（背景已經糊＋0.4），舊截圖那 0.4 秒靜止看不出來 */
-  /* 強制色彩（Windows 高對比佈景）：蓋板是白色點陣、不會換成系統色 → 不放（bg.js 開機也不建）；列印也不要 */
+  /* 強制色彩（Windows 高對比佈景）：畫布是白底點陣、不會換成系統色 → 不放（bg.js 開機也不建）；列印也不要 */
   @media (forced-colors: active), print { .bg { display: none; } }
 
-  /* --ink-max＝筆跡最濃多黑（0–1）；--frost＝毛玻璃多糊（糊的是整張筆跡；一格一格的錯位比它大得多、看得出來，肋是另一層、不會糊）。
-     三張畫布都畫黑白（bg.js）→ 深色模式整張反過來 */
+  /* --ink-max＝筆跡最濃多黑（0–1）；--frost＝毛玻璃多糊（糊的是整張筆跡；一格一格的錯位比它大得多、看得出來，格線是另一層、不會糊）。
+     兩張畫布都畫黑白（bg.js）→ 深色模式整張反過來 */
   .bg-ink { --ink-max: 0.3; --frost: 1.5px; opacity: var(--ink-max); filter: blur(var(--frost)); }
   :root[data-theme="dark"] .bg-ink { filter: invert(1) blur(var(--frost)); }
-  :root[data-theme="dark"] :is(.bg-board, .bg-lid) { filter: invert(1); }
+  :root[data-theme="dark"] .bg-board { filter: invert(1); }
 
-  /* 中空板（PC 陽光板）＝透明毛玻璃（user 2026-11-21），bg.js 畫：一格一格的中空管，格寬有大有小、平均＝logo 的骨牌寬
-     （user 2026-11-21；每一格是骨牌寬的 INK.vary 倍）。--board-pitch 只給 bg.js 讀（註冊成長度＝讀到的是算好的 px） */
-  .bg-board { --board-pitch: calc(var(--block-h) * 45 / 70); }
+  /* 中空板（PC 陽光板）＝透明毛玻璃（user 2026-11-21），bg.js 畫：一格一格的中空管，格寬有大有小、平均＝logo 的骨牌寬 × INK.cell
+     （user 2026-11-21 定骨牌寬、2026-11-22 再大一點＝1.5 倍；每一格是平均的 INK.vary 倍），每一塊板子各抽各的、而且一直在變
+     （user 2026-11-22；INK.drift）。--board-pitch＝骨牌寬，只給 bg.js 讀（註冊成長度＝讀到的是算好的 px）。
+     --board-max＝板子本身（格線、反光、管壁的暗面）多明顯（0–1）。現在 0＝看不到板子、只留它對筆觸的效果（模糊＋折射的錯位）
+     （user 2026-11-22：先調淡成 0.3，再來試整個拿掉；要放回來改這個數字就好，bg.js 照樣在畫）。
+     這張畫布直的方向只有畫面的 1/8（板子的範圍是一團柔邊）、橫的照螢幕密度 */
+  .bg-board { --board-pitch: calc(var(--block-h) * 45 / 70); --board-max: 0; opacity: var(--board-max); }
 }
 @property --board-pitch { syntax: '<length>'; inherits: false; initial-value: 0px; }

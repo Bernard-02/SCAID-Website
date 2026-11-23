@@ -236,14 +236,21 @@
   .menu-btn { position: relative; justify-content: flex-start; min-width: 0; transition: min-width var(--dur-medium) var(--ease-wipe); }
   /* 選單鈕背後的毛玻璃（user 2026-11-21）：同 logo 那塊（.top-blur，上面；header.html 一樣 6 層 <i>）。畫面矮、選單放不下時選項會捲到
      選單鈕底下 → 靠近就漸進模糊＋疊半透明底色，不跟鈕和名字打架。範圍＝鈕（選單開著撐成選單欄那格）往上、往右各外擴 --f 並羽化，
-     左、下到畫面邊（不用羽化）。只在選單開著／收回去那段出現；平常沒有東西會捲到鈕底下 */
-  .bar-blur { display: none; inset: calc(-1 * var(--f)) calc(-1 * var(--f)) calc(-1 * var(--bar-pad)) calc(-1 * var(--container-padding)); }
-  html:is(.menu-open, .menu-closing) .bar-blur { display: block; }
+     左、下到畫面邊（不用羽化）。只在選單開著／收回去那段出現；平常沒有東西會捲到鈕底下。
+     **跟選單一起淡入淡出**（user 2026-11-22；時長／曲線同選單的 fade）：原本是 display 直接開關——鈕後面以前是白的、看不出來，
+     有了背景的筆跡之後（游標按鈕時就停在這裡、筆跡最濃）變成左下角一塊模糊「啪」地出現、收選單後又「啪」地消失。
+     淡的是每一層自己的 opacity：掛在 .bar-blur 上它會變成 backdrop root（同上面遮罩那條），裡面幾層就糊不到底下。
+     收著＝visibility hidden（不畫＝不花 backdrop-filter 的力氣），淡完才藏 */
+  .bar-blur { inset: calc(-1 * var(--f)) calc(-1 * var(--f)) calc(-1 * var(--bar-pad)) calc(-1 * var(--container-padding)); }
   .bar-blur > i, .bar-blur::after {
     --mx: linear-gradient(to right, #000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
     --my: linear-gradient(transparent var(--a), #000 var(--b));
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-medium) var(--ease-wipe), visibility 0s var(--dur-medium);
   }
-  .bar-blur::after { opacity: 0.6; }
+  html.menu-open .bar-blur > i, html.menu-open .bar-blur::after { opacity: 1; visibility: visible; transition: opacity var(--dur-medium) var(--ease-wipe), visibility 0s; }
+  html.menu-open .bar-blur::after { opacity: 0.6; }
   html.menu-open .menu-btn { min-width: calc(var(--menu-w) - var(--container-padding) - var(--bar-gap)); }
 
   /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊內容右內距、上下在畫面中線
