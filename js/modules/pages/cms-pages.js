@@ -43,13 +43,13 @@ async function list(collection, query) {
     return Array.isArray(data) && data.length ? data : null;
   } catch (e) { console.warn(`[${collection}] 後台抓不到，維持示意：`, e instanceof Error ? e.message : e); return null; }
 }
-/** 文字頁（pages，slug＝route）：導言＋段落；沒有那一頁＝null @param {string} slug @param {boolean} sections */
-async function pageRow(slug, sections) {
-  const S = 'sections.sort,sections.title_zh,sections.title_en,sections.body_zh,sections.body_en,' + FILE('sections.images');
-  try {
-    return await fetchCmsJson(`${CMS_API_BASE}/pages/${encodeURIComponent(slug)}?fields=lead_zh,lead_en${sections ? ',' + S + '&deep[sections][_filter][status][_eq]=published&deep[sections][_sort]=sort' : ''}`);
-  } catch { return null; }   // 還沒建那一頁＝留示意（Directus 對不存在的那筆也回 403）
+/** 每頁一個單例（關於、捐款、規章、師資頁、合作企業頁；user 2026-11-22 照 SCCD）；抓不到＝null @param {string} collection @param {string} fields */
+async function single(collection, fields) {
+  try { return await fetchCmsJson(`${CMS_API_BASE}/${collection}?fields=${fields}`); }
+  catch (e) { console.warn(`[${collection}] 後台抓不到，維持示意：`, e instanceof Error ? e.message : e); return null; }
 }
+/** 段落有幾段（關於＝子集合、其他＝重複列，都是陣列；還沒填＝null） @param {any} p */
+const sectionsOf = (p) => Array.isArray(p?.sections) ? p.sections.filter((/** @type {any} */ s) => s?.title_zh || s?.title_en || s?.body_zh || s?.body_en) : [];
 
 /** 段落內文（WYSIWYG）只留這幾種標籤；其他拆掉留字。連結只放行 http(s)／mailto／tel，外連另開新視窗。
  *  class 只留間距／附註那幾個（示意內容從 HTML 搬過去時帶著；後台編輯器不會自己加） */
@@ -211,32 +211,38 @@ async function press() {
   await refresh();
 }
 
-// ── 規章與政策：規章依分類分段（整列外連：檔案優先、沒有就連結；都沒有＝不能點）＋文字段落（pages 的 regulations：使用條款、隱私權政策） ──
+// ── 規章與政策（單例 regulations）：規章、表單（重複列 items）依分類分段、整列外連（只放 http(s)，沒有＝不能點；副標一行一個）＋文字段落（使用條款、隱私權政策） ──
 async function regulations() {
-  const [rows, page] = await Promise.all([list('regulations', 'sort=sort&limit=-1&fields=sort,category_zh,category_en,title_zh,title_en,subtitles,file,url'), pageRow('regulations', true)]);
+  const page = await single('regulations', 'items,sections');
   const art = article();
-  if (!art?.isConnected) return;
+  if (!page || !art?.isConnected) return;
   const isList = (/** @type {Element} */ s) => !!s.querySelector('.item-list');
-  if (rows) replaceSections(art, groups(rows).map(g => `<section class="page-section">${bi('h2', g.zh, g.en, ' class="section-title"')}<ul class="item-list">${g.items.map(r => {
-    const href = r.file ? assetUrl(r.file) : /^https?:\/\//i.test(r.url || '') ? r.url : '';
-    const subs = (Array.isArray(r.subtitles) ? r.subtitles : []).map(x => bi('p', x?.text_zh, x?.text_en)).join('');
-    const head = bi('h3', r.title_zh, r.title_en) + subs;
+  const lines = (/** @type {any} */ s) => String(s || '').split('\n').map(x => x.trim());
+  const items = (Array.isArray(page.items) ? page.items : []).filter((/** @type {any} */ r) => r?.title_zh || r?.title_en), secs = sectionsOf(page);
+  if (items.length) replaceSections(art, groups(items).map(g => `<section class="page-section">${bi('h2', g.zh, g.en, ' class="section-title"')}<ul class="item-list">${g.items.map(r => {
+    const href = /^https?:\/\//i.test(r.url || '') ? r.url : '';
+    const zh = lines(r.subtitles_zh), en = lines(r.subtitles_en);
+    const head = bi('h3', r.title_zh, r.title_en) + Array.from({ length: Math.max(zh.length, en.length) }, (_, i) => bi('p', zh[i], en[i])).join('');
     return href ? `<li><a class="item-row" href="${esc(href)}" target="_blank" rel="noopener">${head}</a></li>` : `<li><div class="item-row">${head}</div></li>`;
   }).join('')}</ul></section>`).join(''), isList);
-  if (page?.sections?.length) replaceSections(art, page.sections.map(textSection).join(''), s => !isList(s));
-  setLead(page);
-  if (rows || page) await refresh();
+  if (secs.length) replaceSections(art, secs.map(textSection).join(''), s => !isList(s));
+  if (items.length || secs.length) await refresh();
 }
 
-// ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業）：pages 的那一筆 ──
+// ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業）：每頁一個單例 ──
+// 關於的段落是子集合（要放輪播圖）、捐款的段落是重複列（JSON）；師資、合作企業只有導言
+const ABOUT_SECTIONS = 'sections.sort,sections.title_zh,sections.title_en,sections.body_zh,sections.body_en,' + FILE('sections.images') + '&deep[sections][_filter][status][_eq]=published&deep[sections][_sort]=sort';
+/** @type {Record<string, [string, string]>} slug → [集合, 導言以外要抓的欄位] */
+const SINGLE = { about: ['about', ABOUT_SECTIONS], donate: ['donate', 'sections'], faculty: ['faculty_page', ''], partners: ['partners_page', ''] };
 /** @param {string} slug */
 async function textPage(slug) {
-  const withSections = slug === 'about' || slug === 'donate';
-  const page = await pageRow(slug, withSections);
+  const [col, more] = SINGLE[slug];
+  const page = await single(col, 'lead_zh,lead_en' + (more ? ',' + more : ''));
   const art = article();
   if (!page || !art?.isConnected) return;
   setLead(page);
-  if (withSections && page.sections?.length) replaceSections(art, page.sections.map(textSection).join(''));
+  const secs = sectionsOf(page);
+  if (secs.length) replaceSections(art, secs.map(textSection).join(''));
   await refresh();
 }
 

@@ -30,15 +30,19 @@ const sort = { field: 'sort', type: 'integer', meta: { hidden: true, interface: 
 const str = (field, label, extra = {}, width = 'half') => ({ field, type: 'string', meta: { interface: 'input', width, translations: zh(label), ...extra }, schema: {} });
 const strEn = (field, label) => str(field, label, { note: EN_NOTE });
 const multi = (field, label, extra = {}) => ({ field, type: 'text', meta: { interface: 'input-multiline', width: 'full', translations: zh(label), ...extra }, schema: {} });
-const rich = (field, label, extra = {}) => ({ field, type: 'text', meta: { interface: 'input-rich-text-html', width: 'full', translations: zh(label), options: { toolbar: ['bold', 'italic', 'h3', 'bullist', 'numlist', 'link', 'removeformat'] }, ...extra }, schema: {} });
+const TOOLBAR = ['bold', 'italic', 'h3', 'bullist', 'numlist', 'link', 'removeformat'];
+const rich = (field, label, extra = {}) => ({ field, type: 'text', meta: { interface: 'input-rich-text-html', width: 'full', translations: zh(label), options: { toolbar: TOOLBAR }, ...extra }, schema: {} });
 const image = (field, label, note) => ({ field, type: 'uuid', meta: { interface: 'file-image', special: ['file'], width: 'half', translations: zh(label), note }, schema: { is_nullable: true } });
-const file = (field, label, note) => ({ field, type: 'uuid', meta: { interface: 'file', special: ['file'], width: 'half', translations: zh(label), note }, schema: { is_nullable: true } });
 const date = (field, label) => ({ field, type: 'date', meta: { interface: 'datetime', width: 'half', translations: zh(label) }, schema: {} });
 const bool = (field, label, text) => ({ field, type: 'boolean', meta: { interface: 'boolean', width: 'half', translations: zh(label), options: { label: text } }, schema: { default_value: false } });
 const dropdown = (field, label, choices) => ({ field, type: 'string', meta: { interface: 'select-dropdown', width: 'half', translations: zh(label), options: { choices }, display: 'labels', display_options: { choices } }, schema: {} });
 const url = (field, label, note) => str(field, label, { note: note || '只接受 https://、mailto:、tel: 開頭' }, 'full');
-// JSON repeater：子欄位都是文字輸入
-const repeater = (field, label, sub, template, note) => ({ field, type: 'json', meta: { interface: 'list', width: 'full', translations: zh(label), note, options: { template, fields: sub.map(([f, name, type]) => ({ field: f, name, type: type || 'string', meta: { field: f, type: type || 'string', interface: type === 'text' ? 'input-multiline' : 'input', width: 'full' } })) } }, schema: {} });
+// JSON repeater：子欄位＝[欄位, 名稱, 種類]；種類 空＝一行、'text'＝多行、'rich'＝段落內文（WYSIWYG）
+const SUB = { text: ['text', 'input-multiline'], rich: ['text', 'input-rich-text-html', { toolbar: TOOLBAR }] };
+const repeater = (field, label, sub, template, note) => ({ field, type: 'json', meta: { interface: 'list', width: 'full', translations: zh(label), note, options: { template, fields: sub.map(([f, name, kind]) => {
+  const [type, iface, options] = SUB[kind] || ['string', 'input'];
+  return { field: f, name, type, meta: { field: f, type, interface: iface, width: 'full', ...(options ? { options } : {}) } };
+}) } }, schema: {} });
 // 副標（師資、合作企業共用同一種列，user 2026-11-21）：標題下面一筆一行、沒填就不出
 const subtitles = repeater('subtitles', '副標', [['text_zh', '副標（中）'], ['text_en', '副標（英）']], '{{text_zh}}', '一筆＝標題下面一行，可拖曳排序；沒填＝只有標題。' + EN_NOTE);
 // 中英成對的「年份／說明」條列（faculty-detail 每段一個）
@@ -65,8 +69,16 @@ const LABEL_CATS = ['選單與頁名', '底列與共用', '師資', '課程', '�
 const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '業界導師', value: 'mentor' }];
 const YEARS = [1, 2, 3, 4].map(n => ({ text: `${'一二三四'[n - 1]}年級`, value: n }));
 
-// ── SPEC：collection → { meta, fields, relations? }。順序有差：庫要排在選它的集合前面、junction 排在它的 parent 後面 ──
+// 單例頁的導言、段落（每頁一個集合，user 2026-11-22 照 SCCD）。段落用重複列；關於的段落要放輪播圖、重複列放不了檔案 → 子集合 about_sections
+const lead = [multi('lead_zh', '導言（中，選填）'), multi('lead_en', '導言（英，選填）', { note: EN_NOTE })];
+const textSections = repeater('sections', '段落', [['title_zh', '段落標題（中）'], ['title_en', '段落標題（英）'], ['body_zh', '內文（中）', 'rich'], ['body_en', '內文（英）', 'rich']],
+  '{{title_zh}}', '一段一列、可拖曳排序；段落標題＝左側段落導覽。' + EN_NOTE);
+
+// ── SPEC：collection → { meta, fields, relations? }（folder: true＝側欄的資料夾）。順序有差：資料夾排在它裡面的集合前面、庫要排在選它的集合前面、junction 排在它的 parent 後面 ──
 const SPEC = {
+  // 清單頁＝清單＋頁面（導言）兩個集合，收在同一個資料夾（user 2026-11-22，照 SCCD）
+  faculty_folder: { folder: true, meta: { icon: 'folder', translations: zh('師資') } },
+  partners_folder: { folder: true, meta: { icon: 'folder', translations: zh('合作企業') } },
   // 庫（user 2026-11-21，照 SCCD）：全站的人名／單位／媒體只在庫裡打一次，用到的地方從庫選；改一次全站跟著換
   people: {
     meta: { icon: 'person', translations: zh('人名庫'), display_template: '{{name_zh}} {{name_en}}', note: '全站的人名從這裡選（師資）。還有人用就刪不掉；重複的要合併' },
@@ -114,7 +126,7 @@ const SPEC = {
   news_album: junction('news', 'album'),
   news_attachments: junction('news', 'attachments'),
   faculty: {
-    meta: { icon: 'school', translations: zh('師資'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '列表依「類別」分段；名字從人名庫選；副標跟語言切（英文留空＝英文版顯示中文）' },
+    meta: { icon: 'school', group: 'faculty_folder', translations: zh('師資名單'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '列表依「類別」分段；名字從人名庫選；副標跟語言切（英文留空＝英文版顯示中文）' },
     fields: [status, sort, dropdown('category', '類別', FACULTY_CATS), image('photo', '照片'),
       pick('person', '姓名（人名庫）', 'people'),
       str('name_zh', '姓名（中）'), str('name_en', '姓名（英）'),   // 舊欄位：名字改從人名庫選（user 2026-11-21），藏起來（HIDE）
@@ -122,12 +134,14 @@ const SPEC = {
       entries('education', '學歷'), entries('experience', '經歷'), entries('expertise', '專長'), entries('exhibitions', '展覽'), entries('awards', '獲獎'), entries('publications', '著作')],
   },
   partners: {
-    meta: { icon: 'handshake', translations: zh('合作企業'), display_template: '{{organization.name_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '企業名稱從單位庫選' },
+    meta: { icon: 'handshake', group: 'partners_folder', translations: zh('合作企業名單'), display_template: '{{organization.name_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '企業名稱從單位庫選' },
     fields: [status, sort, image('logo', 'Logo'), pick('organization', '企業（單位庫）', 'organizations'),
       str('name_zh', '企業名稱（中）'), strEn('name_en', '企業名稱（英）'),   // 舊欄位：改從單位庫選（user 2026-11-21），藏起來（HIDE）
       subtitles,   // 原本是一段 description_zh／_en（合作內容）
       url('url', '企業網站（整列可點、另開新視窗；空＝不可點）')],
   },
+  faculty_page: { meta: { icon: 'article', singleton: true, group: 'faculty_folder', translations: zh('師資頁'), note: '頁標題下面那段導言' }, fields: lead },
+  partners_page: { meta: { icon: 'article', singleton: true, group: 'partners_folder', translations: zh('合作企業頁'), note: '頁標題下面那段導言' }, fields: lead },
   courses: {
     meta: { icon: 'menu_book', translations: zh('課程'), display_template: '{{year}} {{name_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '課程頁依年級分段、同年級照拖曳順序' },
     fields: [status, sort, { ...dropdown('year', '年級', YEARS), type: 'integer' }, bool('required', '必修', '必修（不勾＝選修）'),
@@ -139,12 +153,12 @@ const SPEC = {
     fields: [status, sort, str('category_zh', '分類（中）'), strEn('category_en', '分類（英）'),
       str('question_zh', '問題（中）', {}, 'full'), strEn('question_en', '問題（英）'), multi('answer_zh', '回答（中）'), multi('answer_en', '回答（英）', { note: EN_NOTE })],
   },
+  // 規章與政策（user 2026-11-22：一頁一個單例，照 SCCD；只放連結、不上傳檔案）：上面規章／表單清單、下面條款這種文字段落
   regulations: {
-    meta: { icon: 'gavel', translations: zh('規章'), display_template: '{{title_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '前台依「分類」分段；檔案與外部連結二選一' },
-    fields: [status, sort, str('category_zh', '分類（中）'), strEn('category_en', '分類（英）'),
-      str('title_zh', '規章名稱（中）', {}, 'full'), strEn('title_en', '規章名稱（英）'),
-      subtitles,   // 名稱下面一筆一行（同入學那種列，user 2026-11-21）
-      file('file', '檔案（PDF）'), url('url', '外部連結')],
+    meta: { icon: 'gavel', singleton: true, translations: zh('規章與政策'), note: '上面是規章、表單（依分類分段、整列外連），下面是使用條款、隱私權政策這種文字段落' },
+    fields: [repeater('items', '規章、表單', [['category_zh', '分類（中，例 學程規章、表單下載）'], ['category_en', '分類（英）'], ['title_zh', '名稱（中）'], ['title_en', '名稱（英）'],
+      ['subtitles_zh', '副標（中，一行一個，例 2026.08 修訂）', 'text'], ['subtitles_en', '副標（英，一行一個）', 'text'], ['url', '連結（整列外連、另開新視窗；空＝不能點）']],
+    '{{category_zh}}／{{title_zh}}', '一列一筆、可拖曳排序；分類一樣的排在同一段（照第一次出現的順序）。' + EN_NOTE), textSections],
   },
   // 榮譽（user 2026-11-19）：一筆一個摺疊；收著＝國旗＋獎項＋得獎人，點開＝主辦方、獎別。得獎人照打字（同 SCCD：學生不進人名庫）
   records: {
@@ -160,26 +174,25 @@ const SPEC = {
     fields: [status, date('date', '刊出日期（排序用，前台不顯示）'), str('title_zh', '報導標題（中）', {}, 'full'), strEn('title_en', '報導標題（英）'),
       pick('media', '媒體（媒體庫）', 'media_outlets'), image('screenshot', '報導截圖（點了放大看）')],
   },
-  // 文字頁（about／admission／donate／regulations…）：pages 一頁一筆（slug 當主鍵＝前台 route）＋ page_sections 每段一筆
-  pages: {
-    meta: { icon: 'article', translations: zh('文字頁'), display_template: '{{slug}}', note: 'slug＝前台網址（about／donate／regulations／faculty…）；導言在這裡、段落在下方 sections 新增。頁名在「介面文字」nav.<slug>（選單、網站地圖、頁標題同一個）' },
-    pk: { field: 'slug', type: 'string', meta: { interface: 'input', readonly: false, width: 'half', translations: zh('slug（前台網址，建好不要改）'), options: { slug: true } }, schema: { is_primary_key: true, length: 64 } },
-    fields: [str('title_zh', '頁標題（中）'), strEn('title_en', '頁標題（英）'), multi('lead_zh', '導言（中，選填）'), multi('lead_en', '導言（英，選填）', { note: EN_NOTE }),
-      { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('段落'), options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } }],
+  // 文字頁（user 2026-11-22：每頁一個單例，照 SCCD；原本全部擠在一個「文字頁」pages、捐款找不到）。頁名在「介面文字」nav.<slug>
+  about: {
+    meta: { icon: 'info', singleton: true, translations: zh('關於'), note: '導言＋段落；段落標題＝左側段落導覽，段落可以放輪播圖' },
+    fields: [...lead, { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('段落'), options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } }],
   },
-  page_sections: {
-    meta: { icon: 'segment', translations: zh('文字頁段落'), display_template: '{{page}} / {{title_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', hidden: true, note: '從「文字頁」裡面新增；段落標題＝左側段落導覽' },
-    fields: [status, sort, { field: 'page', type: 'string', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true, length: 64 } },
+  about_sections: {
+    meta: { icon: 'segment', translations: zh('關於的段落'), display_template: '{{title_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', hidden: true, note: '從「關於」裡面新增' },
+    fields: [status, sort, { field: 'about', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
       str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'), rich('body_zh', '內文（中）'), rich('body_en', '內文（英）', { note: EN_NOTE }),
       files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播')],
-    relations: [{ collection: 'page_sections', field: 'page', related_collection: 'pages', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+    relations: [{ collection: 'about_sections', field: 'about', related_collection: 'about', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
   },
-  page_sections_images: junction('page_sections', 'images'),
+  about_sections_images: junction('about_sections', 'images'),
+  donate: { meta: { icon: 'volunteer_activism', singleton: true, translations: zh('捐款'), note: '導言＋段落' }, fields: [...lead, textSections] },
 };
-// 舊欄位只藏不刪（同 SCCD 的做法；集合都還是空的，之後確定不要再刪）：名字改從庫選、頁名改走介面文字 nav.<slug>
-const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en'], ['pages', 'title_zh'], ['pages', 'title_en']];
-// 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；頁名改走介面文字）
-const META = ['faculty', 'partners', 'pages', 'news'];
+// 舊欄位只藏不刪（同 SCCD 的做法；集合都還是空的，之後確定不要再刪）：名字改從庫選
+const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en']];
+// 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；師資、合作企業收進資料夾）
+const META = ['faculty', 'partners', 'news'];
 
 // contact.html（聯絡頁，原本的 footer）目前的示意值：singleton 建好後第一筆就是這些，前台畫面不變（接真資料時在後台改）
 const FOOTER_MOCK = {
@@ -192,9 +205,9 @@ const FOOTER_MOCK = {
 };
 
 async function ensureCollection(name, s) {
-  const first = s.pk || pk;  // 預設整數 id；pages 用 slug 當主鍵
   if (await get(`/collections/${name}`)) console.log(`= ${name} 已存在`);
-  else { console.log(`+ 建 ${name}`); await api('POST', '/collections', { collection: name, meta: s.meta, schema: {}, fields: [first] }); }
+  else { console.log(`+ 建 ${name}`); await api('POST', '/collections', s.folder ? { collection: name, meta: s.meta, schema: null } : { collection: name, meta: s.meta, schema: {}, fields: [pk] }); }
+  if (s.folder) return;
   const have = DRY ? new Set() : new Set(((await get(`/fields/${name}`)) || []).map(f => f.field));
   for (const { pool, ...f } of s.fields) if (!have.has(f.field)) { console.log(`  + 欄位 ${name}.${f.field}`); await api('POST', `/fields/${name}`, f); }
   // 圖片／檔案欄位要掛到 directus_files 才會顯示選圖器
@@ -206,7 +219,8 @@ async function ensureCollection(name, s) {
 // 已經建好的集合：顯示名稱、說明照 SPEC 更新（只動 SPEC 有寫、跟後台不一樣的那幾項）
 async function ensureMeta(name) {
   const cur = (await get(`/collections/${name}`))?.meta || {}, want = SPEC[name].meta;
-  const diff = Object.fromEntries(['display_template', 'note'].filter(k => want[k] !== undefined && cur[k] !== want[k]).map(k => [k, want[k]]));
+  const val = (k, m) => k === 'translations' ? (m[k] || []).map(t => t.translation).join() : m[k];
+  const diff = Object.fromEntries(['display_template', 'note', 'group', 'translations'].filter(k => want[k] !== undefined && val(k, cur) !== val(k, want)).map(k => [k, want[k]]));
   if (Object.keys(diff).length) { console.log(`  ~ ${name} 設定 ${Object.keys(diff).join('、')}`); await api('PATCH', `/collections/${name}`, { meta: diff }); }
 }
 async function hideField(name, field) {
@@ -221,7 +235,7 @@ async function ensurePublicRead() {
   const pub = ((await get('/policies?filter[admin_access][_eq]=false&filter[app_access][_eq]=false')) || [])[0];
   if (!pub) throw new Error('找不到 Public policy');
   const have = new Set((((await get(`/permissions?limit=-1&filter[policy][_eq]=${pub.id}&filter[action][_eq]=read`)) || [])).map(p => p.collection));
-  const want = [...Object.keys(SPEC), 'directus_files'];  // directus_files：前台 /assets 要能讀圖
+  const want = [...Object.keys(SPEC).filter(c => !SPEC[c].folder), 'directus_files'];  // directus_files：前台 /assets 要能讀圖
   for (const c of want) {
     if (have.has(c)) continue;
     console.log(`  + Public 讀取 ${c}`);

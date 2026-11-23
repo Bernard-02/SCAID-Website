@@ -1,6 +1,7 @@
 # SCAID Directus 後台欄位
 
-後台：`https://scaidcms.usc.edu.tw/admin/`（Directus 12，Core 方案：帳號上限 3、**collection 上限 25**，現在 18 個）。
+後台：`https://scaidcms.usc.edu.tw/admin/`（Directus 12，Core 方案：帳號上限 3、**collection 上限 25**，現在 21 個＋2 個資料夾（資料夾算不算在上限裡沒確認））。
+**一頁一個集合**（user 2026-11-22，照 SCCD；原本關於、捐款、規章的條款、師資／合作企業的導言全擠在一個「文字頁」`pages`，後台找不到捐款）：文字頁＝單例；清單頁＝清單＋頁面（導言）兩個集合，收在同一個資料夾（師資、合作企業）。
 前台要抓的欄位都列在這裡。**集合名、欄位 key 要一字不差**，前台照名字抓。
 
 **建法：不用手點，跑 `node scripts/setup-directus.cjs`**（2026-11-18 起）。已存在的集合／欄位／關聯／權限會跳過，可以重跑；
@@ -8,7 +9,7 @@
 舊欄位只藏不刪（SPEC 的 `HIDE`），確定不要了再刪。
 
 **放資料：`node scripts/seed-directus.cjs`**（2026-11-21 全站接後台時跑過一次）：直接解析各頁 HTML 的示意內容寫進後台——
-庫（人名／單位／媒體）→ 內容 → 文字頁 → 介面文字。可重跑：內容集合還是空的才塞、庫只補沒有的名字、介面文字只補沒有的 key（後台改過的不蓋）。
+庫（人名／單位／媒體）→ 內容 → 每頁的單例 → 介面文字。可重跑：內容集合還是空的才塞（單例＝每個欄位都空著）、庫只補那些要塞的集合用到、還沒有的名字、介面文字只補沒有的 key（後台改過的不蓋）。
 只放文字；圖（相簿、封面、截圖、段落輪播）之後在後台上傳（user 2026-11-21）。
 
 共通：
@@ -37,7 +38,7 @@ user 2026-11-21 照 SCCD：**全站的人名、單位、媒體只在庫裡打一
 
 user 2026-11-21 照 SCCD：選單、頁名、固定的小標（專任教師、一年級、必修、學歷…）、聯絡頁的欄位名、404 的字。**一個 key 一筆**，`key` 唯讀（前台照 key 找），只改 `zh`／`en`。
 HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到時的原文。新的 key：HTML 標好 `data-label`，再跑一次 `seed-directus.cjs` 就補進後台。
-**頁名＝`nav.<slug>`**：選單、網站地圖、那一頁的頁標題、瀏覽器分頁標題都吃同一個（所以 `pages` 的 `title_*` 藏起來了）。
+**頁名＝`nav.<slug>`**：選單、網站地圖、那一頁的頁標題、瀏覽器分頁標題都吃同一個（所以各頁的單例沒有頁名欄位）。
 
 | key | 類型 | 內容 |
 |---|---|---|
@@ -85,7 +86,9 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | `attachments` | Files（多個，junction `news_attachments`） | 附件（入學頁點開的連結清單，一個檔一個連結、連結文字＝檔案標題、另開新視窗） |
 | `link` | String | 外部連結（選填，前台目前沒用到） |
 
-## faculty（師資）
+## faculty（師資名單）＋ faculty_page（師資頁）— 資料夾「師資」
+
+`faculty_page` 單例只有導言 `lead_zh`／`lead_en`（頁標題下面那段）。
 
 前台：`pages/faculty.html`（`item-list-cms.js`）依 `category` 分段，段落順序固定＝專任教師 → 兼任教師 → 業界導師（段名在介面文字 `faculty.type.*`），段內照 `sort`；某一類沒人＝那段不出。
 點進 `faculty-detail.html?id=<id>`（`cms-pages.js`）：照片、名字＋副標、各段履歷（段名在介面文字 `faculty.cv.*`；空的段不出）。
@@ -99,7 +102,9 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | `subtitles` | JSON／Repeater | 副標：名字下面的字，**一筆＝一行**，可拖曳排序；沒填＝只有名字。子欄位 `text_zh`、`text_en`（例：學程主任、教授） |
 | `education`、`experience`、`expertise`、`exhibitions`、`awards`、`publications` | JSON／Repeater | 學歷／經歷／專長／展覽／獲獎／著作；子欄位 `year`（年份或標題，專長留空）、`text_zh`、`text_en` |
 
-## partners（合作企業）
+## partners（合作企業名單）＋ partners_page（合作企業頁）— 資料夾「合作企業」
+
+`partners_page` 單例只有導言 `lead_zh`／`lead_en`。
 
 前台：`pages/partners.html`（`item-list-cms.js`）。**跟師資同一種列**：Logo＋企業名稱＋副標一行一個，照 `sort`。
 
@@ -160,32 +165,28 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | `media` | M2O → 媒體庫 | 媒體 |
 | `screenshot` | Image | 報導截圖（點了放大看的那張） |
 
-## regulations（規章）
+## regulations（規章與政策）— 單例
 
-前台「規章與政策」頁的規章段落：依 `category_zh` 分段；一條一列＝規章名稱＋副標（同入學那種列、不展開），整列連到 `file`（有就優先）或 `url`、另開新視窗；兩個都沒填＝那列不能點。
-同一頁後面的文字段落（使用條款、隱私權政策）走 `pages` 的 `regulations` 那一筆。
+一頁一筆（user 2026-11-22，照 SCCD；原本規章是一筆一列的清單、條款在 `pages`）。**只放連結、不上傳檔案**（user：不會有 PDF）。
+前台：上面規章、表單依 `category_zh` 分段（照第一次出現的順序）；一條一列＝名稱＋副標（同入學那種列、不展開），整列連到 `url`、另開新視窗（只放行 http(s)；沒填＝那列不能點）。下面接文字段落（使用條款、隱私權政策）。
+沒填的部分＝照 HTML 的示意。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
-| `status`、`sort` | | |
-| `category_zh` / `category_en` | String | 分類 |
-| `title_zh` / `title_en` | String | 規章名稱 |
-| `subtitles` | JSON／Repeater | 副標：名稱下面的字，**一筆＝一行**（例：2026.08 修訂、PDF 檔）。子欄位 `text_zh`、`text_en` |
-| `file` | File | PDF |
-| `url` | String | 外部連結（只放行 http(s)） |
+| `items` | JSON／Repeater | 規章、表單，一列一筆、可拖曳排序。子欄位 `category_zh`／`category_en`（分類）、`title_zh`／`title_en`（名稱）、`subtitles_zh`／`subtitles_en`（副標，多行文字、**一行＝前台一行**，例 2026.08 修訂）、`url` |
+| `sections` | JSON／Repeater | 文字段落，同下面「段落」 |
 
-## pages（文字頁）＋ page_sections（段落）
+## about（關於）、donate（捐款）— 單例
 
-`pages` 一頁一筆，**主鍵 `slug`＝前台 route**（建好不要改）：現在有 about、donate、regulations（段落＋導言）與 faculty、partners（只有導言）。
-段落在同一個表單下方「段落」新增（`page_sections`，後台選單裡藏起來）。**頁名不在這裡**＝介面文字 `nav.<slug>`。
+一頁一筆（user 2026-11-22，照 SCCD）。**頁名不在這裡**＝介面文字 `nav.<slug>`。
 前台：導言換掉 `.page-lead`；有段落就整段換掉（標題 → 輪播 → 內文）。
 
 | 集合 | key | 類型／介面 | 內容 |
 |---|---|---|---|
-| pages | `slug` | String（主鍵） | about／donate／regulations／faculty／partners |
-| pages | `lead_zh` / `lead_en` | Text／Multiline | 導言（頁標題下面那段） |
-| pages | `sections` | O2M → page_sections | 段落清單（可拖曳排序） |
-| page_sections | `status`、`sort`、`page` | | `page`＝所屬頁 slug |
-| page_sections | `title_zh` / `title_en` | String | 段落標題（h2＝左側段落導覽） |
-| page_sections | `body_zh` / `body_en` | Text／WYSIWYG | 內文 HTML（工具列只留粗體／斜體／h3／清單／連結）。中英各一份，前台跟著語言只顯示一份；**塞進去前過 sanitize**（只放行這幾個標籤與 `mt-sm`／`mt-md`／`text-xs` 三個 class） |
-| page_sections | `images` | Files（多張，junction `page_sections_images`） | 段落圖片輪播（標題下面那排；沒放＝不出輪播） |
+| about／donate | `lead_zh` / `lead_en` | Text／Multiline | 導言（頁標題下面那段） |
+| donate | `sections` | JSON／Repeater | 段落，一段一列、可拖曳排序；子欄位 `title_zh`／`title_en`（段落標題＝左側段落導覽）、`body_zh`／`body_en`（WYSIWYG，同下） |
+| about | `sections` | O2M → about_sections | 段落（在同一個表單裡新增、可拖曳排序；`about_sections` 在後台選單裡藏起來）。**關於的段落要放輪播圖、重複列放不了檔案**，所以是子集合 |
+| about_sections | `status`、`sort`、`about` | | `about`＝所屬的那一筆 |
+| about_sections | `title_zh` / `title_en` | String | 段落標題（h2＝左側段落導覽） |
+| about_sections | `body_zh` / `body_en` | Text／WYSIWYG | 內文 HTML（工具列只留粗體／斜體／h3／清單／連結）。中英各一份，前台跟著語言只顯示一份；**塞進去前過 sanitize**（只放行這幾個標籤與 `mt-sm`／`mt-md`／`text-xs` 三個 class） |
+| about_sections | `images` | Files（多張，junction `about_sections_images`） | 段落圖片輪播（標題下面那排；沒放＝不出輪播） |

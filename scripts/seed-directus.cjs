@@ -1,7 +1,7 @@
 // 後台資料 ← 直接解析前台各頁 HTML（各頁的示意內容是唯一來源；HTML 改好、決定要同步時跑這支，不另抄一份）。
 // user 2026-11-21：全站接後台、把現在的文字實際放進後台，之後在後台改。只放文字（圖之後在後台上傳）。
-// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id）→ 文字頁（pages＋段落）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
-// 安全版、可重跑：內容集合還是空的才塞（pages 以 slug 判斷）；庫只補沒有的名字（中英都一樣才算同一個）；
+// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id）→ 每頁的單例（關於、捐款、規章、師資頁、合作企業頁）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
+// 安全版、可重跑：內容集合還是空的才塞（單例＝每個欄位都空著）；庫只補沒有的名字（中英都一樣才算同一個）；
 // 介面文字只補沒有的 key（後台改過的字不蓋）。
 //
 // 先看會寫什麼：node scripts/seed-directus.cjs --dry
@@ -124,9 +124,14 @@ const courses = () => sections(read('curriculum')).flatMap(sec => pub(findAll(se
 })));
 const qa = () => pub(sections(read('qa')).flatMap(sec => findAll(sec, tag('details')).map(d => ({
   ...zhEn(titleOf(sec), 'category'), ...zhEn(find(d, tag('summary')), 'question'), ...zhEn(kids(d, tag('p'))[0], 'answer') }))));
-// 規章：有清單的段（學程規章、表單下載）一條一列；沒清單的段是文字頁（pages 的 regulations）
-const regulations = () => pub(sections(read('regulations')).filter(s => find(s, cls('item-list'))).flatMap(sec => findAll(sec, cls('item-row')).map(row => ({
-  ...zhEn(titleOf(sec), 'category'), ...zhEn(find(row, tag('h3')), 'title'), subtitles: subsOf(row), url: row.attrs.href || null }))));
+// 規章與政策（單例）：有清單的段（學程規章、表單下載）一條一列（重複列 items，副標一行一個）＋沒清單的段（使用條款…）
+function regulations() {
+  const items = sections(read('regulations')).filter(s => find(s, cls('item-list'))).flatMap(sec => findAll(sec, cls('item-row')).map(row => {
+    const subs = subsOf(row);
+    return { ...zhEn(titleOf(sec), 'category'), ...zhEn(find(row, tag('h3')), 'title'), subtitles_zh: subs.map(s => s.text_zh).join('\n'), subtitles_en: subs.map(s => s.text_en).join('\n'), url: row.attrs.href || '' };
+  }));
+  return { items, sections: page('regulations').sections };
+}
 // 榮譽：國旗檔名＝國家代碼；主辦方進單位庫
 const records = () => pub(findAll(read('records'), tag('details')).map(d => {
   const sum = find(d, tag('summary')), box = kids(sum).at(-1), [org, prize] = kids(find(d, cls('fold-meta')), tag('p'));
@@ -137,13 +142,13 @@ const records = () => pub(findAll(read('records'), tag('details')).map(d => {
 const press = () => findAll(read('press'), cls('item-row')).map(row => ({ status: 'published', ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
 // 文字頁：導言＋沒有清單的段落（標題＋內文）。頁名不在這裡（介面文字 nav.<slug>）
 function page(slug) {
-  const root = read(slug), lead = find(root, cls('page-lead')), row = { slug };
+  const root = read(slug), lead = find(root, cls('page-lead')), row = {};
   if (lead && !lead.attrs['data-label']) Object.assign(row, zhEn(lead, 'lead'));
   const secs = sections(root).filter(s => !find(s, cls('item-list')) && titleOf(s));
-  if (secs.length) row.sections = pub(secs.map(s => {
+  if (secs.length) row.sections = secs.map(s => {
     const body = kids(s).filter(n => !cls('section-title')(n));
     return { ...zhEn(titleOf(s), 'title'), body_zh: body.map(n => rich(n, 'zh')).filter(Boolean).join('\n'), body_en: body.map(n => rich(n, 'en')).filter(Boolean).join('\n') };
-  }));
+  });
   return row;
 }
 // 介面文字：掃殼＋每頁的 data-label，一個 key 一筆（同 key 取第一次出現的字）；分類照 key 的開頭（setup-directus.cjs LABEL_CATS）
@@ -160,18 +165,29 @@ function labels() {
 }
 
 const POOLS = ['people', 'organizations', 'media_outlets'];
-const PAGES = ['about', 'donate', 'regulations', 'faculty', 'partners'];
+// 每頁一個單例（user 2026-11-22，照 SCCD）。關於的段落是子集合（about_sections，有上架狀態與排序）、其他是重複列
+const SINGLES = {
+  about: () => { const r = page('about'); return { ...r, sections: pub(r.sections || []) }; },
+  donate: () => page('donate'),
+  regulations,
+  faculty_page: () => page('faculty'),
+  partners_page: () => page('partners'),
+};
+const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
 
 (async () => {
   console.log(`Directus ${BASE}${DRY ? '（dry run，只印不寫）' : ''}`);
-  const content = { news: news(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), regulations: regulations(), records: records(), press: press() };
+  const content = { news: news(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
   for (const [col, rows] of Object.entries(content)) if (!rows.length) throw new Error(`${col}：HTML 解析出 0 筆，標記大概改了，先修 seed 的解析`);
 
+  // 內容集合還是空的才塞 → 庫也只補那幾個集合要用到的名字（不然後台改過名字、HTML 還是舊的，會多一個沒人用的）
+  const counts = {};
+  for (const col of Object.keys(content)) counts[col] = Number((await api('GET', `/items/${col}?aggregate[count]=*`))[0].count);
   // 1) 庫：內容裡要用到的名字，沒有的補上；再整份讀回來照名字對 id（批次 POST 回來的順序不一定照送出的）
   const ids = {};
   for (const p of POOLS) {
     const want = new Map();
-    Object.values(content).flat().forEach(r => Object.values(r).forEach(v => { if (v?.$pool === p) want.set(keyOf(v), { name_zh: v.name_zh, name_en: v.name_en }); }));
+    Object.entries(content).filter(([col]) => !counts[col]).flatMap(([, rows]) => rows).forEach(r => Object.values(r).forEach(v => { if (v?.$pool === p) want.set(keyOf(v), { name_zh: v.name_zh, name_en: v.name_en }); }));
     const readPool = async () => new Map(((await api('GET', `/items/${p}?limit=-1&fields=id,name_zh,name_en`)) || []).map(r => [keyOf(r), r.id]));
     const have = await readPool(), add = [...want].filter(([k]) => !have.has(k)).map(([, r]) => r);
     console.log(`${add.length ? '+' : '='} ${p}：用到 ${want.size} 個、新增 ${add.length} 個`);
@@ -183,7 +199,7 @@ const PAGES = ['about', 'donate', 'regulations', 'faculty', 'partners'];
 
   // 2) 內容：集合還是空的才塞
   for (const [col, rows] of Object.entries(content)) {
-    const n = Number((await api('GET', `/items/${col}?aggregate[count]=*`))[0].count);
+    const n = counts[col];
     if (n > 0) { console.log(`= ${col} 已有 ${n} 筆，跳過`); continue; }
     console.log(`+ ${col} ${rows.length} 筆`);
     const out = rows.map(resolve);
@@ -191,14 +207,14 @@ const PAGES = ['about', 'donate', 'regulations', 'faculty', 'partners'];
     else await api('POST', `/items/${col}`, out);
   }
 
-  // 3) 文字頁：那個 slug 還沒有才建（段落一起建）
-  const havePages = new Set(((await api('GET', '/items/pages?limit=-1&fields=slug')) || []).map(r => r.slug));
-  for (const slug of PAGES) {
-    if (havePages.has(slug)) { console.log(`= pages/${slug} 已存在，跳過`); continue; }
-    const { sections: secs = [], ...row } = page(slug);
-    console.log(`+ pages/${slug}（導言${row.lead_zh ? '有' : '沒有'}、${secs.length} 段）`);
-    if (DRY) for (const s of secs) console.log(`    § ${s.title_zh} / ${s.title_en}：${s.body_zh.slice(0, 90)}…`);
-    else await api('POST', '/items/pages', { ...row, sections: secs });
+  // 3) 每頁的單例：每個欄位都還空著才塞（段落一起建）
+  for (const [col, build] of Object.entries(SINGLES)) {
+    const cur = (await api('GET', `/items/${col}?fields=*`).catch(() => null)) || {};
+    if (Object.entries(cur).some(([k, v]) => k !== 'id' && !blank(v))) { console.log(`= ${col} 已經填過，跳過`); continue; }
+    const row = build(), secs = row.sections || [];
+    console.log(`+ ${col}（導言${row.lead_zh ? '有' : '沒有'}、${secs.length} 段${row.items ? `、${row.items.length} 列` : ''}）`);
+    if (DRY) for (const s of [...(row.items || []), ...secs]) console.log(`    § ${s.category_zh ? s.category_zh + '／' : ''}${s.title_zh} / ${s.title_en}：${(s.body_zh || s.subtitles_zh || s.url || '').slice(0, 90)}`);
+    else await api('PATCH', `/items/${col}`, row);
   }
 
   // 4) 介面文字：只補後台沒有的 key

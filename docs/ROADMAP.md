@@ -86,15 +86,15 @@
 | 榮譽 `records.html` | `records`＋單位庫（主辦方） | 已接 |
 | 報導 `press.html` | `press`＋媒體庫 | 已接 |
 | 常見問題 `qa.html` | `qa` | 已接 |
-| 規章與政策 `regulations.html` | `regulations`＋`pages` 的 regulations | 已接 |
-| 關於、捐款；師資、合作企業的導言 | `pages`＋`page_sections` | 已接 |
+| 規章與政策 `regulations.html` | `regulations`（單例：規章、表單＋條款段落） | 已接 |
+| 關於、捐款；師資、合作企業的導言 | 單例 `about`（段落＝`about_sections`）、`donate`、`faculty_page`、`partners_page` | 已接 |
 | 選單、頁名、固定小標、聯絡欄位名、404 | `ui_labels` | 已接 |
 
 還沒做：
 
 - [ ] **圖**：相簿、動態封面、報導截圖、關於的段落輪播、師資照片、企業 logo 都要在後台上傳（現在報導沒截圖＝不能點、關於沒圖＝不出輪播）。入學的附件（PDF）也還沒上傳。
 - [ ] 後台的內容換成真的（現在是搬過去的示意文字；入學的那幾則也同時出現在動態頁）。
-- [ ] 舊欄位確定不要了再刪：`faculty`／`partners` 的 `name_*`、`pages` 的 `title_*`（現在藏著）。
+- [ ] 舊欄位確定不要了再刪：`faculty`／`partners` 的 `name_*`（現在藏著）。
 - [ ] 老師／助教的後台帳號與權限（帳號上限 3）。
 
 ## 6. 上線
