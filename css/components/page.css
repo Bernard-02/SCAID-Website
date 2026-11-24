@@ -108,26 +108,30 @@
   @media (min-width: 768px) { .page-body { --item-thumb-w: calc((100% - 5 * var(--spacing-gutter)) / 6 * 1.5 + var(--spacing-gutter) / 2); } }
 
   /* 聯絡頁（原本的 footer 覆蓋層，user 2026-11-21 搬成選單最後一頁；class 名對應 Directus 單例 footer，footer-cms.js 也在用）。
-     連結 hover 圓點同選單那顆（chrome.css .footer-body a::after） */
+     連結 hover＝蓋黑收直條（item-marquee.js；user 2026-11-23，原本圓點）；社群方框沒有字＝方框本身當那一行 */
   .footer-body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-xl); }
   .footer-social { display: flex; gap: var(--spacing-lg); }
   .footer-social-box { display: block; width: 1em; height: 1em; border: 1px solid currentColor; }
   .footer-contact { display: flex; flex-direction: column; gap: var(--spacing-md); }
-  /* 姊妹系所＝連結清單（HTML 另掛 .link-list；user 2026-11-21：寫全名、一行一個，hover 圓點在清單最右邊，原本縮寫排一列）：
-     撐滿內文欄（.footer-body 的子項預設靠左縮到內容寬），圓點才在欄的右緣、整列都點得到 */
+  /* 姊妹系所＝連結清單（HTML 另掛 .link-list；user 2026-11-21：寫全名、一行一個，原本縮寫排一列）：
+     撐滿內文欄（.footer-body 的子項預設靠左縮到內容寬）＝整列都點得到 */
   .footer-links { align-self: stretch; }
   .footer-badge { width: 9.5rem; height: 3.75rem; background: var(--light-gray); }
   img.footer-badge { width: auto; max-width: 100%; background: none; }   /* 後台標章圖：高同佔位、寬照比例 */
 
   /* 師資詳細頁的照片：寬同列表縮圖，下面接名字＋副標（user 2026-11-21：上下排） */
   .profile-photo { width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-md); }
+  /* 學歷／經歷…一筆一筆：筆與筆之間＝標題到第一筆的距離（h3 的 margin-bottom；user 2026-11-23，原本不空、看不出是一筆一筆）。
+     > 只選到詳細頁自己的 h3＋ul，後台段落內文（.cms-rich 裡）的清單不吃 */
+  .page-section > h3 + ul > li + li { margin-top: var(--spacing-xs); }
 
   @media (hover: hover) {
     .back-btn:hover { opacity: 0.6; }
   }
 
-  /* 段落裡的條列（user 2026-11-10 草圖）：一項一塊、項目間空一行。標題到副標隔 xs、副標之間不留距（user 2026-11-21） */
-  .item-list { margin-top: var(--spacing-md); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-lg); }   /* minmax(0)：一行不折的標題不會把整欄撐寬 */
+  /* 段落裡的條列（user 2026-11-10 草圖）：一項一塊。標題到清單 xl、列與列之間 md（user 2026-11-23；原本標題到清單 md、列之間 lg）。
+     標題到副標隔 xs、副標之間不留距（user 2026-11-21） */
+  .item-list { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-md); }   /* minmax(0)：一行不折的標題不會把整欄撐寬 */
   .page-body .item-list h3 { margin-block: 0; }   /* 不是 Subsection title：上下距都歸零 */
   .item-row :is(h1, h3) + p { margin-top: var(--spacing-xs); }
   /* ── 清單列＝積木（user 2026-11-21）：師資、合作企業、課程、動態、榮譽、報導、入學、規章全是同一種列 .item-row，
@@ -144,21 +148,15 @@
   .item-row:has(> .item-thumb) > :last-child { padding-right: var(--row-pad); }
   .item-row :is(h1, h3) { @apply text-md; }
   .item-row p { @apply text-s; }
-  /* 標題、副標各一行（user 2026-11-21）：放不下＝右邊淡掉、左邊不淡（.is-clipped）；hover／鍵盤聚焦那一列＝放不下的那幾行跑馬燈、
-     左右都淡（.is-marquee，左邊的淡跟著淡進來）。哪行放不下、跑一圈多遠（--loop＝字寬＋2em 間距）由 item-marquee.js 量；
+  /* 副標各一行（user 2026-11-21）：放不下＝直接切掉（.is-clipped）；hover／鍵盤聚焦那一列＝放不下的那幾行跑馬燈（.is-marquee）。
+     標題（h3、師資詳細頁頁頭的 h1）放不下＝折行（user 2026-11-23：「去掉 title 過長 marquee 的效果，直接往下排」；原本也是一行＋跑馬燈）。
+     照 SCCD（user 2026-11-23）：每秒 80px、兩端不淡（原本跟底列同速 2.5em/s、兩端淡掉，user 嫌「只動一點」）。
+     哪行放不下、跑一圈多遠（--loop＝字寬＋2em 間距，同底列）由 item-marquee.js 量；
      接力的那一份＝text-shadow 往右 --loop 畫一份一樣的字——不多一份 DOM：lang.js 換語言是直接換 textContent，裡面包東西會被洗掉。
-     速度、間距、兩端淡掉的寬同底列動態的跑馬燈（chrome.css .bar-news-track）。
      觸控（沒有 hover）、系統減少動態＝照常折行、整段看得到：跑不了馬燈，切掉的字就永遠看不到了 */
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .item-row :is(h1, h3, p) { white-space: nowrap; overflow: hidden; }
-    .item-row :is(h1, h3, p).is-clipped {
-      --edge: 2em;
-      text-shadow: var(--loop) 0 currentColor;
-      -webkit-mask: linear-gradient(to right, transparent, #000 var(--marquee-fade-l), #000 calc(100% - var(--edge)), transparent);
-              mask: linear-gradient(to right, transparent, #000 var(--marquee-fade-l), #000 calc(100% - var(--edge)), transparent);
-      transition: --marquee-fade-l var(--dur-fade) var(--ease-standard);
-    }
-    .item-row :is(h1, h3, p).is-marquee { --marquee-fade-l: var(--edge); }
+    .item-row p { white-space: nowrap; overflow: hidden; }
+    .item-row p.is-clipped { text-shadow: var(--loop) 0 currentColor; }
   }
   .item-thumb { aspect-ratio: 1; background: var(--light-gray); }
   /* 清單列 hover（整個 box，文字那邊也算；user 2026-11-22，PC）＝圖片上浮一塊流動的中空板（thumb-board.js 畫：條紋玻璃——圖切成直條、
@@ -187,10 +185,9 @@
     background: currentColor;
     transform: translateY(-50%);
   }
-  /* 內頁的連結清單（網站地圖、聯絡頁姊妹系所、入學附件）：hover 圓點在清單最右邊（右緣＝內文欄右緣，同整列連結／摺疊），不跟在字後面（user 2026-11-18）。
-     連結撐滿整列＝整列都點得到；右邊讓出圓點的位置不壓字（--row-pad） */
+  /* 內頁的連結清單（網站地圖、聯絡頁姊妹系所、入學附件）：hover＝同清單列蓋黑收直條（user 2026-11-23；原本清單最右邊一顆圓點）。
+     連結撐滿整列＝整列都點得到；右邊讓出直條的位置不壓字（--row-pad） */
   .page-body .link-list .nav-link { display: block; padding-right: var(--row-pad); }
-  .page-body .link-list .nav-link::after { left: auto; right: 0; margin-left: 0; }
 
   /* 摺疊（原生 <details>：常見問題、課程、榮譽、動態、入學；user 2026-11-18）：原生箭頭拿掉，整列最右邊一顆圓點——跟選單 hover／選中時出現的
      那顆同一種（--dot-size，chrome.css .nav-link::after；方塊試過後改回圓點），右緣＝內文欄右緣。
@@ -220,22 +217,17 @@
     transform: translateY(-50%);
     pointer-events: none;
   }
-  /* 清單的圓點（整列連結、摺疊、連結清單；user 2026-11-21）：能 hover 的（PC）平常不出，hover／鍵盤聚焦才出、摺疊點開後常駐；
-     觸控（手機）沒有 hover → 一直出，當「點得開」的提示。現／隱都走網站 fade＋模糊（user 2026-11-21；連結的原本瞬間出）。
-     收的時候 open 等縮完才拿掉 → accordion.js 一開始就標 .is-closing，這裡當它已經關了。
-     PC 的清單列與摺疊不出圓點，改下面的直條（user 2026-11-22）；連結清單照舊圓點 */
-  :is(a.item-row, .page-body details, .page-body .link-list .nav-link)::after { opacity: 1; filter: none; transition: var(--transition-fade); }
-  @media (hover: hover) {
-    .page-body .link-list .nav-link::after { opacity: 0; filter: blur(var(--blur)); }
-    .page-body .link-list .nav-link:is(:hover, :focus-visible)::after { opacity: 1; filter: none; }
-    :is(a.item-row, .page-body details)::after { display: none; }
-  }
+  /* 清單的圓點（整列連結、摺疊；user 2026-11-21）：哪裡都不出——PC 改下面的直條（user 2026-11-22），
+     觸控（手機、iPad）也拿掉（user 2026-11-23：「手機上也去掉這個 hover 點的設計」；原本觸控沒有 hover → 一直出，當「點得開」的提示） */
+  :is(a.item-row, .page-body details)::after { display: none; }
   /* 清單列與摺疊（手風琴）hover／鍵盤聚焦（user 2026-11-22，PC；item-marquee.js strike）：每行字先被一條字高的帶蓋住（.item-cover），
-     再一起往右收成一根直條（寬 0.4em、高＝字高；user 2026-11-22：以文字的高度為主、不用跟 logo 一樣），停在字尾後面隔一根直條寬——
-     標題、每個副標（常見問題＝問題）都有；問題折行時只有最後一行留直條、前幾行的收到沒有。
+     再一起往右收到字尾、沒有了；收完、游標還在，才在字尾後面隔一根直條寬的位置淡出一根直條（只有透明度、不帶模糊，user 2026-11-23；寬 0.4em、高＝字高；user 2026-11-22：以文字的高度為主、不用跟 logo 一樣）——
+     帶只走到字的右緣、直條等帶收完才在自己的位置出來（user 2026-11-23；原本帶一路滑過去變成直條）。
+     標題、每個副標都有（常見問題的問題＝清單列的標題，user 2026-11-23 改成同課程）；
+     清單列的標題折行＝整塊一條帶、直條跟整塊一樣高（user 2026-11-23：「如果是兩行文字，就不是兩個遮罩」）。
      帶與直條都是 JS 動畫時插進列裡的 span（不放進 h3／p／問題的字裡：lang.js 換語言會洗掉）、量好位置；hover 著就留著，離開直接拿掉（不淡，user 2026-11-22）；
      摺疊打開著＝直條一直留著（user 2026-11-22），收起來又沒 hover 著才拿掉。
-     z 1＝蓋過放不下那幾行（mask 自成一層）；標題放不下（右邊淡掉）＝直條停在框外、落在 --row-pad 裡 */
+     z 1＝蓋過字；副標放不下（切掉）＝直條停在框外、落在 --row-pad 裡 */
   .item-cover { position: absolute; z-index: 1; background: currentColor; pointer-events: none; }   /* 看得到的那段用 clip-path 切（item-marquee.js），不縮放 */
   /* 被收起來的那則（開別則時一起收）：一開始收就藏直條；真的拿掉要等縮完拿掉 open 的 toggle（item-marquee.js） */
   .page-body details.is-closing > summary:not(:hover, :focus-visible) > .item-cover { display: none; }
@@ -338,11 +330,4 @@
   .section-nav ~ .page-body .page-section:last-child { min-height: calc(100vh - var(--section-y0, 0px) - var(--bar-h)); }
   /* 沒段落的短頁（404）也要高過畫面中線，導覽／右圖的 sticky 才停得住 */
   .page-body { min-height: calc(100vh - var(--top-h) - var(--bar-h)); }
-}
-
-/* 清單列跑馬燈左邊那段淡掉的寬（上面 .is-marquee）：註冊成長度才能過場（漸層本身不能過場）＝開始跑時左邊慢慢淡進來、停回起點後慢慢收掉 */
-@property --marquee-fade-l {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
 }

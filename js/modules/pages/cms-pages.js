@@ -231,13 +231,13 @@ async function curriculum() {
   await refresh();
 }
 
-// ── 常見問題：依分類分段，一題一個摺疊 ──
+// ── 常見問題：依分類分段，一題一個摺疊＝排法同課程（user 2026-11-23）：外面＝問題（標題）、點開＝答案 ──
 async function qa() {
   const rows = await list('qa', 'sort=sort&limit=-1&fields=sort,category_zh,category_en,question_zh,question_en,answer_zh,answer_en');
   const art = article();
   if (!rows || !art?.isConnected) return;
-  replaceSections(art, groups(rows).map(g => `<section class="page-section">${bi('h2', g.zh, g.en, ' class="section-title"')}${g.items.map(q =>
-    `<details class="mt-md">${bi('summary', q.question_zh, q.question_en)}${text(q.answer_zh, q.answer_en, 'mt-sm')}</details>`).join('')}</section>`).join(''));
+  replaceSections(art, groups(rows).map(g => `<section class="page-section">${bi('h2', g.zh, g.en, ' class="section-title"')}<ul class="item-list">${g.items.map(q =>
+    fold(bi('h3', q.question_zh, q.question_en), text(q.answer_zh, q.answer_en))).join('')}</ul></section>`).join(''));
   await refresh();
 }
 

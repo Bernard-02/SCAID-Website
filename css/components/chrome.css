@@ -199,11 +199,10 @@
   .theme-btn { display: flex; align-items: center; min-height: 1lh; }   /* 高＝一行字，跟 EN 同高 */
   .theme-btn .icon { transition: transform var(--dur-medium) var(--ease-standard); }
   html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝實心那半邊轉到右邊 */
-  /* 選中／hover＝文字右邊中線一顆圓點（user 2026-11-18，方塊試過後改回圓點）：大小同骨牌圓孔（--dot-size）；絕對定位＝出現不推版面。
-     聯絡頁的連結（社群方塊、email、姊妹系所；.footer-body，page.css）hover 也是這顆（user 2026-11-18，取代變淡）。
-     選單裡的選項改成跟清單一樣（user 2026-11-22，見下面 .site-menu 那兩條）；內頁的連結清單、聯絡頁照舊圓點 */
+  /* hover 的圓點全站拿掉了：選單（user 2026-11-22）、內頁的連結清單、聯絡頁的連結（user 2026-11-23）都改成蓋黑收直條（item-marquee.js strike）。
+     這條只剩給選單選中那項的常駐直條當底（下面 .site-menu 那兩條改成直條的樣子）；relative＝hover 的帶與直條對它定位 */
   .nav-link, .lang-btn, .theme-btn, .footer-body a { position: relative; }
-  .nav-link::after, .lang-btn::after, .theme-btn::after, .footer-body a::after {
+  .nav-link::after {
     content: '';
     position: absolute;
     left: 100%;
@@ -221,9 +220,8 @@
   /* 選單的選項 hover＝跟清單一樣蓋黑收直條（user 2026-11-22；item-marquee.js strike，hover 著才在、離開拿掉），不出圓點。
      選中的那一項＝收完的那根直條常駐（同打開的手風琴直條留著）：字尾後面隔一根直條寬、寬 0.4em、高＝字高（同 strike 收完的直條），hover 它不重做 */
   .site-menu .nav-link.active::after { width: 0.4em; height: 1em; aspect-ratio: auto; margin-left: 0.4em; border-radius: 0; opacity: 1; filter: none; }
-  @media (hover: hover) {
-    :is(.nav-link, .footer-body a):not(.site-menu *):hover::after { opacity: 1; filter: none; }
-  }
+  /* 中文的選項（都是中文字結尾）：扣掉最後一個字右邊燒在字體裡的字距（0.205em＝scripts/build-fonts.py TRACKING）＝跟 hover 收完的直條同一個位置（item-marquee.js TRACK；user 2026-11-23） */
+  html:not([lang="en"]) .site-menu .nav-link.active::after { margin-left: calc(0.4em - 0.205em); }
 
   /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 右圖的開關（PC 以外，user 2026-11-23；原本空著＝footer 鈕 2026-11-21 搬進選單＝聯絡頁）]；整列貼底 --bar-pad。
      兩側等寬（--side-min＝左欄內容寬，chrome.js fitBar 量）＝動態永遠畫面正中；
