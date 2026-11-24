@@ -35,6 +35,11 @@ export async function fetchCmsJson(url, ms = 10000) {
   } finally { clearTimeout(t); }
 }
 
+// YouTube Data API v3（作品頁用 playlistItems.list 把播放清單拆成一支一支影片，1 unit／50 支；user 2026-11-23，照 SCCD）。
+// 沿用 SCCD 那支 key：GCP HTTP-referrer 限制（放行 github.io／sccd.usc.edu.tw／localhost）＝曝在前端無妨、限制網域才是防線。
+// ⚠️ SCAID 的正式網域要加進這支 key 的白名單（或另開一支 SCAID 的 key 換掉這裡）；本機要用 http://localhost:PORT 開（127.0.0.1、file:// 會被擋）
+export const YT_API_KEY = 'AIzaSyBU-muAPWSpX6hn4gKw4fec6yM1Yqd4lFA';
+
 // sessionStorage last-known-good：上次成功的真資料，後台失敗時退這份（存不進去／壞快取都當沒有）
 export function saveLKG(key, data) { try { sessionStorage.setItem(`scaid:${key}`, JSON.stringify(data)); } catch {} }
 export function readLKG(key) { try { const s = sessionStorage.getItem(`scaid:${key}`); return s ? JSON.parse(s) : null; } catch { return null; } }

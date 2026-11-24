@@ -1,0 +1,72 @@
+/* 作品頁（user 2026-11-23；行為 js/modules/pages/works.js）：像電影院——整頁一律深色（chrome.js syncPageTheme）、沒有右圖、內容置中（works.html 的欄）。
+   兩種排法掛在 .works 的 data-mode：放映（slideshow）／總覽（bento），底列中間那組鈕切（.bar-works）。
+   放映時兩邊的照自己的比例與大小、只限最大寬（user：「顯示的 thumbnail 都以圖片本身的大小爲主，但需要設一個 max width」），正中那個一律撐滿最大框；總覽撐滿一欄（user 2026-11-23）：
+   大小＝自己的寬高（.work 上的 --w／--h，works.js／HTML 寫）照比例縮進最大框、不放大——寫在框上不靠圖：圖的寬高寫 auto 的話，載到之前是 0×0（lazy 也就不載）。
+   影片的寬高寫成 16:9（standard／high 縮圖是 4:3 上下帶黑邊，cover 裁掉） */
+@layer components {
+  .works { margin-inline: 0; }   /* 沒有段落導覽、沒有右圖的鈕 → 手機也不用讓出兩邊那條（.page-body 的 --rail-w） */
+  .works-items { margin-top: var(--spacing-md); }
+  .work { aspect-ratio: var(--w) / var(--h); }
+  .work img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* 點的範圍＝蓋在整個作品上的鈕（放映：兩邊那個＝換、正中的影片＝播；總覽：點了切到放映）；影片中間一顆 play */
+  .work-hit { position: absolute; inset: 0; display: grid; place-items: center; width: 100%; padding: 0; color: var(--theme-fg); cursor: pointer; }
+  .work-hit:disabled { cursor: default; }
+  .work-hit .icon { font-size: 2.5rem; filter: drop-shadow(0 0 0.4rem rgb(var(--theme-bg-rgb), 0.6)); transition: var(--transition-fade); }
+  /* 放映：只有正中那個出 play（user 2026-11-23：兩邊的即便是影片也不出）；總覽照常出 */
+  .works[data-mode="slideshow"] .work:not([data-pos="0"]) .work-hit .icon { opacity: 0; filter: blur(var(--blur)); }
+  /* 影片就地播：蓋在縮圖上、同一個框（YouTube 播放器自己的鈕可以全螢幕） */
+  .work-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--theme-bg); }
+  .work:has(.work-frame) .work-hit { visibility: hidden; }
+
+  /* ── 放映：舞台吃掉 h1 下面剩下的高（.works 定高＝畫面扣掉頂、底列，同 .page-body 的 min-height），一屏放得下、不捲。
+     正中最大壓最上層；前後兩個縮小、貼著舞台兩邊、被正中那個擋住一部分＝從兩邊露出來；再外面的藏在兩邊那個底下。
+     兩邊失焦（景深，同關於的段落輪播 page.css .slide）。換一個＝位置、大小、模糊一起補間（時長同網站 fade）。
+     大小用舞台的 cq 單位（container-type: size；總覽不能掛，高會被鎖成 0）。.works 一定要定高：只有 min-height＝舞台的高是 flex 長出來的，
+     Chrome 的 cqh 會算成 0＝作品寬高全是 0、只看得到 play（2026-11-23 user 回報；WebKit 沒事，煙霧測試只守這條規則還在）── */
+  .works[data-mode="slideshow"] { display: flex; flex-direction: column; height: calc(100vh - var(--top-h) - var(--bar-h)); }
+  .works[data-mode="slideshow"] .works-items { flex: 1; position: relative; min-height: 12rem; margin-bottom: var(--spacing-md); container-type: size; --step: 0.6cqw; }   /* 下面留一段：直的圖撐滿高時不貼著底列 */
+  .works[data-mode="slideshow"] .work {
+    --mw: 40cqw; --mh: 60cqh;   /* 兩邊那個（還有藏著的）的最大框 */
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(calc(var(--w) * 1px), var(--mw), calc(var(--mh) * var(--w) / var(--h)));
+    opacity: 0; z-index: 1; filter: blur(calc(2 * var(--step)));
+    transition: left var(--dur-fade) var(--ease-standard), transform var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard),
+      opacity var(--dur-fade) var(--ease-standard), filter var(--dur-fade) var(--ease-standard);
+  }
+  .works[data-mode="slideshow"] .work:is([data-pos="-2"], [data-pos="-1"]) { left: 0; transform: translate(0, -50%); }
+  .works[data-mode="slideshow"] .work:is([data-pos="1"], [data-pos="2"]) { left: 100%; transform: translate(-100%, -50%); }
+  .works[data-mode="slideshow"] .work:is([data-pos="-1"], [data-pos="1"]) { z-index: 2; opacity: 1; filter: blur(var(--step)); }
+  /* 正中那個一律撐滿最大框（寬、高哪邊先碰到就停）、照比例，圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」；
+     原本也不放大，小圖在正中反而比兩邊小） */
+  .works[data-mode="slideshow"] .work[data-pos="0"] { --mw: 72cqw; --mh: 100cqh; width: min(var(--mw), calc(var(--mh) * var(--w) / var(--h))); z-index: 3; opacity: 1; filter: none; }
+  .works[data-mode="slideshow"] .work[data-pos="0"] .work-hit:disabled { pointer-events: none; }   /* 正中的圖片不放大：點了等於沒點 */
+
+  /* ── 總覽（bento）：照比例排成幾欄（masonry），照閱讀順序擺（user 2026-11-23：放映的第 8 個＝總覽的第 8 個）：
+     一個一個由左到右放進最矮的那一欄，位置 works.js layoutBento 算（--x／--y／--bw）——原本 CSS 多欄是一欄排滿才換下一欄，順序對不上。
+     手機 2 欄、md 起 3 欄（--cols；user 的截圖），欄距＝gutter（column-gap 只給 JS 量）；每個作品都撐滿一欄寬（--bw 掛在清單上；
+     user 2026-11-23：「有些圖片應該是拉滿到那個格子」，原本比一欄窄的照原本大小置中）── */
+  .works[data-mode="bento"] .works-items { --cols: 2; position: relative; column-gap: var(--spacing-gutter); }
+  .works[data-mode="bento"] .work { position: absolute; left: var(--x, 0); top: var(--y, 0); width: var(--bw, 0); }
+  @media (min-width: 768px) {
+    .works[data-mode="bento"] .works-items { --cols: 3; }
+  }
+  /* 換排法（works.js setMode）：作品淡出（網站 fade）→ 換 → 淡入；位置不補間——兩套版型，補了會滿畫面亂飛 */
+  .works-items { transition: var(--transition-fade); }
+  .works.is-switching .works-items { opacity: 0; filter: blur(var(--blur)); }
+  .works.is-switching .work { transition: none; }
+
+  /* ── 底列中間那組鈕：放映／總覽（header.html .bar-works）。只在作品頁（同首頁的動態只在首頁：別頁淡掉、淡完才 hidden）；
+     跟首頁的動態同一格（底列中欄、畫面正中）。目前的那個全亮、另一個淡（同段落導覽的淡 0.3），深淺的過場走網站 fade ── */
+  .bar-works { grid-area: 1 / 2; justify-self: center; display: flex; gap: 1em; transition: var(--transition-fade), visibility 0s; }
+  body:not([data-page="works"]) .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  .bar-works button { color: inherit; opacity: 0.3; transition: var(--transition-fade); }
+  .bar-works button[aria-pressed="true"] { opacity: 1; }
+  @media (hover: hover) {
+    .bar-works button:hover { opacity: 1; }
+  }
+  /* 選單開著＝當內容處理（同首頁的動態）：模糊＋疊白、不吃指標（點下去落在底列本身＝只收選單，chrome.js） */
+  html.menu-open body[data-page="works"] .bar-works { opacity: 0.4; filter: blur(var(--blur)); pointer-events: none; }
+  /* 作品頁一律深色：深色模式鈕藏起來（user 2026-11-23；原本停用＋淡 0.3。chrome.js syncTheme 照樣掛 disabled），
+     語言鈕補到它的位置（上面隔的就是選單分區的間距）；離開回到存的那種 */
+  body[data-page="works"] .theme-btn { display: none; }
+}

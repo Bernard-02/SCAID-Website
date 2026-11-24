@@ -67,7 +67,25 @@ function setNews(open) {
 // 一進頁的套用在各頁 <head> 的 inline script（CSS 之前，免得閃白）；這裡只管切換與鈕的 aria-pressed（header 注入後 main.js 也呼叫一次）
 const THEME_KEY = 'scaid:theme';
 export function syncTheme() {
-  document.querySelectorAll('.theme-btn').forEach(b => b.setAttribute('aria-pressed', String(html.dataset.theme === 'dark')));
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.setAttribute('aria-pressed', String(html.dataset.theme === 'dark'));
+    /** @type {HTMLButtonElement} */ (b).disabled = document.body.dataset.page === 'works';   // 作品頁一律深色（下面 syncPageTheme）
+  });
+}
+// 作品頁（user 2026-11-23）：不管存的是哪種都暗；離開＝回到存的那種（不寫進 localStorage）。換頁時 main.js initPageModules 叫，
+// 過場同切換（整個畫面 fade）；直接開 works.html＝<head> 的 inline script 就先暗了。放大 dialog 在放影片＝也暗（關燈，下面 lights） @param {string} page
+let lightsOff = false;
+/** @param {string} page @param {boolean} [fade] false＝不整張交叉淡化（關燈：背景、logo 的顏色自己過場，見 lights） */
+export function syncPageTheme(page, fade = true) {
+  let saved = '';
+  try { saved = localStorage.getItem(THEME_KEY) || ''; } catch {}
+  const dark = lightsOff || page === 'works' || saved === 'dark';
+  if (dark === (html.dataset.theme === 'dark')) { syncTheme(); return; }
+  const apply = () => {
+    if (dark) html.dataset.theme = 'dark'; else delete html.dataset.theme;
+    syncTheme();
+  };
+  if (fade) fadeSwap(apply); else apply();
 }
 function toggleTheme() {
   const dark = html.dataset.theme !== 'dark';
@@ -83,6 +101,20 @@ function toggleTheme() {
 export function closeOverlays(news = true) { setMenu(false); if (news) setNews(false); awayNews(); }   // awayNews：換頁離開首頁（router 先換 data-page 才叫這裡）
 
 // intro：data-video 有網址才開 <dialog> 播；關掉就停並卸載
+/** YouTube 的影片 id（youtu.be/…、watch?v=…、/embed/、/shorts/、/live/）；不是 YouTube 的網域＝undefined——不先看網域的話，
+ *  …/live/graduation-2026.mp4、?v=快取參數 這種直連的檔會被認成 YouTube @param {string} url */
+const youtubeId = (url) => {
+  let u;
+  try { u = new URL(url, location.href); } catch { return undefined; }
+  if (!/(^|\.)(youtube(-nocookie)?\.com|youtu\.be)$/.test(u.hostname)) return undefined;
+  const id = u.hostname.endsWith('youtu.be') ? u.pathname.slice(1) : u.searchParams.get('v') || u.pathname.split('/')[2];
+  return id && /^[\w-]{11}$/.test(id) && id !== 'videoseries' ? id : undefined;   // videoseries＝播放清單，不是一支
+};
+/** YouTube 播放器（intro、作品頁共用）：youtube-nocookie、autoplay＝點了就播、playsinline＝iPhone 不自己跳全螢幕、可以全螢幕 @param {string} id @param {string} title */
+export const youtubeFrame = (id, title) => Object.assign(document.createElement('iframe'), {
+  src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1&rel=0`,
+  allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, title,
+});
 function openIntro(btn) {
   const url = btn.dataset.video;
   if (!url) return;   // TODO intro 影片網址（header.html .play-btn data-video）
@@ -129,8 +161,9 @@ function renderFigure() {
 }
 /** 動態那則的一組圖：封面縮圖在前、相簿照順序（不在摺疊裡的相簿＝只有那本） @param {Element} el */
 const galleryOf = (el) => [...(el.closest('details') ?? el.closest('.album'))?.querySelectorAll(':scope > summary .item-thumb img, .album button img') ?? []];
-/** @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張） */
-function openFigure(node, e, items) {
+/** 作品頁的總覽也用它（user 2026-11-23：點了就地開 lightbox，一組＝總覽全部；影片的節點＝youtubeFrame，切到才載、切走就停）
+ *  @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張） */
+export function openFigure(node, e, items) {
   const dialog = figureDialog();
   if (!dialog || !node) return;
   figureItems = items?.length ? items : [node];

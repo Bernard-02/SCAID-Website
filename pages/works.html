@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <!-- 作品頁一律深色（user 2026-11-23）：不看 localStorage 直接暗；離開時 chrome.js syncPageTheme 回到存的那種 -->
+  <script>document.documentElement.dataset.theme='dark';document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
+  <title>作品 - SCAID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
+  <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
+  <link rel="stylesheet" href="../css/output.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <!-- 作品（user 2026-11-23）：像電影院——整頁深色、沒有右圖（不放 .page-figure）、內容置中（md 起中間 8 欄）。
+       兩種排法：放映（slideshow，一次一個在正中、前後兩個躲在後面）／總覽（bento，照比例排成幾欄），底列中間那組鈕切（header.html .bar-works）。
+       每個作品照自己的比例與大小、只限最大寬；每次進來順序都打亂；影片在放映時點了就地播、可以全螢幕，圖片不放大。行為 js/modules/pages/works.js、版型 css/components/works.css。
+       內容為 MOCK 示意：圖暫時是 Lorem Picsum、影片是 Blender 的開放影片；後台（單例 works 的 YouTube 播放清單＋檔案庫「作品」資料夾的圖）有東西就換掉 -->
+  <main id="page-content">
+    <div class="site-container site-grid">
+      <article class="page-body works col-span-full md:col-start-3 md:col-span-8" data-mode="slideshow">
+        <h1 data-label="nav.works" data-en="Works">作品</h1>
+        <div class="works-items">
+          <div class="work" data-kind="image" style="--w:1600;--h:900"><img src="https://picsum.photos/seed/scaid-work-1/1600/900" alt="" width="1600" height="900" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="image" style="--w:900;--h:1200"><img src="https://picsum.photos/seed/scaid-work-2/900/1200" alt="" width="900" height="1200" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="video" data-vid="aqz-KE-bpKQ" style="--w:1280;--h:720"><img src="https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg" alt="Big Buck Bunny" width="1280" height="720" loading="lazy"><button type="button" class="work-hit"><span class="icon icon-play" aria-hidden="true"></span></button></div>
+          <div class="work" data-kind="image" style="--w:1200;--h:1200"><img src="https://picsum.photos/seed/scaid-work-3/1200/1200" alt="" width="1200" height="1200" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="image" style="--w:1400;--h:800"><img src="https://picsum.photos/seed/scaid-work-4/1400/800" alt="" width="1400" height="800" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="image" style="--w:800;--h:1100"><img src="https://picsum.photos/seed/scaid-work-5/800/1100" alt="" width="800" height="1100" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="video" data-vid="R6MlUcmOul8" style="--w:1280;--h:720"><img src="https://i.ytimg.com/vi/R6MlUcmOul8/maxresdefault.jpg" alt="Tears of Steel" width="1280" height="720" loading="lazy"><button type="button" class="work-hit"><span class="icon icon-play" aria-hidden="true"></span></button></div>
+          <div class="work" data-kind="image" style="--w:1500;--h:1000"><img src="https://picsum.photos/seed/scaid-work-6/1500/1000" alt="" width="1500" height="1000" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="image" style="--w:1000;--h:1400"><img src="https://picsum.photos/seed/scaid-work-7/1000/1400" alt="" width="1000" height="1400" loading="lazy"><button type="button" class="work-hit"></button></div>
+          <div class="work" data-kind="image" style="--w:1600;--h:1000"><img src="https://picsum.photos/seed/scaid-work-8/1600/1000" alt="" width="1600" height="1000" loading="lazy"><button type="button" class="work-hit"></button></div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <script src="../js/utils/helpers.js"></script>
+  <script type="module" src="../js/main.js"></script>
+
+</body>
+</html>

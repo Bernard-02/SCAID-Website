@@ -1,0 +1,132 @@
+[
+  {
+    "kind": "image",
+    "src": "data/works/01.svg",
+    "w": 1600,
+    "h": 900,
+    "title": "測試 01｜1600×900 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/02.svg",
+    "w": 900,
+    "h": 1600,
+    "title": "測試 02｜900×1600 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/03.svg",
+    "w": 1500,
+    "h": 1000,
+    "title": "測試 03｜1500×1000 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/04.svg",
+    "w": 1000,
+    "h": 1500,
+    "title": "測試 04｜1000×1500 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/05.svg",
+    "w": 1200,
+    "h": 1200,
+    "title": "測試 05｜1200×1200 方形"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/06.svg",
+    "w": 1600,
+    "h": 1200,
+    "title": "測試 06｜1600×1200 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/07.svg",
+    "w": 1200,
+    "h": 1600,
+    "title": "測試 07｜1200×1600 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/08.svg",
+    "w": 2000,
+    "h": 1000,
+    "title": "測試 08｜2000×1000 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/09.svg",
+    "w": 800,
+    "h": 1000,
+    "title": "測試 09｜800×1000 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/10.svg",
+    "w": 240,
+    "h": 160,
+    "title": "測試 10｜240×160 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/11.svg",
+    "w": 1920,
+    "h": 1080,
+    "title": "測試 11｜1920×1080 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/12.svg",
+    "w": 1080,
+    "h": 1920,
+    "title": "測試 12｜1080×1920 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/13.svg",
+    "w": 1000,
+    "h": 800,
+    "title": "測試 13｜1000×800 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/14.svg",
+    "w": 700,
+    "h": 1400,
+    "title": "測試 14｜700×1400 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/15.svg",
+    "w": 220,
+    "h": 330,
+    "title": "測試 15｜220×330 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/16.svg",
+    "w": 1400,
+    "h": 1050,
+    "title": "測試 16｜1400×1050 橫式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/17.svg",
+    "w": 1050,
+    "h": 1400,
+    "title": "測試 17｜1050×1400 直式"
+  },
+  {
+    "kind": "image",
+    "src": "data/works/18.svg",
+    "w": 1300,
+    "h": 1300,
+    "title": "測試 18｜1300×1300 方形"
+  },
+  {
+    "kind": "playlist",
+    "url": "https://www.youtube.com/playlist?list=PLG0DnOKlL-llBG3d2yiQeQnhN6MK95pM4"
+  }
+]

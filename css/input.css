@@ -13,6 +13,7 @@
 @import './components/chrome.css';   /* 全站殼：logo／選單／底列／intro dialog */
 @import './components/home.css';     /* 首頁：logo 置中、動態展開 */
 @import './components/page.css';     /* 內頁版型：段落導覽、內文、右圖 */
+@import './components/works.css';    /* 作品頁：放映／總覽兩種排法、底列那組鈕 */
 
 /* 3. Tailwind */
 @tailwind base;

@@ -8,7 +8,7 @@ import { initRouter, updateNavActive } from './router.js';
 import { sitePath } from './modules/ui/site-base.js';
 import { runPageCleanups } from './modules/ui/page-cleanup.js';
 import { installReducedMotionGsap } from './modules/ui/reduce-motion.js';
-import { initChrome, closeOverlays, fitBar, syncFigure, syncTheme } from './modules/ui/chrome.js';
+import { initChrome, closeOverlays, fitBar, syncFigure, syncTheme, syncPageTheme } from './modules/ui/chrome.js';
 import { initLogo } from './modules/ui/logo.js';
 import { initObject } from './modules/ui/object.js';
 import { initLang, applyLang } from './modules/ui/lang.js';
@@ -58,6 +58,7 @@ export function cleanupPageModules() {
  */
 export function initPageModules(page, params = new URLSearchParams(), fromUserNav = false) {
   closeOverlays();      // 選單／首頁展開態不跨頁
+  syncPageTheme(page);  // 作品頁一律深色、離開回到原本的（user 2026-11-23）
   updateNavActive(page);
   initSectionNav();     // 內頁段落導覽
   initSlideshow();      // 段落圖片輪播（有 .slideshow 的頁）
@@ -68,6 +69,7 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   // 回傳＝後台這幾支都換完（router 等它才淡入，免得示意內容先閃一下）
   const cms = [applyUiLabels(document.getElementById('page-content') || document)];   // 介面文字（頁名、固定小標）
   if (page === 'contact') cms.push(import('./modules/ui/footer-cms.js').then(m => m.loadFooterCms()));   // 聯絡頁＝Directus 單例 footer
+  if (page === 'works') cms.push(import('./modules/pages/works.js').then(m => m.initWorks()));         // 作品頁：兩種排法＋後台／YouTube 播放清單
   // 縮圖＋標題＋副標的列表（師資、合作企業）＝Directus；頁面有 ul.item-list[data-cms] 才載
   if (document.querySelector('#page-content .item-list[data-cms]')) cms.push(import('./modules/ui/item-list-cms.js').then(m => m.loadItemListCms()));
   cms.push(import('./modules/pages/cms-pages.js').then(m => m.loadPage(page, params)));   // 其他各頁的內容

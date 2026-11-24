@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(20 55% 58%)"/><stop offset="1" stop-color="hsl(60 50% 30%)"/></linearGradient></defs>
+<rect width="800" height="1000" fill="url(#g)"/>
+<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-family="system-ui, sans-serif" font-weight="700" font-size="288" fill="#fff" fill-opacity="0.92">09</text>
+<text x="50%" y="740" text-anchor="middle" font-family="system-ui, 'Microsoft JhengHei', 'PingFang TC', sans-serif" font-size="60" fill="#fff" fill-opacity="0.85">800 × 1000・直式</text>
+</svg>

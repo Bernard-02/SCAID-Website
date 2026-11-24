@@ -13,7 +13,7 @@ import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
 // <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
-const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'news', 'records', 'press', 'admission',
+const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'works', 'news', 'records', 'press', 'admission',
                'qa', 'donate', 'regulations', 'sitemap', 'contact', '404'];
 const routes = {
   '/':           { page: 'index', htmlFile: 'index.html' },
