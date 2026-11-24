@@ -14,6 +14,7 @@ import { initSectionNav } from '../ui/section-nav.js';
 import { initAlbums } from '../ui/album.js';
 import { initSlideshow } from '../ui/slideshow.js';
 import { fitBar } from '../ui/chrome.js';
+import { sitePath } from '../ui/site-base.js';
 
 // ── 小工具 ──
 /** 中文寫內文、英文寫 data-en（lang.js 切），英文空退中文；兩個都空＝不出 @param {string} tag @param {any} zh @param {any} en @param {string} [attrs] */
@@ -49,7 +50,7 @@ async function single(collection, fields) {
   catch (e) { console.warn(`[${collection}] 後台抓不到，維持示意：`, e instanceof Error ? e.message : e); return null; }
 }
 /** 段落有幾段（關於＝子集合、其他＝重複列，都是陣列；還沒填＝null） @param {any} p */
-const sectionsOf = (p) => Array.isArray(p?.sections) ? p.sections.filter((/** @type {any} */ s) => s?.title_zh || s?.title_en || s?.body_zh || s?.body_en) : [];
+const sectionsOf = (p) => Array.isArray(p?.sections) ? p.sections.filter((/** @type {any} */ s) => s?.title_zh || s?.title_en || s?.body_zh || s?.body_en || s?.description_zh || s?.description_en || s?.subsections?.length || s?.timeline?.length) : [];
 
 /** 段落內文（WYSIWYG）只留這幾種標籤；其他拆掉留字。連結只放行 http(s)／mailto／tel，外連另開新視窗。
  *  class 只留間距／附註那幾個（示意內容從 HTML 搬過去時帶著；後台編輯器不會自己加） */
@@ -84,8 +85,36 @@ const imgAttrs = (/** @type {any} */ f) => `src="${esc(assetUrl(f))}" alt=""${f.
 const album = (fs) => fs.length ? `<div class="album">${fs.map(f => `<button type="button"><img ${imgAttrs(f)}>${lbl('span', 'common.enlarge', '放大圖片', 'Enlarge image', ' class="sr-only"')}</button>`).join('')}</div>` : '';
 /** 段落圖片輪播（關於） @param {any[]} fs */
 const slideshow = (fs) => fs.length ? `<div class="slideshow" aria-label="段落圖片">${fs.map(f => `<button type="button" class="slide"><img ${imgAttrs(f)}></button>`).join('')}</div>` : '';
-/** 一段（文字頁）＝標題 → 輪播 → 內文 @param {any} s */
-const textSection = (s) => `<section class="page-section">${bi('h2', s.title_zh, s.title_en, ' class="section-title"')}${slideshow(filesOf(s.images))}${rich(s.body_zh, s.body_en)}</section>`;
+/** 多行純文字 → 一段一個 p（換行照留、空一行＝分段；中英照段的順序對），回傳每段的產生器、class 由呼叫端給 @param {any} zh @param {any} en */
+const paras = (zh, en) => {
+  const split = (/** @type {any} */ s) => String(s || '').trim().split(/\n\s*\n/), z = split(zh), e = split(en);
+  /** @type {((c: string) => string)[]} */
+  const out = [];
+  for (let i = 0; i < Math.max(z.length, e.length); i++) if (z[i] || e[i]) out.push(c => text(z[i], e[i], c));
+  return out;
+};
+/** 關於的一個小節（user 2026-11-23：不用 rich text，一個小節一筆、可以一直加；同一天加圖片、附註）：標題 → 圖 → 內文 → 附註，有才排。
+ *  塊與塊之間隔 sm（同分段）；沒標題＝第一塊自己隔 md（同 h3 的上距）；圖的最高 page.css @param {any} it */
+const subsection = (it) => {
+  /** @type {((c: string) => string)[]} */
+  const blocks = [];
+  if (it.image?.id) blocks.push(c => `<img${c ? ` class="${c}"` : ''} ${imgAttrs(it.image)}>`);
+  blocks.push(...paras(it.text_zh, it.text_en));
+  if (it.note_zh || it.note_en) blocks.push(c => text(it.note_zh, it.note_en, `${c} text-xs`.trim()));
+  const top = it.title_zh || it.title_en ? '' : 'mt-md';
+  return bi('h3', it.title_zh, it.title_en) + blocks.map((b, i) => b(i ? 'mt-sm' : top)).join('');
+};
+/** 年份＋說明的條列（師資詳細頁的學歷…、關於的年表；user 2026-11-23：沿革要跟老師的詳細頁一樣）：一筆＝年份一行、說明一行，沒年份＝只有說明；
+ *  沒說明的那筆不算、一筆都沒有＝'' @param {any} rows @param {string} [attrs] */
+const entryList = (rows, attrs = '') => {
+  const r = (Array.isArray(rows) ? rows : []).filter((/** @type {any} */ x) => x?.text_zh || x?.text_en);
+  return r.length ? `<ul${attrs}>${r.map(x => x.year ? `<li><p>${esc(x.year)}</p>${bi('p', x.text_zh, x.text_en)}</li>` : bi('li', x.text_zh, x.text_en)).join('')}</ul>` : '';
+};
+/** 一段（文字頁）＝標題 → 輪播 → 說明 → 內文 → 年表。關於：說明＝段落圖片下面那段、內文＝小節（子集合，照 sort）、年表＝沿革那種年份＋說明（都 user 2026-11-23）；
+ *  捐款、規章的內文是一段 rich text @param {any} s */
+const textSection = (s) => `<section class="page-section">${bi('h2', s.title_zh, s.title_en, ' class="section-title"')}${slideshow(filesOf(s.images))}${
+  paras(s.description_zh, s.description_en).map((b, i) => b(i ? 'mt-sm' : 'mt-md')).join('')}${
+  Array.isArray(s.subsections) ? s.subsections.slice().sort(bySort).map(subsection).join('') : rich(s.body_zh, s.body_en)}${entryList(s.timeline, ' class="timeline mt-md"')}</section>`;
 /** 依分類分段（qa、規章）：照第一次出現的順序 @param {any[]} rows */
 const groups = (rows) => {
   /** @type {Map<string, { zh: string, en: string, items: any[] }>} */
@@ -115,7 +144,7 @@ function setLead(p) {
   el.dataset.en = p.lead_en || p.lead_zh;
 }
 
-// ── 動態（news）：動態頁、入學頁（勾了 admission 的）、首頁清單、底列跑馬燈 ──
+// ── 動態（news）：動態頁、入學頁（勾了 admission 的）。首頁那串與底列跑馬燈是另一個集合 home_news（user 2026-11-23 拆開，下面） ──
 const NEWS = `id,date,title_zh,title_en,summary_zh,summary_en,category_zh,category_en,time_zh,time_en,place_zh,place_en,image,${FILE('album')},${FILE('attachments')}`;
 /** 動態頁那一列：縮圖＋標題＋分類；展開＝時間、地點、相簿 @param {any} n */
 const newsRow = (n) => {
@@ -129,25 +158,54 @@ const admissionRow = (n) => {
   const links = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(assetUrl(f))}" target="_blank" rel="noopener">${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
   return fold(bi('h3', n.title_zh, n.title_en) + timeOf(n), text(n.summary_zh, n.summary_en) + album(filesOf(n.album)) + links);
 };
-async function newsList(admission = false) {
-  const rows = await list('news', `sort=-date&limit=-1${admission ? '&filter[admission][_eq]=true' : ''}&fields=${NEWS}`);
+/** 動態頁／入學頁的清單。item＝首頁連過來的那一則（入學頁 ?item=<id>，user 2026-11-23 照 SCCD）：打開、捲到 h1 那條線（同段落導覽的對齊） @param {boolean} [admission] @param {string} [item] */
+async function newsList(admission = false, item = '') {
+  // 抓之前先記住這一頁的清單：後台慢、抓完已經換到動態／入學另一頁（同樣有 .item-list）＝不畫到那一頁去
   const ul = document.querySelector('#page-content .page-section .item-list');
-  if (!rows || !ul?.isConnected) return;
+  if (!ul) return;
+  const rows = await list('news', `sort=-date&limit=-1${admission ? '&filter[admission][_eq]=true' : ''}&fields=${NEWS}`);
+  if (!rows || !ul.isConnected) return;
   ul.innerHTML = rows.map(admission ? admissionRow : newsRow).join('');
   await refresh();
+  if (!item || !ul.isConnected) return;   // 等介面文字的時候換頁了，同上
+  const li = ul.children[rows.findIndex(n => String(n.id) === item)], h1 = document.querySelector('#page-content h1');
+  if (!li) return;
+  const d = li.querySelector('details');
+  if (d) d.open = true;
+  if (h1) window.scrollTo({ top: li.getBoundingClientRect().top - h1.getBoundingClientRect().top, behavior: 'instant' });   // 兩個都是畫面座標＝相減跟目前捲到哪無關（同 section-nav 的 target）
+  li.querySelector('summary')?.focus({ preventScroll: true });   // 鍵盤從這一則接著走（同網址的 #錨點）；不然第一下 Tab 從頁首開始、把它捲走
 }
+
+// ── 首頁那串＋底列跑馬燈＝首頁動態 home_news（user 2026-11-23 跟動態頁拆開）：照拖曳順序前 8 則 ──
+/** 點了去哪（照 SCCD 的首頁 news）→ <a> 的屬性：入學頁的某一則（?item=，到了打開那一則）優先——那則要上架、還勾著「入學」，不然入學頁沒有它＝當作沒選；
+ *  再來外部網址（只放 http(s)、另開新視窗）；都沒有＝''（不能點） @param {any} n */
+const homeLink = (n) => {
+  const a = n.admission_item;
+  if (a?.id && a.status === 'published' && a.admission) return `href="${esc(sitePath(`pages/admission.html?item=${encodeURIComponent(a.id)}`))}"`;
+  return /^https?:\/\//i.test(n.url || '') ? `href="${esc(n.url)}" target="_blank" rel="noopener"` : '';
+};
 async function homeNews() {
-  const rows = await list('news', 'sort=-date&limit=8&fields=title_zh,title_en,summary_zh,summary_en,image');
+  const rows = await list('home_news', 'sort=sort&limit=8&fields=title_zh,title_en,summary_zh,summary_en,image,url,admission_item.id,admission_item.status,admission_item.admission');
   const ul = document.querySelector('#page-content .home-news-list ul');
   if (!rows || !ul?.isConnected) return;
-  ul.innerHTML = rows.map(n => `<li>${n.summary_zh || n.summary_en
-    ? `<p class="text-md">${bi('span', n.title_zh, n.title_en, ' class="block"')}${bi('span', n.summary_zh, n.summary_en, ' class="block"')}</p>`
-    : bi('p', n.title_zh, n.title_en, ' class="text-md"')}<div class="home-news-box">${n.image ? `<img src="${esc(assetUrl(n.image))}" alt="" loading="lazy">` : ''}</div></li>`).join('');
+  ul.innerHTML = rows.map(n => {
+    const body = (n.summary_zh || n.summary_en
+      ? `<p class="text-md">${bi('span', n.title_zh, n.title_en, ' class="block"')}${bi('span', n.summary_zh, n.summary_en, ' class="block"')}</p>`
+      : bi('p', n.title_zh, n.title_en, ' class="text-md"')) + `<div class="home-news-box">${n.image ? `<img src="${esc(assetUrl(n.image))}" alt="" loading="lazy">` : ''}</div>`;
+    const link = homeLink(n);
+    return `<li>${link ? `<a class="block" ${link}>${body}</a>` : body}</li>`;
+  }).join('');
   await refresh();
+}
+/** 首頁影片（後台「首頁」資料夾裡的單例 home_video，user 2026-11-23）：底列 ▶ 鈕的 data-video ← 後台的連結（chrome.js openIntro 照它開）。
+ *  只收 http(s)；抓不到／沒填＝照 header.html 原本的 data-video */
+export async function loadIntroVideo() {
+  const v = await single('home_video', 'url'), btn = /** @type {HTMLElement | null} */ (document.querySelector('.site-bar .play-btn'));
+  if (btn && /^https?:\/\//i.test(v?.url || '')) btn.dataset.video = v.url;
 }
 /** 底列動態跑馬燈（殼裡、每頁都在）：最近幾則的標題；換完內容拿掉接力那份、fitBar 重做 */
 export async function loadBarNews() {
-  const rows = await list('news', 'sort=-date&limit=8&fields=title_zh,title_en');
+  const rows = await list('home_news', 'sort=sort&limit=8&fields=title_zh,title_en');
   const copy = document.querySelector('.site-bar .bar-news-copy');
   if (!rows || !copy) return;
   copy.innerHTML = rows.map(n => bi('span', n.title_zh, n.title_en)).join('');
@@ -230,8 +288,9 @@ async function regulations() {
 }
 
 // ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業）：每頁一個單例 ──
-// 關於的段落是子集合（要放輪播圖）、捐款的段落是重複列（JSON）；師資、合作企業只有導言
-const ABOUT_SECTIONS = 'sections.sort,sections.title_zh,sections.title_en,sections.body_zh,sections.body_en,' + FILE('sections.images') + '&deep[sections][_filter][status][_eq]=published&deep[sections][_sort]=sort';
+// 關於的段落是子集合（要放輪播圖；輪播下面一段說明、再來是小節，小節也是子集合：要放圖）、捐款的段落是重複列（JSON）；師資、合作企業只有導言
+const ABOUT_SECTIONS = 'sections.sort,sections.title_zh,sections.title_en,sections.description_zh,sections.description_en,sections.timeline,sections.subsections.*,sections.subsections.image.id,sections.subsections.image.width,sections.subsections.image.height,'
+  + FILE('sections.images') + '&deep[sections][_filter][status][_eq]=published&deep[sections][_sort]=sort';
 /** @type {Record<string, [string, string]>} slug → [集合, 導言以外要抓的欄位] */
 const SINGLE = { about: ['about', ABOUT_SECTIONS], donate: ['donate', 'sections'], faculty: ['faculty_page', ''], partners: ['partners_page', ''] };
 /** @param {string} slug */
@@ -261,9 +320,8 @@ async function facultyDetail(params) {
   const subs = (Array.isArray(f.subtitles) ? f.subtitles : []).map(x => bi('p', x?.text_zh, x?.text_en)).join('');
   head.innerHTML = bi('h1', f.person?.name_zh, f.person?.name_en) + subs;
   replaceSections(art, `<section class="page-section">${CV.map(([k, zh, en]) => {
-    const rows = (Array.isArray(f[k]) ? f[k] : []).filter(x => x?.text_zh || x?.text_en);
-    if (!rows.length) return '';
-    return lbl('h3', `faculty.cv.${k}`, zh, en) + `<ul>${rows.map(x => x.year ? `<li><p>${esc(x.year)}</p>${bi('p', x.text_zh, x.text_en)}</li>` : bi('li', x.text_zh, x.text_en)).join('')}</ul>`;
+    const items = entryList(f[k]);
+    return items && lbl('h3', `faculty.cv.${k}`, zh, en) + items;
   }).join('')}</section>`);
   await refresh();
   const name = art.querySelector('h1')?.textContent;
@@ -274,7 +332,7 @@ async function facultyDetail(params) {
 export function loadPage(page, params) {
   /** @type {Record<string, () => Promise<void>>} */
   const run = {
-    index: homeNews, news: () => newsList(), admission: () => newsList(true), curriculum, qa, records, press, regulations,
+    index: homeNews, news: () => newsList(), admission: () => newsList(true, params.get('item') || ''), curriculum, qa, records, press, regulations,
     about: () => textPage('about'), donate: () => textPage('donate'), faculty: () => textPage('faculty'), partners: () => textPage('partners'),
     'faculty-detail': () => facultyDetail(params),
   };

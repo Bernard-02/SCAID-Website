@@ -7,7 +7,8 @@
 
 const fs = require('fs');
 const token = (process.env.DIRECTUS_TOKEN || fs.readFileSync('scripts/.directus-token', 'utf8')).trim();
-const BASE = fs.readFileSync('js/config/api.js', 'utf8').match(/CMS_API_BASE = '(https:\/\/[^/']+)/)[1];
+// 建在別台（搬到 v11 時先在新的那台建結構，docs/Directus-搬到11.md）：DIRECTUS_URL=<網址> DIRECTUS_TOKEN=<那台的 token>
+const BASE = (process.env.DIRECTUS_URL || fs.readFileSync('js/config/api.js', 'utf8').match(/CMS_API_BASE = '(https:\/\/[^/']+)/)[1]).replace(/\/+$/, '');
 const H = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' };
 const DRY = process.argv.includes('--dry');
 
@@ -63,13 +64,15 @@ const junction = (parent, field) => ({
     { collection: `${parent}_${field}`, field: `${parent}_id`, related_collection: parent, meta: { one_field: field, junction_field: 'directus_files_id', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } },
   ],
 });
+// 二選一的兩格互鎖（照 SCCD）：另一格有值＝這格唯讀；不藏，看得到為什麼不能填
+const LOCK = (other, why) => [{ name: why, rule: { [other]: { _nnull: true } }, readonly: true, hidden: false }];
 // 介面文字的分類（後台整理用，前台只認 key；key 的開頭決定分類，seed-directus.cjs LABEL_CAT）
 const LABEL_CATS = ['選單與頁名', '底列與共用', '師資', '課程', '聯絡', '榮譽', '404'].map(c => ({ text: c, value: c }));
 
 const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '業界導師', value: 'mentor' }];
 const YEARS = [1, 2, 3, 4].map(n => ({ text: `${'一二三四'[n - 1]}年級`, value: n }));
 
-// 單例頁的導言、段落（每頁一個集合，user 2026-11-22 照 SCCD）。段落用重複列；關於的段落要放輪播圖、重複列放不了檔案 → 子集合 about_sections
+// 單例頁的導言、段落（每頁一個集合，user 2026-11-22 照 SCCD）。段落用重複列；關於的段落要放輪播圖、重複列放不了檔案 → 子集合 about_sections（裡面的小節要放圖 → 再一層子集合 about_subsections）
 const lead = [multi('lead_zh', '導言（中，選填）'), multi('lead_en', '導言（英，選填）', { note: EN_NOTE })];
 const textSections = repeater('sections', '段落', [['title_zh', '段落標題（中）'], ['title_en', '段落標題（英）'], ['body_zh', '內文（中）', 'rich'], ['body_en', '內文（英）', 'rich']],
   '{{title_zh}}', '一段一列、可拖曳排序；段落標題＝左側段落導覽。' + EN_NOTE);
@@ -77,6 +80,7 @@ const textSections = repeater('sections', '段落', [['title_zh', '段落標題�
 // ── SPEC：collection → { meta, fields, relations? }（folder: true＝側欄的資料夾）。順序有差：資料夾排在它裡面的集合前面、庫要排在選它的集合前面、junction 排在它的 parent 後面 ──
 const SPEC = {
   // 清單頁＝清單＋頁面（導言）兩個集合，收在同一個資料夾（user 2026-11-22，照 SCCD）
+  home_folder: { folder: true, meta: { icon: 'folder', translations: zh('首頁') } },   // 首頁動態＋首頁影片（user 2026-11-23）
   faculty_folder: { folder: true, meta: { icon: 'folder', translations: zh('師資') } },
   partners_folder: { folder: true, meta: { icon: 'folder', translations: zh('合作企業') } },
   // 庫（user 2026-11-21，照 SCCD）：全站的人名／單位／媒體只在庫裡打一次，用到的地方從庫選；改一次全站跟著換
@@ -101,7 +105,7 @@ const SPEC = {
       str('zh', '中文'), strEn('en', '英文')],
   },
   footer: {
-    meta: { icon: 'call_to_action', singleton: true, translations: zh('頁尾'), note: '只有這一筆；欄位留空＝前台那一列不顯示' },
+    meta: { icon: 'call_to_action', singleton: true, translations: zh('聯絡'), note: '聯絡頁（原本的頁尾）；只有這一筆，欄位留空＝前台那一列不顯示' },
     fields: [
       str('email', '電子郵件'), str('tel', '電話（中英共用）'), str('fax', '傳真（中英共用）'),
       str('address_zh', '地址（中）'), strEn('address_en', '地址（英）'),
@@ -112,10 +116,10 @@ const SPEC = {
     ],
   },
   news: {
-    meta: { icon: 'newspaper', translations: zh('動態'), display_template: '{{date}} {{title_zh}}', sort_field: null, archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '首頁清單與底列只顯示上架的，依日期新到舊' },
+    meta: { icon: 'newspaper', translations: zh('動態'), display_template: '{{date}} {{title_zh}}', sort_field: null, archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '動態頁（依日期新到舊）＋入學頁（勾了「入學」的）；首頁那串與底列跑馬燈另外在「首頁動態」（user 2026-11-23 拆開）' },
     fields: [status, date('date', '日期'), str('title_zh', '標題（中）', {}, 'full'), strEn('title_en', '標題（英）'),
-      multi('summary_zh', '說明（中，選填，首頁清單第二行；入學頁點開的第一段）'), multi('summary_en', '說明（英，選填）', { note: EN_NOTE }),
-      image('image', '圖片（列表的縮圖、首頁清單那格）'), url('link', '外部連結（選填）'),
+      multi('summary_zh', '說明（中，選填，入學頁點開的第一段）'), multi('summary_en', '說明（英，選填）', { note: EN_NOTE }),   // 首頁那串改在 home_news（2026-11-23），名稱跟著改（正式後台手動 PATCH 過）
+      image('image', '圖片（動態頁那一列的縮圖）'), url('link', '外部連結（選填）'),
       // 2026-11-21 補（動態頁＋入學頁的版型，docs/Directus-後台欄位.md）
       str('category_zh', '分類（中，例 講座、參訪）'), strEn('category_en', '分類（英）'),
       str('time_zh', '時間（中，選填，例 2026.11.22 14:00–16:00；空＝用日期）'), strEn('time_en', '時間（英）'),
@@ -125,6 +129,26 @@ const SPEC = {
   },
   news_album: junction('news', 'album'),
   news_attachments: junction('news', 'attachments'),
+  // 首頁動態（user 2026-11-23：原本首頁、動態頁、入學頁共用 news，首頁要自己一個）：首頁點「＋」展開的那串＋底列跑馬燈，照拖曳順序。
+  // 點了去哪＝照 SCCD 的首頁 news：外部網址 url，或入學頁的某一則 admission_item（＝勾了「入學」的動態）；兩格互鎖；都沒填＝不能點
+  home_news: {
+    meta: { icon: 'home', group: 'home_folder', translations: zh('首頁動態'), display_template: '{{title_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published',
+      note: '首頁點「＋」展開的那串、底列跑馬燈：照拖曳順序、前 8 則。點了去哪＝外部連結或入學頁的某一則，二選一' },
+    fields: [status, sort, str('title_zh', '標題（中）', {}, 'full'), strEn('title_en', '標題（英）'),
+      multi('summary_zh', '說明（中，選填，標題下面第二行）'), multi('summary_en', '說明（英，選填）', { note: EN_NOTE }),
+      image('image', '圖片（標題下面那格，裁成 3:1）'),
+      str('url', '外部連結（選填）', { note: 'https:// 開頭，點了另開新視窗；跟「入學頁的哪一則」二選一', conditions: LOCK('admission_item', '已經選了入學頁的哪一則') }),
+      { field: 'admission_item', type: 'integer', meta: { interface: 'select-dropdown-m2o', special: ['m2o'], width: 'half', translations: zh('入學頁的哪一則（選填）'),
+        note: '點了到入學頁、打開那一則（只列勾了「入學」的動態）；跟外部連結二選一', conditions: LOCK('url', '已經填了外部連結'),
+        options: { template: '{{title_zh}}', filter: { admission: { _eq: true } }, enableCreate: false, enableSelect: true }, display: 'related-values', display_options: { template: '{{title_zh}}' } },
+        schema: { is_nullable: true } }],
+    relations: [{ collection: 'home_news', field: 'admission_item', related_collection: 'news', schema: { on_delete: 'SET NULL' } }],
+  },
+  // 首頁影片（user 2026-11-23：影片也要在後台，「首頁」資料夾裡放首頁動態＋影片）：底列 ▶ 鈕點了播的那一支（chrome.js openIntro），只有一筆
+  home_video: {
+    meta: { icon: 'smart_display', singleton: true, group: 'home_folder', translations: zh('首頁影片'), note: '首頁底列 ▶ 鈕點了播的那一支；沒填＝點了不會開' },
+    fields: [str('url', '影片連結', { note: 'YouTube 連結（例 https://youtu.be/xxxxxxxxxxx、https://www.youtube.com/watch?v=…）；也可以貼直連的影片檔網址（.mp4、.m3u8）' }, 'full')],
+  },
   faculty: {
     meta: { icon: 'school', group: 'faculty_folder', translations: zh('師資名單'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', note: '列表依「類別」分段；名字從人名庫選；副標跟語言切（英文留空＝英文版顯示中文）' },
     fields: [status, sort, dropdown('category', '類別', FACULTY_CATS), image('photo', '照片'),
@@ -182,17 +206,49 @@ const SPEC = {
   about_sections: {
     meta: { icon: 'segment', translations: zh('關於的段落'), display_template: '{{title_zh}}', sort_field: 'sort', archive_field: 'status', archive_value: 'draft', unarchive_value: 'published', hidden: true, note: '從「關於」裡面新增' },
     fields: [status, sort, { field: 'about', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
-      str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'), rich('body_zh', '內文（中）'), rich('body_en', '內文（英）', { note: EN_NOTE }),
-      files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播')],
+      str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'),
+      rich('body_zh', '內文（中）'), rich('body_en', '內文（英）', { note: EN_NOTE }),   // 舊欄位：改成下面的小節（user 2026-11-23），藏起來（HIDE）
+      files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播'),
+      // 說明（user 2026-11-23）：段落圖片下面、小節上面那段
+      multi('description_zh', '說明（中，選填：段落圖片下面那段）', { note: '純文字：換行照留、空一行＝分段' }), multi('description_en', '說明（英）', { note: EN_NOTE }),
+      // 小節（user 2026-11-23：不要一整段 rich text，標題＋純文字、可以一直加；同一天又要每個小節放一張圖＋附註 → 重複列放不了檔案 → 子集合 about_subsections）。
+      // 表單的順序＝前台由上往下（新建的照這裡的順序；正式後台是後來補的欄位，2026-11-23 手動排過 sort）
+      { field: 'subsections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('小節'), note: '一個小節＝標題、圖片、內文、附註（都可以不填），可拖曳排序',
+        options: { template: '{{title_zh}} {{text_zh}}', enableCreate: true, enableSelect: false } } },
+      // 年表（user 2026-11-23：沿革要跟老師的詳細頁一樣，年份＋文字一筆一筆加）＝同師資的學歷那種重複列；前台排在小節後面
+      entries('timeline', '年表（年份＋文字，沿革那種）'),
+      repeater('items', '小節', [['title_zh', '小節標題（中，選填）'], ['title_en', '小節標題（英）'], ['text_zh', '內文（中）', 'text'], ['text_en', '內文（英）', 'text']],
+        '{{title_zh}} {{text_zh}}', '一個小節一列、可拖曳排序：標題＋純文字（換行照留、空一行＝分段）；沒標題＝只有內文。' + EN_NOTE),   // 舊欄位：改成上面的子集合（小節要放圖），藏起來（HIDE）
+      multi('note_zh', '附註（中，選填：段落最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],   // 舊欄位：附註改放在小節裡（user 2026-11-23），藏起來（HIDE）
     relations: [{ collection: 'about_sections', field: 'about', related_collection: 'about', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
   },
   about_sections_images: junction('about_sections', 'images'),
+  about_subsections: {
+    meta: { icon: 'subject', translations: zh('關於的小節'), display_template: '{{title_zh}} {{text_zh}}', sort_field: 'sort', hidden: true, note: '從「關於」的段落裡面新增' },
+    fields: [sort, { field: 'section', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬段落') }, schema: { is_nullable: true } },
+      str('title_zh', '小節標題（中，選填）'), strEn('title_en', '小節標題（英）'), image('image', '圖片（選填）', '標題下面、內文上面'),
+      multi('text_zh', '內文（中）', { note: '純文字：換行照留、空一行＝分段' }), multi('text_en', '內文（英）', { note: EN_NOTE }),
+      multi('note_zh', '附註（中，選填：小節最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],
+    relations: [{ collection: 'about_subsections', field: 'section', related_collection: 'about_sections', meta: { one_field: 'subsections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
   donate: { meta: { icon: 'volunteer_activism', singleton: true, translations: zh('捐款'), note: '導言＋段落' }, fields: [...lead, textSections] },
+  // 作品頁（user 2026-11-23）：影片＝貼 YouTube 播放清單（可以好幾個，前台用 Data API 拆成一支一支）；圖片不開欄位＝檔案庫的「作品」資料夾（下面建）——
+  // 多圖欄位要多一張 junction 表，集合上限 25 已經快滿（Directus 12 Core：資料夾不算、junction 算；works 建下去＝25＝滿了，第 26 個會被拒絕）
+  works: {
+    meta: { icon: 'movie', singleton: true, translations: zh('作品'), note: '作品頁：影片＝下面貼的 YouTube 播放清單；圖片＝檔案庫「作品」資料夾裡的圖（丟進去就會出現、刪掉或移出去就不見）。前台每次進來順序都打亂' },
+    fields: [repeater('playlists', 'YouTube 播放清單', [['url', '播放清單網址（含 list=）']], '{{url}}', '一列一個播放清單、可以好幾個；清單裡的影片會一支一支出現（私人、已刪除的不會）')],
+  },
 };
-// 舊欄位只藏不刪（同 SCCD 的做法；集合都還是空的，之後確定不要再刪）：名字改從庫選
-const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en']];
-// 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；師資、合作企業收進資料夾）
-const META = ['faculty', 'partners', 'news'];
+const WORKS_FOLDER = '作品';   // js/modules/pages/works.js 照這個名字抓圖：改名兩邊一起改
+// 舊欄位只藏不刪（同 SCCD 的做法；之後確定不要再刪）：名字改從庫選；關於的段落內文改成小節（先是 JSON 重複列，再改子集合）、段落的附註改放在小節裡
+const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en'], ['about_sections', 'body_zh'], ['about_sections', 'body_en'], ['about_sections', 'items'],
+  ['about_sections', 'note_zh'], ['about_sections', 'note_en']];
+// 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；師資、合作企業收進資料夾；動態只管動態頁、頁尾改叫聯絡）
+const META = ['faculty', 'partners', 'news', 'footer', 'home_news'];
+// 後台側欄的順序＝前台選單（user 2026-11-23）：首頁 → 主選單 → 次選單 → 庫、介面文字；資料夾裡＝頁面（導言）→ 名單。
+// 入學沒有自己的集合（＝勾了「入學」的動態）、網站地圖沒有內容；藏起來的（段落、小節、junction）不用排
+const NAV = ['home_folder', 'home_news', 'home_video', 'about', 'partners_folder', 'partners_page', 'partners', 'faculty_folder', 'faculty_page', 'faculty', 'courses', 'works', 'news', 'records', 'press',
+  'qa', 'donate', 'footer', 'regulations', 'people', 'organizations', 'media_outlets', 'ui_labels'];
 
 // contact.html（聯絡頁，原本的 footer）目前的示意值：singleton 建好後第一筆就是這些，前台畫面不變（接真資料時在後台改）
 const FOOTER_MOCK = {
@@ -223,6 +279,12 @@ async function ensureMeta(name) {
   const diff = Object.fromEntries(['display_template', 'note', 'group', 'translations'].filter(k => want[k] !== undefined && val(k, cur) !== val(k, want)).map(k => [k, want[k]]));
   if (Object.keys(diff).length) { console.log(`  ~ ${name} 設定 ${Object.keys(diff).join('、')}`); await api('PATCH', `/collections/${name}`, { meta: diff }); }
 }
+async function ensureOrder() {
+  for (const [i, name] of NAV.entries()) {
+    const cur = (await get(`/collections/${name}`))?.meta;
+    if (cur && cur.sort !== i + 1) { console.log(`  ~ ${name} 排第 ${i + 1}`); await api('PATCH', `/collections/${name}`, { meta: { sort: i + 1 } }); }
+  }
+}
 async function hideField(name, field) {
   const f = await get(`/fields/${name}/${field}`);
   if (f && !f.meta?.hidden) { console.log(`  ~ 藏起舊欄位 ${name}.${field}`); await api('PATCH', `/fields/${name}/${field}`, { meta: { hidden: true } }); }
@@ -235,7 +297,8 @@ async function ensurePublicRead() {
   const pub = ((await get('/policies?filter[admin_access][_eq]=false&filter[app_access][_eq]=false')) || [])[0];
   if (!pub) throw new Error('找不到 Public policy');
   const have = new Set((((await get(`/permissions?limit=-1&filter[policy][_eq]=${pub.id}&filter[action][_eq]=read`)) || [])).map(p => p.collection));
-  const want = [...Object.keys(SPEC).filter(c => !SPEC[c].folder), 'directus_files'];  // directus_files：前台 /assets 要能讀圖
+  // directus_files：前台 /assets 要能讀圖；directus_folders：作品頁照資料夾名字抓圖（filter[folder][name]）
+  const want = [...Object.keys(SPEC).filter(c => !SPEC[c].folder), 'directus_files', 'directus_folders'];
   for (const c of want) {
     if (have.has(c)) continue;
     console.log(`  + Public 讀取 ${c}`);
@@ -249,8 +312,11 @@ async function ensurePublicRead() {
   for (const [name, s] of Object.entries(SPEC)) await ensureCollection(name, s);
   for (const name of META) await ensureMeta(name);
   for (const [name, field] of HIDE) await hideField(name, field);
+  console.log('側欄順序（照前台選單）');
+  await ensureOrder();
   console.log('Public 讀取權');
   await ensurePublicRead();
+  if (!((await get(`/folders?filter[name][_eq]=${encodeURIComponent(WORKS_FOLDER)}`)) || []).length) { console.log(`+ 檔案庫資料夾「${WORKS_FOLDER}」`); await api('POST', '/folders', { name: WORKS_FOLDER }); }
   // footer 單例：還是空的才塞示意值（已經有人填過就不碰）
   const f = DRY ? null : await get('/items/footer');
   if (!DRY && f && !f.email) { console.log('+ footer 塞 contact.html 的示意值'); await api('PATCH', '/items/footer', FOOTER_MOCK); }

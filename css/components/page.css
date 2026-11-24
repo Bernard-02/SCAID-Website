@@ -17,6 +17,13 @@
   /* Subsection title 跟下面內文隔 xs，掛在標題上（user 2026-11-21；原本貼著、試過 sm）。
      看起來的距離還含行距：試過用 text-box 把標題的行距切掉，user 2026-11-21 拿回——要調就直接調 spacing 的值 */
   .page-section h3 { margin-top: var(--spacing-md); margin-bottom: var(--spacing-xs); }
+  /* 關於的小節圖（cms-pages.js subsection；user 2026-11-23）：照原比例、寬＝內文欄，最高 16rem，比這還高的等比縮小、在內文欄正中
+     （user 2026-11-23：「如果只有一張照片，就要 center 然後置中」；原本靠左）。
+     用 object-fit、不用 width: auto：框照 img 的 width／height 屬性先排好，lazy 載入前後版面不跳（框＝整欄寬，圖畫在框的正中；
+     圖本身比欄窄＝框也窄 → margin auto 把框置中） */
+  .page-section > img { max-height: 16rem; object-fit: contain; margin-inline: auto; }
+  /* 關於的年表（沿革；user 2026-11-23：跟師資詳細頁的學歷一樣，年份一行、說明一行）：筆與筆之間同詳細頁（.profile-photo 下面那條 h3 + ul） */
+  .timeline > li + li { margin-top: var(--spacing-xs); }
   /* 後台的段落內文（WYSIWYG，cms-pages.js）：中英各一份 HTML、不能走 data-en → 兩份都放、跟著 <html lang>（lang.js 設）只顯示一份 */
   html[lang="en"] [data-lang-block="zh"], html:not([lang="en"]) [data-lang-block="en"] { display: none; }
 

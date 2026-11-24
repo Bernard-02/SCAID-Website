@@ -90,5 +90,5 @@ loadPartial('site-header', 'pages/header.html').then(() => {
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
   initObject();          // 右圖的 object（殼上的畫布；模型清單載到才開始）
   initLogo();            // logo 的進場動畫：演完才把其他東西放出來（html.is-intro，各頁 <head> 的 inline script 先掛上）
-  import('./modules/pages/cms-pages.js').then(m => m.loadBarNews());     // 底列動態跑馬燈＝後台最近幾則
+  import('./modules/pages/cms-pages.js').then(m => { m.loadBarNews(); m.loadIntroVideo(); });   // 底列：跑馬燈＝後台「首頁動態」前 8 則的標題；▶ 鈕的影片＝「首頁影片」
 });

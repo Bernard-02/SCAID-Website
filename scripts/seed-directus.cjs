@@ -1,6 +1,6 @@
 // 後台資料 ← 直接解析前台各頁 HTML（各頁的示意內容是唯一來源；HTML 改好、決定要同步時跑這支，不另抄一份）。
 // user 2026-11-21：全站接後台、把現在的文字實際放進後台，之後在後台改。只放文字（圖之後在後台上傳）。
-// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id）→ 每頁的單例（關於、捐款、規章、師資頁、合作企業頁）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
+// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id；首頁動態的「入學頁的哪一則」照標題對到動態的 id）→ 每頁的單例（關於、捐款、規章、師資頁、合作企業頁）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
 // 安全版、可重跑：內容集合還是空的才塞（單例＝每個欄位都空著）；庫只補沒有的名字（中英都一樣才算同一個）；
 // 介面文字只補沒有的 key（後台改過的字不蓋）。
 //
@@ -54,6 +54,8 @@ const text = n => (n.text ?? n.children.map(text).join('')).replace(/\s+/g, ' ')
 const zhEn = (el, k) => el ? { [`${k}_zh`]: text(el), [`${k}_en`]: el.attrs['data-en'] ?? text(el) } : {};
 // 名字下面每個 p＝一行副標（subtitles；師資、合作企業、規章）
 const subsOf = el => kids(el, tag('p')).map(p => ({ text_zh: text(p), text_en: p.attrs['data-en'] ?? text(p) }));
+// 年份＋說明的條列（師資詳細頁的學歷…、關於的年表）：li 裡兩個 p＝年份＋說明，一個＝只有說明
+const entriesOf = ul => kids(ul, tag('li')).map(li => { const ps = kids(li, tag('p')); return ps.length === 2 ? { year: text(ps[0]), text_zh: text(ps[1]), text_en: ps[1].attrs['data-en'] ?? text(ps[1]) } : { year: '', text_zh: text(li), text_en: li.attrs['data-en'] ?? text(li) }; });
 const sections = root => findAll(root, e => e.tag === 'section' && cls('page-section')(e));
 const titleOf = sec => find(sec, cls('section-title'));
 const pub = rows => rows.map((r, i) => ({ status: 'published', sort: i + 1, ...r }));
@@ -104,7 +106,7 @@ function faculty() {
   let k = null;
   for (const n of kids(find(d, cls('page-section')))) {
     if (n.tag === 'h3') k = (n.attrs['data-label'] || '').replace('faculty.cv.', '');
-    else if (n.tag === 'ul' && k) cv[k] = kids(n, tag('li')).map(li => { const ps = kids(li, tag('p')); return ps.length === 2 ? { year: text(ps[0]), text_zh: text(ps[1]), text_en: ps[1].attrs['data-en'] ?? text(ps[1]) } : { year: '', text_zh: text(li), text_en: li.attrs['data-en'] ?? text(li) }; });
+    else if (n.tag === 'ul' && k) cv[k] = entriesOf(n);
   }
   return sections(read('faculty')).flatMap(sec => pub(findAll(sec, cls('item-row')).map(row => {
     const box = kids(row).at(-1), h3 = find(box, tag('h3'));
@@ -138,17 +140,39 @@ const records = () => pub(findAll(read('records'), tag('details')).map(d => {
   return { country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null, ...zhEn(find(box, cls('sr-only')), 'country'),
     ...zhEn(find(box, tag('h3')), 'award'), ...zhEn(kids(box, tag('p'))[0], 'winner'), organizer: pool('organizations', org), ...zhEn(prize, 'prize') };
 }));
+// 首頁動態（home_news；user 2026-11-23 跟動態頁拆開）：首頁展開那串一則一個 li（p＝標題；裡面兩個 span.block＝標題＋說明），照順序。
+// 點了去哪 HTML 示意沒有：寫進後台時，標題跟入學頁的某一則一樣＝連到那一則（下面主程式；同動態／入學「標題一樣＝同一則」）
+const homeNews = () => pub(findAll(find(parse('index.html'), cls('home-news-list')), tag('li')).map(li => {
+  const p = find(li, tag('p')), [t, s] = kids(p, tag('span'));
+  return t ? { ...zhEn(t, 'title'), ...zhEn(s, 'summary') } : zhEn(p, 'title');
+}));
 // 報導：媒體進媒體庫；截圖之後在後台上傳（沒截圖前台那列不能點）
 const press = () => findAll(read('press'), cls('item-row')).map(row => ({ status: 'published', ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
+// 段落內文＝一段 rich text（捐款、規章）
+const richBody = s => { const body = kids(s).filter(n => !cls('section-title')(n)); return { body_zh: body.map(n => rich(n, 'zh')).filter(Boolean).join('\n'), body_en: body.map(n => rich(n, 'en')).filter(Boolean).join('\n') }; };
+// 關於的段落內文＝小節（user 2026-11-23：標題＋純文字、可以一直加，不要一整段 rich text；子集合 about_subsections）：
+// h3 起一個小節，p／li 一行一行接上去（mt-sm＝空一行＝分段）；text-xs＝那個小節的附註（段落自己的附註同一天拿掉）；ul.timeline＝段落的年表（沿革）。
+// 小節的圖、段落的說明 HTML 示意沒有
+function subsections(sec) {
+  const items = [];
+  for (const n of kids(sec, e => ['h3', 'p', 'ul'].includes(e.tag) && !cls('timeline')(e))) {
+    if (n.tag === 'h3') { items.push({ ...zhEn(n, 'title'), text_zh: '', text_en: '' }); continue; }
+    if (!items.length) items.push({ text_zh: '', text_en: '' });
+    const it = items.at(-1);
+    if (cls('text-xs')(n)) { Object.assign(it, zhEn(n, 'note')); continue; }
+    (n.tag === 'ul' ? kids(n, tag('li')) : [n]).forEach((l, i) => {
+      const sep = !it.text_zh ? '' : !i && cls('mt-sm')(n) ? '\n\n' : '\n';
+      it.text_zh += sep + text(l); it.text_en += sep + (l.attrs['data-en'] ?? text(l));
+    });
+  }
+  return { subsections: items.map((x, i) => ({ sort: i + 1, ...x })), timeline: entriesOf(find(sec, cls('timeline'))) };
+}
 // 文字頁：導言＋沒有清單的段落（標題＋內文）。頁名不在這裡（介面文字 nav.<slug>）
-function page(slug) {
+function page(slug, body = richBody) {
   const root = read(slug), lead = find(root, cls('page-lead')), row = {};
   if (lead && !lead.attrs['data-label']) Object.assign(row, zhEn(lead, 'lead'));
   const secs = sections(root).filter(s => !find(s, cls('item-list')) && titleOf(s));
-  if (secs.length) row.sections = secs.map(s => {
-    const body = kids(s).filter(n => !cls('section-title')(n));
-    return { ...zhEn(titleOf(s), 'title'), body_zh: body.map(n => rich(n, 'zh')).filter(Boolean).join('\n'), body_en: body.map(n => rich(n, 'en')).filter(Boolean).join('\n') };
-  });
+  if (secs.length) row.sections = secs.map(s => ({ ...zhEn(titleOf(s), 'title'), ...body(s) }));
   return row;
 }
 // 介面文字：掃殼＋每頁的 data-label，一個 key 一筆（同 key 取第一次出現的字）；分類照 key 的開頭（setup-directus.cjs LABEL_CATS）
@@ -167,7 +191,7 @@ function labels() {
 const POOLS = ['people', 'organizations', 'media_outlets'];
 // 每頁一個單例（user 2026-11-22，照 SCCD）。關於的段落是子集合（about_sections，有上架狀態與排序）、其他是重複列
 const SINGLES = {
-  about: () => { const r = page('about'); return { ...r, sections: pub(r.sections || []) }; },
+  about: () => { const r = page('about', subsections); return { ...r, sections: pub(r.sections || []) }; },
   donate: () => page('donate'),
   regulations,
   faculty_page: () => page('faculty'),
@@ -177,7 +201,7 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
 
 (async () => {
   console.log(`Directus ${BASE}${DRY ? '（dry run，只印不寫）' : ''}`);
-  const content = { news: news(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
+  const content = { news: news(), home_news: homeNews(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
   for (const [col, rows] of Object.entries(content)) if (!rows.length) throw new Error(`${col}：HTML 解析出 0 筆，標記大概改了，先修 seed 的解析`);
 
   // 內容集合還是空的才塞 → 庫也只補那幾個集合要用到的名字（不然後台改過名字、HTML 還是舊的，會多一個沒人用的）
@@ -201,6 +225,10 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
   for (const [col, rows] of Object.entries(content)) {
     const n = counts[col];
     if (n > 0) { console.log(`= ${col} 已有 ${n} 筆，跳過`); continue; }
+    if (col === 'home_news') {   // 標題跟入學頁的某一則一樣＝連過去（動態排在前面＝這時候已經寫進去了）
+      const adm = new Map(((await api('GET', '/items/news?limit=-1&filter[admission][_eq]=true&fields=id,title_zh')) || []).map(r => [r.title_zh, r.id]));
+      for (const r of rows) r.admission_item = adm.get(r.title_zh) ?? null;
+    }
     console.log(`+ ${col} ${rows.length} 筆`);
     const out = rows.map(resolve);
     if (DRY) out.forEach(r => console.log('   ', JSON.stringify(r).slice(0, 170)));
@@ -213,7 +241,7 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
     if (Object.entries(cur).some(([k, v]) => k !== 'id' && !blank(v))) { console.log(`= ${col} 已經填過，跳過`); continue; }
     const row = build(), secs = row.sections || [];
     console.log(`+ ${col}（導言${row.lead_zh ? '有' : '沒有'}、${secs.length} 段${row.items ? `、${row.items.length} 列` : ''}）`);
-    if (DRY) for (const s of [...(row.items || []), ...secs]) console.log(`    § ${s.category_zh ? s.category_zh + '／' : ''}${s.title_zh} / ${s.title_en}：${(s.body_zh || s.subtitles_zh || s.url || '').slice(0, 90)}`);
+    if (DRY) for (const s of [...(row.items || []), ...secs]) console.log(`    § ${s.category_zh ? s.category_zh + '／' : ''}${s.title_zh} / ${s.title_en}：${(s.body_zh || s.subtitles_zh || s.url || s.subsections?.map(x => x.title_zh || '（沒標題）').join('、') || '').slice(0, 90)}`);
     else await api('PATCH', `/items/${col}`, row);
   }
 

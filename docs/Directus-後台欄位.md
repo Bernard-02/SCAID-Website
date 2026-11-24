@@ -1,6 +1,7 @@
 # SCAID Directus 後台欄位
 
-後台：`https://scaidcms.usc.edu.tw/admin/`（Directus 12，Core 方案：帳號上限 3、**collection 上限 25**，現在 21 個＋2 個資料夾（資料夾算不算在上限裡沒確認））。
+後台：`https://scaidcms.usc.edu.tw/admin/`（Directus 12，Core 方案：帳號上限 3、**collection 上限 25**，現在 24 個＋3 個資料夾（**資料夾不算**：2026-11-23 建第 3 個資料夾「首頁」時總數 27 照樣建成。同一天加了 `about_subsections`、`home_news`、`home_video`；作品頁的 `works` 寫進 SPEC、**還沒跑 setup**，建了＝25 個＝滿了））。
+**後台側欄的順序＝前台選單**（user 2026-11-23；`setup-directus.cjs` 的 `NAV`）：首頁（資料夾：首頁動態、首頁影片）→ 關於、合作企業、師資、課程、作品、動態、榮譽、報導 → 常見問題、捐款、聯絡、規章與政策 → 庫、介面文字。入學沒有自己的集合（＝勾了「入學」的動態）。
 **一頁一個集合**（user 2026-11-22，照 SCCD；原本關於、捐款、規章的條款、師資／合作企業的導言全擠在一個「文字頁」`pages`，後台找不到捐款）：文字頁＝單例；清單頁＝清單＋頁面（導言）兩個集合，收在同一個資料夾（師資、合作企業）。
 前台要抓的欄位都列在這裡。**集合名、欄位 key 要一字不差**，前台照名字抓。
 
@@ -64,12 +65,33 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 - 網址只接受 `https://`、`mailto:`、`tel:` 開頭，其他會變成無效連結。
 - 欄位標籤（電子郵件／電話／傳真／地址）在介面文字（`contact.*`）；社群 icon 圖還沒定，目前是方框。
 
+## home_news（首頁動態）＋ home_video（首頁影片）— 資料夾「首頁」
+
+user 2026-11-23：原本首頁、動態頁、入學頁共用 `news`，**首頁要自己一個**；同一天「影片在後台也要有，首頁一個資料夾，裡面放 news 跟影片兩個」。前台：首頁點「＋」展開的那串（標題、有說明就第二行、圖）＋底列跑馬燈（標題），照拖曳順序、前 8 則（`cms-pages.js homeNews()`／`loadBarNews()`）。
+**點了去哪＝照 SCCD 的首頁 news**：`url`（外部網址）或 `admission_item`（入學頁的某一則）二選一，兩格互鎖（另一格有值＝這格唯讀，不藏；Directus 欄位的 `conditions`）。
+入學那則＝`pages/admission.html?item=<id>`（站內換頁），到了把那一則打開、捲到頁標題那條線；連到的那則要上架、還勾著「入學」才算（不然入學頁沒有它＝當作沒選、退回外部網址）。外部網址只放 `http(s)`、另開新視窗；都沒有＝那則不能點。
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `status`、`sort` | | 上架／草稿；拖曳排序＝首頁的順序 |
+| `title_zh` / `title_en` | String | 標題 |
+| `summary_zh` / `summary_en` | Text／Multiline | 說明（選填，標題下面第二行） |
+| `image` | Image | 圖片（標題下面那格，裁成 3:1；沒圖＝灰底） |
+| `url` | String | 外部連結（選填；`admission_item` 有值時唯讀） |
+| `admission_item` | M2O → news（只列 `admission`＝勾了的） | 入學頁的哪一則（選填；`url` 有值時唯讀）。那則被刪掉＝這格變空（SET NULL） |
+
+`home_video`（單例，只有一筆）：首頁底列 ▶ 鈕點了播的那一支（`cms-pages.js loadIntroVideo()` 殼載完抓、填進 `.play-btn` 的 `data-video`；播放器＝chrome.js `openIntro`：開在放大 dialog，頂對齊各頁 title、自己的控制列（播放／暫停、音量、全螢幕）、關燈，只有一支）。沒填／抓不到＝照 `header.html` 的 `data-video`（目前空的＝點了不開）。
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `url` | String | 影片連結：YouTube（`youtu.be/…`、`watch?v=…`、`/shorts/…`）＝內嵌播放器；其他 `http(s)` 網址＝直連的影片檔（原生 `<video>`；`.m3u8` 串流 Chrome、Safari 直接播，Firefox 不行）。**目前暫用 SCCD 的介紹影片**（user 2026-11-23，S3 上的 m3u8） |
+
 ## news（動態）
 
-前台：首頁展開清單（最近 8 則：標題、有說明就第二行、圖）、底列跑馬燈（最近 8 則的標題）、`pages/news.html`（全部、不分年份）、`pages/admission.html`（勾了 `admission` 的）。依 `date` 新到舊。
+前台：`pages/news.html`（全部、不分年份）、`pages/admission.html`（勾了 `admission` 的）。依 `date` 新到舊。**首頁那串與底列跑馬燈不在這裡**＝上面的 `home_news`（user 2026-11-23 拆開）。
 
 `pages/news.html`：每則是一個摺疊。收著＝縮圖（`image`）＋標題＋分類；點開＝時間、地點（沒填就不出那一行）、相簿；點相簿的圖放大到整個畫面。什麼都沒得展開＝那一列不能點。
-`pages/admission.html`：**入學頁＝勾了「入學」的動態**（user 2026-11-21 定：勾選，不看分類），一則同時也在動態頁。外面只有標題＋時間（沒有縮圖、分類）；點開＝說明 → 相簿 → 附件。
+`pages/admission.html`：**入學頁＝勾了「入學」的動態**（user 2026-11-21 定：勾選，不看分類），一則同時也在動態頁。外面只有標題＋時間（沒有縮圖、分類）；點開＝說明 → 相簿 → 附件。首頁動態可以指到其中一則（`?item=<id>`＝打開那一則）。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
@@ -80,8 +102,8 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | `time_zh` / `time_en` | String | 時間的顯示文字（選填，例：2026.11.22 14:00–16:00；空的就顯示 `date`） |
 | `place_zh` / `place_en` | String | 地點（選填） |
 | `admission` | Boolean | 勾＝也列在入學頁 |
-| `summary_zh` / `summary_en` | Text／Multiline | 說明文字（選填；首頁清單第二行；入學頁點開的第一段；換行照留） |
-| `image` | Image | 圖片（動態頁那一列的縮圖；首頁清單那格） |
+| `summary_zh` / `summary_en` | Text／Multiline | 說明文字（選填；入學頁點開的第一段；換行照留） |
+| `image` | Image | 圖片（動態頁那一列的縮圖） |
 | `album` | Files（多張，junction `news_album`） | 相簿；可拖曳排序；前台 `<img>` 帶檔案的寬高（一打開摺疊就排好） |
 | `attachments` | Files（多個，junction `news_attachments`） | 附件（入學頁點開的連結清單，一個檔一個連結、連結文字＝檔案標題、另開新視窗） |
 | `link` | String | 外部連結（選填，前台目前沒用到） |
@@ -127,6 +149,17 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | `required` | Boolean | 勾＝必修、不勾＝選修 |
 | `name_zh` / `name_en` | String | 課程名稱 |
 | `description_zh` / `description_en` | Text／Multiline | 課程說明（一段，可以很長；換行照留） |
+
+## works（作品）— 單例＋檔案庫資料夾「作品」
+
+前台：`pages/works.html`（user 2026-11-23，`js/modules/pages/works.js`）。兩個來源混在一起、每次進來順序都打亂：
+- **影片**＝這個單例的 `playlists`：貼 YouTube 播放清單網址（可以好幾個），前台用 YouTube Data API（`playlistItems.list`，key 在 `js/config/api.js YT_API_KEY`，沿用 SCCD 那支、靠網域白名單）拆成一支一支：縮圖、標題；私人／已刪除的不出。
+- **圖片**＝檔案庫的資料夾「作品」（不開多圖欄位：多一張 junction 表，集合上限快滿了）：丟進去就會出現、移出去或刪掉就不見；替代文字＝檔案的「描述」。前台照資料夾名字抓（`filter[folder][name][_eq]=作品`，所以 Public 也開了 `directus_folders` 的 Read）——**資料夾改名＝前台 `works.js FOLDER` 一起改**。
+- 單例還沒建、兩個都沒東西＝照舊顯示 HTML 的示意（Picsum 圖＋兩支 Blender 開放影片）。
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `playlists` | JSON／Repeater | 一列一個播放清單：`url`（播放清單網址，要有 `list=`；watch 網址帶 `list=` 也行）。同一個清單貼兩次只抓一次 |
 
 ## qa（常見問題）
 
@@ -179,7 +212,7 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 ## about（關於）、donate（捐款）— 單例
 
 一頁一筆（user 2026-11-22，照 SCCD）。**頁名不在這裡**＝介面文字 `nav.<slug>`。
-前台：導言換掉 `.page-lead`；有段落就整段換掉（標題 → 輪播 → 內文）。
+前台：導言換掉 `.page-lead`；有段落就整段換掉（關於＝標題 → 輪播 → 說明 → 小節 → 年表；捐款＝標題 → 內文）。
 
 | 集合 | key | 類型／介面 | 內容 |
 |---|---|---|---|
@@ -188,5 +221,17 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 | about | `sections` | O2M → about_sections | 段落（在同一個表單裡新增、可拖曳排序；`about_sections` 在後台選單裡藏起來）。**關於的段落要放輪播圖、重複列放不了檔案**，所以是子集合 |
 | about_sections | `status`、`sort`、`about` | | `about`＝所屬的那一筆 |
 | about_sections | `title_zh` / `title_en` | String | 段落標題（h2＝左側段落導覽） |
-| about_sections | `body_zh` / `body_en` | Text／WYSIWYG | 內文 HTML（工具列只留粗體／斜體／h3／清單／連結）。中英各一份，前台跟著語言只顯示一份；**塞進去前過 sanitize**（只放行這幾個標籤與 `mt-sm`／`mt-md`／`text-xs` 三個 class） |
 | about_sections | `images` | Files（多張，junction `about_sections_images`） | 段落圖片輪播（標題下面那排；沒放＝不出輪播） |
+| about_sections | `description_zh` / `description_en` | Text／Multiline | **說明**（選填，user 2026-11-23）：段落圖片下面、小節上面那段；多行純文字，換行照留、空一行＝分段 |
+| about_sections | `subsections` | O2M → about_subsections | **小節**（user 2026-11-23：不要一整段 rich text，一個小節一筆、可以一直加；同一天加了圖片、附註 → 重複列放不了檔案，改子集合）。在段落的表單裡新增、可拖曳排序；`about_subsections` 在後台選單裡藏起來 |
+| about_sections | `timeline` | JSON／Repeater | **年表**（user 2026-11-23，「沿革」那段用）＝同師資的學歷：一列一筆、子欄位 `year`／`text_zh`／`text_en`；前台排在小節後面，年份一行、說明一行（沒年份＝只有說明），筆與筆之間 `--spacing-xs` |
+| about_sections | `items`、`body_*`、`note_*` | | **舊欄位、藏起來**，前台不再讀（`body_*`＝原本的一整段 WYSIWYG；`items`＝同一天先做的 JSON 重複列，小節要放圖才改成子集合；`note_*`＝段落的附註，user 2026-11-23 拿掉，內容搬到各段最後一個小節的附註） |
+| about_subsections | `sort`、`section` | | `section`＝所屬的段落 |
+| about_subsections | `title_zh` / `title_en` | String | 小節標題（h3，選填） |
+| about_subsections | `image` | Image | 圖片（選填）：標題下面、內文上面，照原比例、寬＝內文欄，**最高 16rem**（user 2026-11-23；page.css `.page-section > img`），更高的等比縮小、在內文欄正中（原本靠左） |
+| about_subsections | `text_zh` / `text_en` | Text／Multiline | 內文，多行純文字：換行照留、**空一行＝分段** |
+| about_subsections | `note_zh` / `note_en` | Text／Multiline | 小節的附註（選填）：小節最後一行小字（text-xs） |
+
+小節前台的排法＝標題 → 圖 → 內文 → 附註，有才排；塊與塊之間（含分段）隔 `--spacing-sm`；沒標題＝第一塊自己隔 `--spacing-md`（同小節標題的上距）。
+
+捐款、規章的段落內文（`sections[].body_*`）還是 WYSIWYG：中英各一份 HTML，前台跟著語言只顯示一份；**塞進去前過 sanitize**（只放行 p／h3／清單／粗體斜體／連結與 `mt-sm`／`mt-md`／`text-xs` 三個 class）。

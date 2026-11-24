@@ -26,7 +26,7 @@
 一頁一頁看過，結構確定就勾。下面是每頁現在的樣子。
 
 - [ ] **首頁**：一屏只有置中 logo；點底列動態的＋展開動態清單。
-- [ ] **關於** `about`：導言＋分段（有段落導覽），每段＝標題 → 圖片輪播 → 內文。
+- [ ] **關於** `about`：導言＋分段（有段落導覽），每段＝標題 → 圖片輪播 → 說明 → 小節（標題、圖、內文、附註）→ 年表（沿革）（2026-11-23）。
 - [ ] **合作企業** `partners`：一家一列（縮圖＋名稱＋副標，跟師資同一種列），整列外連官網。不分段。
 - [ ] **師資** `faculty`：專任／兼任／業界導師三段，一位一列（縮圖＋名字＋副標）→ 詳細頁。
 - [ ] **教師詳細頁** `faculty-detail`：照片＋名字＋各段條列。
@@ -78,7 +78,8 @@
 | 頁 | 集合 | 狀態 |
 |---|---|---|
 | 聯絡 `contact.html` | `footer` | 已接 |
-| 動態 `news.html`、首頁展開清單、底列跑馬燈 | `news` | 已接 |
+| 動態 `news.html` | `news` | 已接 |
+| 首頁展開清單、底列跑馬燈 | `home_news`（首頁動態；入學那則用 `admission_item` 連到 `news`，2026-11-23 拆開） | 已接 |
 | 入學 `admission.html` | `news`（勾了 `admission` 的） | 已接 |
 | 師資 `faculty.html`、`faculty-detail.html?id=` | `faculty`＋人名庫 | 已接 |
 | 課程 `curriculum.html` | `courses` | 已接 |
@@ -87,7 +88,7 @@
 | 報導 `press.html` | `press`＋媒體庫 | 已接 |
 | 常見問題 `qa.html` | `qa` | 已接 |
 | 規章與政策 `regulations.html` | `regulations`（單例：規章、表單＋條款段落） | 已接 |
-| 關於、捐款；師資、合作企業的導言 | 單例 `about`（段落＝`about_sections`）、`donate`、`faculty_page`、`partners_page` | 已接 |
+| 關於、捐款；師資、合作企業的導言 | 單例 `about`（段落＝`about_sections`，小節＝`about_subsections`）、`donate`、`faculty_page`、`partners_page` | 已接 |
 | 選單、頁名、固定小標、聯絡欄位名、404 | `ui_labels` | 已接 |
 
 還沒做：
