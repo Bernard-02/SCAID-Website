@@ -1,20 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-  <defs>
-    <style>
-      .cls-1 {
-        stroke-width: 0px;
-      }
-
-      .cls-2 {
-        fill: none;
-        stroke: #000;
-        stroke-miterlimit: 66.67;
-        stroke-width: 16px;
-      }
-    </style>
-  </defs>
-  <path class="cls-1" d="M8,55.64v53.59h35.72l46.2,36.96V17.45l-46.2,38.19H8Z"/>
-  <path class="cls-2" d="M128.97,132.73c28.14-28.14,28.14-73.68,0-101.82"/>
-  <path class="cls-2" d="M110.62,104.45c12.51-12.51,12.51-32.75,0-45.25"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 197.233 45">
+  <!-- docs/SCAID icon.ai「volume」：直條的粗細、高、間距照 ai，根數 20（拉桿長度照一般播放器，scripts/build-icons.cjs VOL_BARS） -->
+  <path fill="none" stroke="#000" stroke-width="3" d="M1.5,0L1.5,45M11.723,0L11.723,45M21.946,0L21.946,45M32.168,0L32.168,45M42.391,0L42.391,45M52.614,0L52.614,45M62.837,0L62.837,45M73.06,0L73.06,45M83.283,0L83.283,45M93.505,0L93.505,45M103.728,0L103.728,45M113.951,0L113.951,45M124.174,0L124.174,45M134.397,0L134.397,45M144.619,0L144.619,45M154.842,0L154.842,45M165.065,0L165.065,45M175.288,0L175.288,45M185.511,0L185.511,45M195.733,0L195.733,45"/>
 </svg>

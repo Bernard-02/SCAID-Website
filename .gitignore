@@ -19,3 +19,6 @@ scripts/_*
 # Media / Large files
 *.mp4
 *.mov
+
+# 設計原始檔（ai；icon 由 scripts/build-icons.cjs 抽出來，原始檔不進 repo）
+docs/*.ai

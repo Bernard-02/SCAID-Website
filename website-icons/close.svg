@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-  <g fill="none" stroke="#000" stroke-miterlimit="10" stroke-width="20">
-    <line x1="25" y1="25" x2="135" y2="135"/>
-    <line x1="135" y1="25" x2="25" y2="135"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32.675 70">
+  <!-- docs/SCAID icon.ai「close」 -->
+  <path fill="none" stroke="#000" stroke-width="3" d="M1.375,0.639L31.301,69.163M31.301,0.639L1.375,69.163"/>
 </svg>

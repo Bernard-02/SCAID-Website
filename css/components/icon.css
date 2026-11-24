@@ -1,11 +1,14 @@
 /* CSS mask icon 系統（沿用 SCCD）：<span class="icon icon-X">
-   mask + background-color: currentColor → 顏色繼承文字色；尺寸走 font-size（1em）。新 icon＝丟 SVG 進 website-icons/ 加一行 */
+   mask + background-color: currentColor → 顏色繼承文字色；高＝1em（尺寸走 font-size）、寬＝icon 自己的寬：--ar＝那張 SVG viewBox 的寬高比
+   （user 2026-11-24：「每個 icon 都不自帶一個 box，就是用它本身的寬度」；原本一律 1em 的正方形，細的 icon 左右會多一段空白）。
+   新 icon＝丟 SVG 進 website-icons/ 加一行（--icon＋--ar；沒寫 --ar＝正方形），再跑一次 scripts/setup-directus.cjs＝補進後台「網頁 icon」。
+   後台換了圖＝前台開頁後換成後台那張（js/modules/ui/site-assets.js 照檔名對：website-icons/<key>.svg ↔ site_icons 的 key）；--ar 不跟著變 */
 
 @layer components {
   .icon {
     display: inline-block;
-    width: 1em;
     height: 1em;
+    aspect-ratio: var(--ar, 1);
     vertical-align: -0.125em;
     background-color: currentColor;
     -webkit-mask: var(--icon) center / contain no-repeat;
@@ -20,21 +23,23 @@
   .icon-s  { font-size: 1rem; }
   .icon-xs { font-size: 0.875rem; }
 
-  .icon-menu        { --icon: url('../website-icons/menu.svg'); }
-  .icon-arrow-left  { --icon: url('../website-icons/arrow_left.svg'); }
-  .icon-arrow-right { --icon: url('../website-icons/arrow_right.svg'); }
-  .icon-arrow-up    { --icon: url('../website-icons/arrow_up.svg'); }
-  .icon-arrow-down  { --icon: url('../website-icons/arrow_down.svg'); }
-  .icon-play        { --icon: url('../website-icons/play.svg'); }
-  /* 影片控制列（放大 dialog，user 2026-11-23）：四個取自 SCCD 的 website-icons（同一套） */
-  .icon-pause       { --icon: url('../website-icons/pause.svg'); }
-  .icon-volume      { --icon: url('../website-icons/volume.svg'); }
-  .icon-mute        { --icon: url('../website-icons/mute.svg'); }
-  .icon-fullscreen  { --icon: url('../website-icons/fullscreen.svg'); }
-  /* chevron base 朝左，方向用 Tailwind rotate：rotate-180＝右、rotate-90＝上、-rotate-90＝下 */
-  .icon-chevron     { --icon: url('../website-icons/chevron_left_list.svg'); }
-  .icon-close       { --icon: url('../website-icons/close.svg'); }
-  .icon-theme       { --icon: url('../website-icons/theme.svg'); }   /* 深色模式鈕：半實心圓 */
-  /* 方塊 icon（user 2026-11-18 命名）＝logo 兩端那顆「骨牌」：直立矩形＋中央圓孔，比例 45:70（放進 1em 方框會左右留白） */
-  .icon-block       { --icon: url('../website-icons/block.svg'); }
+  /* user 2026-11-24 給的那套（docs/SCAID icon.ai，檔名照 ai 裡每個 icon 下面的名字）：每個都畫在高 70 的框裡（＝logo 骨牌的高），
+     play、day、slideshow、grid 跟骨牌一樣 45×70。重出圖＝scripts/build-icons.cjs 重抽、蓋同名檔，它印出來的寬高抄進這裡的 --ar。
+     站上的大小一律＝menu 鈕那顆骨牌的高（font-size: var(--block-h)；user 2026-11-24：「icon 的高度都跟 menu 的那個一樣」）：
+     底列 play、放大 dialog 的控制列、返回鈕、相簿左右、作品的排法鈕與影片的 play、深色模式鈕 */
+  .icon-play        { --icon: url('../website-icons/play.svg'); --ar: 45 / 70; }
+  .icon-back        { --icon: url('../website-icons/back.svg'); --ar: 32.793 / 70; }   /* 返回鈕、上一個 */
+  .icon-next        { --icon: url('../website-icons/next.svg'); --ar: 32.793 / 70; }
+  .icon-pause       { --icon: url('../website-icons/pause.svg'); --ar: 27.551 / 70; }
+  /* 音量鈕照音量換（chrome.css）：loud／half（一半以下）／silence（靜音）。三張的左緣都是喇叭的左緣；換圖的鈕裡幾張疊在同一格、靠左（chrome.css），喇叭不跳。
+     拉桿那排直條＝volume.svg（20 根，樣子照 ai 的 volume；chrome.css .media-vol-bars 當 mask） */
+  .icon-loud        { --icon: url('../website-icons/loud.svg'); --ar: 52.987 / 70; }
+  .icon-half        { --icon: url('../website-icons/half.svg'); --ar: 42.764 / 70; }
+  .icon-silence     { --icon: url('../website-icons/silence.svg'); --ar: 53.399 / 70; }
+  .icon-fullscreen  { --icon: url('../website-icons/fullscreen.svg'); --ar: 45.083 / 70; }
+  .icon-close       { --icon: url('../website-icons/close.svg'); --ar: 32.675 / 70; }
+  .icon-theme       { --icon: url('../website-icons/day.svg'); --ar: 45.084 / 70; }   /* 深色模式鈕：ai 的 night＝day 轉半圈 → 深色時轉（chrome.css） */
+  .icon-slideshow   { --icon: url('../website-icons/slideshow.svg'); --ar: 45.084 / 70; }   /* 作品頁的排法：放映／總覽 */
+  .icon-grid        { --icon: url('../website-icons/grid.svg'); --ar: 45.084 / 70; }
+  .icon-ig          { --icon: url('../website-icons/ig.svg'); --ar: 45.08 / 70; }   /* 聯絡頁的 Instagram（user 2026-11-24 給的 SCAID IG＝骨牌挖一個鏡頭） */
 }

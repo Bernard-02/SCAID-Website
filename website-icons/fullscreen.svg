@@ -1,17 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_圖層_1" data-name="圖層 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: none;
-        stroke: #000;
-        stroke-miterlimit: 10;
-        stroke-width: 22.86px;
-      }
-    </style>
-  </defs>
-  <polyline class="cls-1" points="14.06 62 14.06 14 62.06 14"/>
-  <polyline class="cls-1" points="98.06 14 146.06 14 146.06 62"/>
-  <polyline class="cls-1" points="14.06 98 14.06 146 62.06 146"/>
-  <polyline class="cls-1" points="98.06 146 146.06 146 146.06 98"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45.083 70">
+  <!-- docs/SCAID icon.ai「full screen」 -->
+  <path fill="none" stroke="#000" stroke-width="3" d="M1.5,14.023L1.5,1.5L14.023,1.5M31.06,1.5L43.583,1.5L43.583,14.023M43.583,55.977L43.583,68.5L31.06,68.5M14.023,68.5L1.5,68.5L1.5,55.977"/>
 </svg>

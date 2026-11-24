@@ -9,40 +9,13 @@ window.SCAIDHelpers = window.SCAIDHelpers || /** @type {SCAIDHelpersAPI} */ ({})
 (function (Helpers) {
   'use strict';
 
-  // 站台根 URL：部署在子路徑（GitHub Pages project site／學校子目錄）時，根目錄絕對路徑（/custom-cursor/x.svg）
+  // 站台根 URL：部署在子路徑（GitHub Pages project site／學校子目錄）時，根目錄絕對路徑（/images/x.svg）
   // 會指到網域根而 404 → 一律經 sitePath() 以站台根為基準。從本檔 <script src> 位置推導（js/utils/ → 上兩層＝站台根）
   Helpers.siteBase = new URL('../../', /** @type {HTMLScriptElement} */ (document.currentScript).src).href;
 
   Helpers.sitePath = function (path) {
     return new URL(String(path).replace(/^\//, ''), Helpers.siteBase).href;
   };
-
-  // 全站 --cursor-* 唯一定義處（CSS 與 JS inline 都寫 var(--cursor-X)）。用絕對 URL：var() 內的相對 url()
-  // 由「使用處」解析（stylesheet 深度不同／inline＝文件基準）會差層 404 退回系統游標
-  function setCursorVars() {
-    var cursors = {
-      'default':     ['default.svg',  '9 2',   'default'],
-      'pointer':     ['pointer.svg',  '14 1',  'pointer'],
-      'text':        ['typing.svg',   '15 15', 'text'],
-      'grab':        ['drag_1.svg',   '15 15', 'grab'],
-      'grabbing':    ['drag_2.svg',   '15 15', 'grabbing'],
-      'zoom-in':     ['zoom-in.svg',  '9 9',   'zoom-in'],
-      'zoom-out':    ['zoom-out.svg', '9 9',   'zoom-out'],
-      'w-resize':    ['left.svg',     '2 15',  'w-resize'],
-      'e-resize':    ['right.svg',    '28 15', 'e-resize'],
-      'not-allowed': ['ban.svg',      '16 16', 'not-allowed'],
-    };
-    var root = document.documentElement;
-    Object.keys(cursors).forEach(function (key) {
-      var c = cursors[key];
-      root.style.setProperty(
-        '--cursor-' + key,
-        "url('" + Helpers.sitePath('custom-cursor/' + c[0]) + "') " + c[1] + ', ' + c[2]
-      );
-    });
-  }
-  setCursorVars();
-  Helpers.refreshCursorVars = setCursorVars;
 
   // 版型判斷：只分手機／桌面，同 CSS 的 768（不分 iPad，user 2026-11-23；SCCD 那條 iPad／矮橫向手機的 gate 沒搬 CSS，拿掉）。
   // MediaQueryList 建一次重複讀（讀 innerWidth 會強制 layout）

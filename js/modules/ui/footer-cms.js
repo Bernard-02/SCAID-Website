@@ -43,9 +43,10 @@ export async function loadFooterCms() {
   setText(dd('fax', d.fax), d.fax);
   setText(dd('address', d.address_zh), d.address_zh, d.address_en);
 
-  const social = root.querySelector('.footer-social');
+  // 社群＝一個 IG icon（user 2026-11-24）；網址空的／不是 http(s)＝不出
+  const social = root.querySelector('.footer-social'), ig = safeUrl(d.instagram);
   if (social) {
-    social.innerHTML = list(d.social).map(s => `<a ${ext(s?.url)} class="footer-social-box" aria-label="${escapeHtml(s?.label)}"></a>`).join('');
+    social.innerHTML = /^https?:/i.test(ig) ? `<a ${ext(ig)} aria-label="Instagram"><span class="icon icon-ig" aria-hidden="true"></span></a>` : '';
     show(social, social.children.length);
   }
   // 姊妹系所（user 2026-11-21）：全名、一行一個＝連結清單（.link-list 裡的 a.nav-link）；中文寫內文、英文寫 data-en（最後 applyLang 套），英文空退中文。

@@ -7,7 +7,6 @@ interface SCAIDHelpersAPI {
   // 站台路徑（子路徑部署安全）
   siteBase: string;
   sitePath(path: string): string;
-  refreshCursorVars(): void;
 
   // 版型判斷（版型看寬度、互動看輸入）
   isMobileLayout(): boolean;
