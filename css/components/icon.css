@@ -26,6 +26,11 @@
   .icon-arrow-up    { --icon: url('../website-icons/arrow_up.svg'); }
   .icon-arrow-down  { --icon: url('../website-icons/arrow_down.svg'); }
   .icon-play        { --icon: url('../website-icons/play.svg'); }
+  /* 影片控制列（放大 dialog，user 2026-11-23）：四個取自 SCCD 的 website-icons（同一套） */
+  .icon-pause       { --icon: url('../website-icons/pause.svg'); }
+  .icon-volume      { --icon: url('../website-icons/volume.svg'); }
+  .icon-mute        { --icon: url('../website-icons/mute.svg'); }
+  .icon-fullscreen  { --icon: url('../website-icons/fullscreen.svg'); }
   /* chevron base 朝左，方向用 Tailwind rotate：rotate-180＝右、rotate-90＝上、-rotate-90＝下 */
   .icon-chevron     { --icon: url('../website-icons/chevron_left_list.svg'); }
   .icon-close       { --icon: url('../website-icons/close.svg'); }

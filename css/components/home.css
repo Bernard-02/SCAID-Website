@@ -4,13 +4,15 @@
 
 @layer components {
   /* 未展開：logo 在畫面正中央（變數由 chrome.css .site-logo 吃，位移走 transition）。
-     上下以「文字版三行的高」置中、不看現在的高：logo 在 stroke 與文字之間來回（logo.js）時左上角不動，帶是往下長 */
-  html:not(.news-open) body[data-page="index"] {
+     上下照現在的高置中（translate −50%＝自己的高的一半）：stroke 版（一行）、文字版（三行）都在畫面正中（user 2026-11-23：「切換的時候應該要調整位置，
+     保持兩種 logo 都對齊畫面」；原本以文字版的高置中、左上角不動、帶往下長）。logo.js 每幀改 --tall＝高跟著變 → 來回時帶從中間往上下長。
+     放大 dialog 開著（首頁＝intro 影片，user 2026-11-23）也到頂：影片的頂對齊各頁 title 那條線，logo 留在正中會被它蓋掉 */
+  html:not(.news-open, :has(#figure-dialog[open]:not(.is-closing))) body[data-page="index"] {
     --logo-top: 50%;
     --logo-tf: translate(-50%, -50%);
   }
   /* logo 在正中：背後的毛玻璃往上也只外擴 --f＝四邊一樣羽化（在頂時往上擴 --w、上緣的羽化在畫面外；chrome.css .top-blur） */
-  html:not(.news-open) body[data-page="index"] .top-blur { top: calc(-1 * var(--f)); }
+  html:not(.news-open, :has(#figure-dialog[open]:not(.is-closing))) body[data-page="index"] .top-blur { top: calc(-1 * var(--f)); }
   /* 展開的順序（user 2026-11-21）：底列跑馬燈先淡出（--dur-fade，chrome.css .bar-news-track），淡完 logo 與清單才一起往上
      → 兩個都晚 --news-wait 才動。收合不等（news-open 一拿掉就走），跑馬燈等清單滑走才淡回來。減少動態＝不等 */
   :root { --news-wait: var(--dur-fade); }

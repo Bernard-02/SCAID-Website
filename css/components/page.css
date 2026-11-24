@@ -249,7 +249,7 @@
   @media (min-width: 768px) { .album { --album-h: 9rem; } }
   .album-strip { flex: 1; min-width: 0; display: flex; gap: var(--spacing-gutter); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
   .album-strip::-webkit-scrollbar { display: none; }
-  .album-strip > button { flex: none; display: block; height: var(--album-h); background: var(--light-gray); cursor: zoom-in; scroll-snap-align: start; }   /* 只管圖，chevron 是 .album 直接的子 button */
+  .album-strip > button { flex: none; display: block; height: var(--album-h); background: var(--light-gray); cursor: pointer; scroll-snap-align: start; }   /* 只管圖，chevron 是 .album 直接的子 button。游標＝手指（user 2026-11-23；原本放大鏡 zoom-in） */
   .album-strip img { display: block; height: 100%; width: auto; }
   .album-chev { @apply text-md; display: none; flex: none; align-items: center; justify-content: center; }
   .album-chev .icon { font-size: 1.25em; }
@@ -287,13 +287,14 @@
     overflow: hidden;
     transition: width var(--dur-medium) var(--ease-wipe), transform var(--dur-medium) var(--ease-wipe);
   }
-  /* 放大的是相簿的圖（<img>，動態頁）：不裁方形、不墊灰底，整張照原比例放進 logo 區～底列之間 */
+  /* 放大的是照片（<img>：相簿、封面、報導截圖、作品）：不裁方形、不墊灰底，整張照原比例放進放大 dialog 的框（chrome.css --fig-w／--fig-h：
+     頂對齊各頁 title 那條線、下面留一樣多，user 2026-11-23；原本 logo 區～底列之間） */
   .figure-dialog-body > img {
     display: block;
     aspect-ratio: auto;
     width: auto;
-    max-width: calc(100vw - 2 * var(--container-padding));
-    max-height: calc(100svh - var(--top-h) - var(--bar-h));
+    max-width: var(--fig-w);
+    max-height: var(--fig-h);
     background: none;
   }
 

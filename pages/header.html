@@ -64,7 +64,8 @@
         <span class="bar-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
         <span class="bar-rect"></span><span data-label="bar.menu" class="bar-label" data-zh="選單" data-en="menu">選單</span>
       </button>
-      <!-- TODO intro 影片：data-video 填網址才會開 dialog 播 -->
+      <!-- TODO intro 影片：data-video 填網址才會開 dialog 播（YouTube 連結，例 https://youtu.be/xxxxxxxxxxx；直連的影片檔也行）。
+           名字（簡介）不出、只當報讀名稱（user 2026-11-23，同 menu 鈕） -->
       <button type="button" class="bar-btn play-btn" data-video="">
         <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
       </button>
@@ -89,21 +90,31 @@
     </button>
   </div>
 
-  <!-- intro 影片：原生 <dialog>，Esc／右上鈕關 -->
-  <dialog class="intro-dialog" id="intro-dialog" aria-label="intro">
-    <video controls playsinline></video>
-    <button type="button" class="bar-btn intro-close"><span data-label="common.close" class="bar-label" data-zh="關閉" data-en="close">關閉</span><span class="bar-rect"></span></button>
-  </dialog>
-
-  <!-- 右圖放大（手機，右緣縮圖鈕開）：原生 <dialog> 白底蓋滿畫面、圖置中；點任何地方／Esc 關（fade in／out）。
-       下方矩形鈕（白圓點＝開著）給鍵盤與報讀用，位置同底列那條線 -->
+  <!-- 放大 dialog（lightbox）：相簿／封面／報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片（user 2026-11-23 併進來，原本自己一個滿版黑底的 dialog）都開在這裡。
+       原生 <dialog>、透明：後面的內容模糊＋疊白、底列收起來，logo 照常；內容的頂對齊各頁 title 那條線、下面留一樣多（user 2026-11-23）。
+       在放影片＝關燈（整頁換深色，同作品頁）。點旁邊／Esc 關（fade in／out）。行為 chrome.js openFigure -->
   <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片">
+    <!-- .figure-stage＝全螢幕的那一塊（內容＋控制列；dialog 自己不能全螢幕，Fullscreen 規格擋 dialog） -->
+    <div class="figure-stage">
     <div class="figure-dialog-body"></div>
-    <!-- 控制列（user 2026-11-18）：‹ X ›，左右＝play icon（user 2026-11-19，大小同底列 play 鈕）。只有一張（右圖、封面）時左右不出（chrome.js 依張數標 .has-nav）；左右鍵也能切 -->
+    <!-- 關閉＝menu 鈕那顆骨牌、在它的位置（左下角，user 2026-11-23：「back btn 要保持在左下角」；不出圓點）。
+         autofocus：不然一開焦點就進了內容裡 YouTube 的 iframe（跨網域），Safari 的 Esc 被它吃掉 -->
+    <!-- .fs-blur＝全螢幕時鈕後面的毛玻璃（同 logo 背後那塊：貼著這一組、四邊羽化；平常不出，chrome.css） -->
+    <button type="button" class="bar-btn figure-close" aria-label="關閉" autofocus><span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span><span class="bar-rect"></span></button>
+    <!-- 控制列（user 2026-11-23：「ui 放在中間」）：底列那條線的正中。影片才有播放／暫停、音量、全螢幕（.has-video）——音量＝靜音鈕＋拉桿一組，
+         拉桿游標移到這一組才長出來（user：「hover btn 時才會出現」）；一組多於一張才有上一個／下一個（.has-nav，在影片的鈕後面；首頁的 intro 只有一支＝沒有）
+         ＝圖片只剩上一個／下一個。左右鍵也能切 -->
     <div class="figure-nav">
+      <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
+      <button type="button" class="media-btn media-play" aria-label="播放" aria-pressed="true"><span class="icon icon-pause" aria-hidden="true"></span><span class="icon icon-play" aria-hidden="true"></span></button>
+      <div class="media-btn media-vol-wrap">
+        <button type="button" class="media-mute" aria-label="靜音" aria-pressed="false"><span class="icon icon-volume" aria-hidden="true"></span><span class="icon icon-mute" aria-hidden="true"></span></button>
+        <input type="range" class="media-vol" min="0" max="1" step="0.05" value="1" aria-label="音量">
+      </div>
+      <button type="button" class="media-btn media-fs" aria-label="全螢幕"><span class="icon icon-fullscreen" aria-hidden="true"></span></button>
       <button type="button" class="figure-prev" aria-label="上一張"><span class="icon icon-play rotate-180" aria-hidden="true"></span></button>
-      <button type="button" class="figure-close" aria-label="關閉"><span class="icon icon-close icon-m" aria-hidden="true"></span></button>
       <button type="button" class="figure-next" aria-label="下一張"><span class="icon icon-play" aria-hidden="true"></span></button>
+    </div>
     </div>
   </dialog>
 </header>

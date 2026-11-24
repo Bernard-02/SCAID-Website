@@ -1,11 +1,12 @@
 /**
  * 全站殼行為（結構 pages/header.html，樣式 css/components/chrome.css）：
- * 選單開關、intro 影片 dialog、底列量測（兩側等寬＋動態跑馬燈）、首頁動態原地展開、手機的右圖縮圖鈕＋放大 dialog。
+ * 選單開關、底列量測（兩側等寬）、首頁底列的動態（一則一則換）與原地展開、手機的右圖鈕、放大 dialog（圖片／影片＋自己的控制列；首頁的 intro 影片也開在這裡）。
  * 全部 document 委派＝片段注入前後都綁得到；狀態掛 <html> class（menu-open／news-open）
  */
 import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
+import { logoToStroke, logoPage } from './logo.js';
 import { flash, remeasure } from './item-marquee.js';
 
 const html = document.documentElement;
@@ -100,7 +101,9 @@ function toggleTheme() {
 // 換頁／Esc：選單、首頁展開全收（main.js initPageModules 每次換頁呼叫）。news＝false：只收選單、首頁展開先留著（router.js 換頁前用）
 export function closeOverlays(news = true) { setMenu(false); if (news) setNews(false); awayNews(); }   // awayNews：換頁離開首頁（router 先換 data-page 才叫這裡）
 
-// intro：data-video 有網址才開 <dialog> 播；關掉就停並卸載
+// intro（首頁底列的 ▶）：data-video 有網址才開。一支影片開在放大 dialog（user 2026-11-23；原本自己一個滿版黑底的 dialog、用 YouTube 自己的控制列）：
+// YouTube 連結＝iframe（youtube-nocookie：規章頁寫了不蒐集個人資料；autoplay＝點了就播、playsinline＝iPhone 不自己跳全螢幕）；
+// 其他＝直連的影片檔（.mp4、.m3u8）＝原生 <video>。控制列、關燈、關掉整個拿掉＝放大 dialog 那套（renderFigure）
 /** YouTube 的影片 id（youtu.be/…、watch?v=…、/embed/、/shorts/、/live/）；不是 YouTube 的網域＝undefined——不先看網域的話，
  *  …/live/graduation-2026.mp4、?v=快取參數 這種直連的檔會被認成 YouTube @param {string} url */
 const youtubeId = (url) => {
@@ -115,15 +118,13 @@ export const youtubeFrame = (id, title) => Object.assign(document.createElement(
   src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1&rel=0`,
   allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, title,
 });
-function openIntro(btn) {
+/** @param {HTMLElement} btn @param {MouseEvent} e */
+function openIntro(btn, e) {
   const url = btn.dataset.video;
-  if (!url) return;   // TODO intro 影片網址（header.html .play-btn data-video）
-  const dialog = /** @type {HTMLDialogElement} */ (document.getElementById('intro-dialog'));
-  const video = dialog.querySelector('video');
-  video.src = url;
-  dialog.showModal();
-  video.play().catch(() => {});
-  dialog.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); }, { once: true });
+  if (!url) return;   // 後台「首頁影片」沒填、header.html 的備援也空著
+  const id = youtubeId(url);
+  // preload auto：logo 還在動、影片先藏著不播（openFigure）的時候就開始緩衝，淡出來時接得上
+  openFigure(id ? youtubeFrame(id, btn.textContent?.trim() || 'intro') : Object.assign(document.createElement('video'), { src: url, playsInline: true, preload: 'auto' }), e);
 }
 
 // 內頁的右圖＝殼上的 object 畫布（user 2026-11-22；object.js）。PC：疊在當頁右圖那一格（page.css .page-figure）上；
@@ -142,18 +143,29 @@ export function syncFigure() {
 function openObjectDialog(e) {
   const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
   if (!dialog || !box) return;
-  figureItems = []; dialog.classList.remove('has-nav');
+  figureItems = []; dialog.classList.remove('has-nav', 'has-video'); dialog.setAttribute('aria-label', '圖片');
   openObject(box);
   dialog.showModal();
   if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();   // 同 openFigure：滑鼠／觸控點開的不亮焦點框
 }
 // 開放大 dialog：內容開的時候才放（那個節點的複本）——右緣縮圖鈕＝當頁右圖；動態那則（打開的）點封面縮圖或相簿哪張＝
 // 同一組「封面（第一張）＋相簿」可左右切（user 2026-11-19；原本點封面只有那一張）。多於一張才出 ‹ ›（.has-nav）；到頭的那邊 disabled
+// 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕，關閉＝menu 鈕那顆）、開著＝關燈
 let figureItems = /** @type {Element[]} */ ([]), figureIndex = 0;
 function renderFigure() {
   const dialog = figureDialog();
   if (!dialog || !figureItems[figureIndex]) return;
-  dialog.querySelector('.figure-dialog-body')?.replaceChildren(figureItems[figureIndex].cloneNode(true));
+  const node = /** @type {Element} */ (figureItems[figureIndex].cloneNode(true)), video = node instanceof HTMLVideoElement, yt = node instanceof HTMLIFrameElement;
+  if (yt) node.src += '&controls=0&enablejsapi=1';   // YouTube 收掉它自己的控制列、開 postMessage（下面 mediaAct）
+  if (video) node.controls = false;
+  dialog.querySelector('.figure-dialog-body')?.replaceChildren(node);
+  dialog.classList.toggle('has-video', video || yt);
+  dialog.classList.toggle('no-fs', !document.fullscreenEnabled && !video);   // iPhone：只有 <video> 能全螢幕（webkitEnterFullscreen）
+  dialog.classList.toggle('no-vol', !canVolume);
+  dialog.setAttribute('aria-label', video || yt ? '影片' : '圖片');
+  if (video) { mediaState(true, node.muted, node.volume); if (!dialog.classList.contains('is-waiting')) node.play().catch(() => {}); }   // 播了（play 事件）圖示才換；等 logo 的時候先不播（openFigure）
+  if (yt) { mediaState(false, false, 1); listen(node); }                                    // autoplay=1：先當作在播、全音量，播放器回報了再照它
+  lights(video || yt);
   dialog.classList.toggle('has-nav', figureItems.length > 1);
   const prev = dialog.querySelector('.figure-prev'), next = dialog.querySelector('.figure-next');
   if (prev instanceof HTMLButtonElement) prev.disabled = figureIndex <= 0;
@@ -168,10 +180,107 @@ export function openFigure(node, e, items) {
   if (!dialog || !node) return;
   figureItems = items?.length ? items : [node];
   figureIndex = Math.max(0, figureItems.indexOf(node));
+  // 先讓背景跟 logo 動（user 2026-11-23：「背景跟 logo 同時開始動畫，logo 淡成白色；logo 動畫好了之後，影片跟 ui 才開始 fade 出來」）：
+  // 首頁（intro）logo 從正中移到頂（home.css）、停在 stroke；影片＝關燈（lights，顏色過場同 logo 上移的時長）。這段內容藏著（.is-waiting）、影片先不播，動完才淡出來、開始播
+  const home = document.body.dataset.page === 'index', item = figureItems[figureIndex];
+  const wait = !prefersReducedMotion() && ((home && !html.classList.contains('news-open'))
+    || ((item instanceof HTMLVideoElement || item instanceof HTMLIFrameElement) && html.dataset.theme !== 'dark'));
+  dialog.classList.toggle('is-waiting', wait);
   renderFigure();
   dialog.showModal();
+  const logo = home ? logoToStroke(true) : null;   // 首頁：停在 stroke 同內頁（正在變的那段直接切過去），關了再接著來回
+  if (wait) Promise.all([logo, new Promise(r => setTimeout(r, DUR.slow * 1000))]).then(() => {
+    if (!dialog.open || dialog.classList.contains('is-closing')) return;
+    dialog.classList.remove('is-waiting');
+    const m = shownMedia();
+    if (m instanceof HTMLVideoElement) m.play().catch(() => {});
+  });
   // showModal 會自動聚焦第一個鈕 → 滑鼠／觸控點開的不要一開就亮焦點框（鍵盤 Enter 的 detail 是 0，照常聚焦）
   if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+/** 放大 dialog 裡現在那支影片（沒有＝null） */
+const shownMedia = () => /** @type {HTMLVideoElement | HTMLIFrameElement | null} */ (figureDialog()?.querySelector('.figure-dialog-body > :is(video, iframe)') ?? null);
+/** 現在全螢幕的是不是放大 dialog 那一塊（內容＋控制列） */
+const fsStage = () => { const f = document.fullscreenElement; return f instanceof HTMLElement && f.matches('.figure-stage') ? f : null; };
+// 全螢幕時控制列平常藏著、游標也藏（chrome.css .is-idle）：游標動了／按了鍵才淡出來，停 IDLE（游標不在控制列上）又藏
+// （user 2026-11-23：「游標有動那些 ui 才在全螢幕狀態下 fade 出來」；3 秒同 SCCD 播放器沒動自動收）
+const IDLE = 3000;
+let idleTimer = 0;
+/** @param {Event} e */
+function wakeControls(e) {
+  const st = fsStage();
+  if (!st) return;
+  st.classList.remove('is-idle');
+  clearTimeout(idleTimer);
+  if (e.target instanceof Element && e.target.closest('.figure-nav, .figure-close')) return;   // 游標在控制列上＝先不藏
+  idleTimer = window.setTimeout(() => st.classList.add('is-idle'), IDLE);
+}
+// 這台能不能用網頁調音量（iPhone 不行：volume 設了還是 1，只能用手機的音量鍵）→ 不行就只留靜音（chrome.css .no-vol）
+const canVolume = (() => { const v = document.createElement('video'); v.volume = 0.5; return v.volume === 0.5; })();
+let volume = 1;   // 現在的音量（0～1；靜音另外記）
+/** 播著沒、靜音沒、音量 → dialog 的 class（控制列的圖示照它換，chrome.css）、鈕的 aria-pressed、拉桿（靜音＝拉到 0）
+ *  @param {boolean} paused @param {boolean} muted @param {number} [v] */
+function mediaState(paused, muted, v = volume) {
+  const d = figureDialog();
+  if (!d) return;
+  volume = v;
+  d.classList.toggle('is-paused', paused);
+  d.classList.toggle('is-muted', muted);
+  d.querySelector('.media-play')?.setAttribute('aria-pressed', String(!paused));
+  d.querySelector('.media-mute')?.setAttribute('aria-pressed', String(muted));
+  const range = d.querySelector('.media-vol'), shown = muted ? 0 : v;
+  if (range instanceof HTMLInputElement) { range.value = String(shown); range.style.setProperty('--vol', `${Math.round(shown * 100)}%`); }
+}
+/** YouTube 的播放器（enablejsapi）：叫它做事 @param {HTMLIFrameElement} f @param {string} func @param {unknown[]} [args] */
+const ytSend = (f, func, args = []) => f.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+/** 控制列的鈕：<video> 直接叫（圖示等 play／pause／volumechange 事件換）；YouTube＝postMessage 給它的播放器（同 SCCD pause-offscreen-video.js），
+ *  它不會馬上回報 → 先照按的改圖示。全螢幕＝.figure-stage（內容＋控制列）；iPhone 只能讓 <video> 自己全螢幕 @param {'play' | 'mute' | 'fs'} act */
+function mediaAct(act) {
+  const m = shownMedia(), d = figureDialog();
+  if (!m || !d) return;
+  const paused = d.classList.contains('is-paused'), muted = d.classList.contains('is-muted');
+  if (act === 'mute' && muted && !volume) { mediaVolume(1); return; }   // 拉到 0 之後按取消靜音：回到全音量（不然按了還是沒聲音）
+  if (act === 'fs') {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (document.fullscreenEnabled) d.querySelector('.figure-stage')?.requestFullscreen().catch(() => {});
+    else /** @type {any} */ (m).webkitEnterFullscreen?.();
+  } else if (m instanceof HTMLVideoElement) {
+    if (act === 'mute') m.muted = !muted; else if (paused) m.play().catch(() => {}); else m.pause();
+  } else {
+    ytSend(m, act === 'mute' ? (muted ? 'unMute' : 'mute') : (paused ? 'playVideo' : 'pauseVideo'));
+    mediaState(act === 'play' ? !paused : paused, act === 'mute' ? !muted : muted);
+  }
+}
+/** 音量拉桿：拉到 0＝靜音、拉起來＝取消靜音 @param {number} v 0～1 */
+function mediaVolume(v) {
+  const m = shownMedia(), d = figureDialog();
+  if (!m || !d) return;
+  if (m instanceof HTMLVideoElement) { m.volume = v; m.muted = !v; return; }   // volumechange → mediaState
+  ytSend(m, 'setVolume', [Math.round(v * 100)]);
+  ytSend(m, v ? 'unMute' : 'mute');
+  mediaState(d.classList.contains('is-paused'), !v, v);
+}
+// YouTube 的播放器（enablejsapi）要先跟它說「在聽」，它才回報狀態；沒回就每 0.25 秒再說一次（官方 iframe_api 也這樣），最多 10 秒
+const heard = new WeakSet();
+/** @param {HTMLIFrameElement} f */
+function listen(f) {
+  let n = 0;
+  const t = setInterval(() => {
+    if (heard.has(f) || !f.isConnected || ++n > 40) clearInterval(t);
+    else f.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*');
+  }, 250);
+}
+// 關燈（user 2026-11-23：開影片＝像作品頁那樣整頁變暗）：放大 dialog 在放影片＝深色，關掉／換到圖片＝回到這頁該有的那種（syncPageTheme）。
+// 不走 fadeSwap 的整張交叉淡化（logo 同時在上移，會疊出兩個）：掛 html.is-lights 這段＝背景、logo 的顏色自己過場（chrome.css）
+let lightsTimer = 0;
+/** @param {boolean} off */
+function lights(off) {
+  if (off === lightsOff) return;
+  lightsOff = off;
+  html.classList.add('is-lights');
+  clearTimeout(lightsTimer);
+  lightsTimer = window.setTimeout(() => html.classList.remove('is-lights'), DUR.slow * 1000 + 100);
+  syncPageTheme(document.body.dataset.page || '', false);
 }
 /** 上一張／下一張（到頭不動） @param {number} dir */
 function stepFigure(dir) {
@@ -180,10 +289,12 @@ function stepFigure(dir) {
   figureIndex = i;
   renderFigure();
 }
-// 關＝先淡出（.is-closing）、淡完才真的 close()
+// 關＝先淡出（.is-closing）、淡完才真的 close()；全螢幕先退、開燈跟著淡出一起
 function closeFigure() {
   const dialog = figureDialog();
   if (!dialog?.open || dialog.classList.contains('is-closing')) return;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  lights(false);
   dialog.classList.add('is-closing');
   setTimeout(() => { dialog.classList.remove('is-closing'); dialog.close(); }, prefersReducedMotion() ? 0 : DUR.fade * 1000);
 }
@@ -289,13 +400,18 @@ export function initChrome() {
     if (!t) return;
     if (t.closest('.menu-btn')) { setMenu(!html.classList.contains('menu-open')); return; }
     if (t.closest('.theme-btn')) { toggleTheme(); return; }
-    if (t.closest('.intro-close')) { /** @type {HTMLDialogElement} */ (document.getElementById('intro-dialog')).close(); return; }
     const play = t.closest('.play-btn');
-    if (play instanceof HTMLElement) { openIntro(play); return; }
+    if (play instanceof HTMLElement) { openIntro(play, e); return; }
     if (t.closest('.figure-btn')) { openObjectDialog(e); return; }
     if (t.closest('.object-canvas')) return;   // dialog 裡的 object：點它＝露出名字、拖＝轉視角（object.js），不算「點任何地方都關」
     if (t.closest('.figure-prev')) { stepFigure(-1); return; }
     if (t.closest('.figure-next')) { stepFigure(1); return; }
+    // 影片的控制列；點影片本身＝播放／暫停、不關（YouTube 的點擊在它自己的 iframe 裡，到不了這裡）
+    // 全螢幕時 YouTube 上面蓋的那層透明的（chrome.css；點到的是 .figure-dialog-body 本身）也是
+    if (t.closest('.media-play, .figure-dialog-body > video') || (t.matches('.figure-dialog-body') && fsStage())) { mediaAct('play'); return; }
+    if (t.closest('.media-mute')) { mediaAct('mute'); return; }
+    if (t.closest('.media-fs')) { mediaAct('fs'); return; }
+    if (t.closest('.figure-nav')) return;   // 控制列的空隙、音量拉桿：不算「點旁邊」（關閉鈕在列外、左下角）
     const shot = t.closest('.album button');
     if (shot) { openFigure(shot.querySelector('img'), e, galleryOf(shot)); return; }
     // 清單列掛 data-zoom（報導，user 2026-11-21）：不換頁、不另開，放大 dialog 直接看 href 那張圖（報導的截圖）
@@ -335,6 +451,13 @@ export function initChrome() {
     if (e.key === 'Escape') closeOverlays();
     // 放大 dialog 開著：左右鍵切上一張／下一張
     if (e.key === 'ArrowLeft') stepFigure(-1); else if (e.key === 'ArrowRight') stepFigure(1);
+    // 影片：空白鍵＝播放／暫停（user 2026-11-23）。焦點在控制列的鈕上＝照那顆鈕自己的（空白鍵按它）；其他地方都是播放／暫停——
+    // 包括一開就聚焦的關閉鈕（autofocus，不然鍵盤開的一按空白鍵就關了；關＝Enter／Esc）。按著不放的重複不算
+    const d = figureDialog();
+    if (e.key === ' ' && d?.open && d.classList.contains('has-video') && !(document.activeElement instanceof HTMLButtonElement && document.activeElement.closest('.figure-nav'))) {
+      e.preventDefault();
+      if (!e.repeat) mediaAct('play');
+    }
   });
   // 選單開著時對右邊內容做任何操作＝第一下只收選單、內容不動（user 2026-11-18）：在 #page-content 按下（滑鼠／觸控）、鍵盤聚焦進去、
   // 選單外滾輪／觸控滑動（內容本來就鎖住捲不動，見 chrome.css .menu-open overflow）。不用 scroll 事件：換頁回頂那類程式捲動會誤收。
@@ -365,6 +488,41 @@ export function initChrome() {
   document.addEventListener('touchmove', onScrollGesture, { passive: false });
   // 右圖 dialog 的 Esc：原生會直接關 → 攔下來走淡出。cancel 不冒泡 → capture
   document.addEventListener('cancel', (e) => { if (e.target === figureDialog()) { e.preventDefault(); closeFigure(); } }, true);
+  // 關了（淡完、換頁）＝影片拿掉（dialog 關了它照樣在播、聽得到聲音）、開燈、全螢幕退掉、首頁的 logo 接著來回。
+  // 只拿影片——手機的右圖 object 也住在這裡、由 object.js 搬回去。close 不冒泡 → capture
+  document.addEventListener('close', (e) => {
+    if (e.target !== figureDialog()) return;
+    shownMedia()?.remove();
+    figureDialog()?.classList.remove('is-waiting');   // logo 還在動就關了：別留著（下次開手機的右圖會整個藏著）
+    lights(false);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (document.body.dataset.page === 'index') logoPage();
+  }, true);
+  // 直連的影片：播放／暫停／音量變了 → 控制列的圖示（media 事件不冒泡 → capture）
+  ['play', 'pause', 'volumechange'].forEach(type => document.addEventListener(type, (e) => {
+    if (e.target instanceof HTMLVideoElement && e.target === shownMedia()) mediaState(e.target.paused, e.target.muted, e.target.volume);
+  }, true));
+  // 全螢幕的控制列：游標動了／按了鍵＝淡出來（wakeControls）；一進全螢幕先藏（游標動了才出來），出來全螢幕拿掉
+  ['pointermove', 'pointerdown', 'keydown'].forEach(type => document.addEventListener(type, wakeControls, true));
+  document.addEventListener('fullscreenchange', () => {
+    clearTimeout(idleTimer);
+    const st = fsStage();
+    if (st) st.classList.add('is-idle');
+    else document.querySelector('.figure-stage.is-idle')?.classList.remove('is-idle');
+  });
+  // 音量拉桿（拉的途中就一直調）
+  document.addEventListener('input', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('.media-vol')) mediaVolume(Number(e.target.value)); });
+  // YouTube 的播放器回報（listen 之後）：onStateChange／infoDelivery 的 playerState（1 在播、3 緩衝也算在播；-1 還沒開始＝不算數）、muted、volume（0～100）
+  window.addEventListener('message', (e) => {
+    const f = shownMedia(), d = figureDialog();
+    if (!(f instanceof HTMLIFrameElement) || !d || e.source !== f.contentWindow || typeof e.data !== 'string') return;
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    heard.add(f);
+    const info = msg?.info, s = msg?.event === 'onStateChange' ? info : info?.playerState;
+    mediaState(typeof s === 'number' && s !== -1 ? !(s === 1 || s === 3) : d.classList.contains('is-paused'), typeof info?.muted === 'boolean' ? info.muted : d.classList.contains('is-muted'),
+      typeof info?.volume === 'number' ? info.volume / 100 : volume);
+  });
 
   // 名字現／隱（hover、鍵盤聚焦）→ 側邊寬變 → 下一幀重量（等樣式套上）；視窗寬也是
   const refit = (e) => { if (e.target instanceof Element && e.target.closest('.site-bar')) requestAnimationFrame(fitBar); };

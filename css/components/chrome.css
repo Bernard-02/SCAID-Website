@@ -73,7 +73,7 @@
   /* 漸進模糊（羽化）：單層 blur＋遮罩只是糊／不糊交叉淡化（有重影）→ 疊 6 層（header.html 的 <i>），模糊每層加倍（0.25→8px），
      第 i 層從外緣往內 i 格開始淡入、淡兩格才全實（一格＝--w/7，跟鄰層重疊＝更柔）；後層糊的是前層糊過的＝越往 logo 越糊。
      遮罩＝左右、上下兩條漸層取交集。遮罩不能掛在 .top-blur 本身：mask 會變 backdrop root，子層就糊不到底下內容 */
-  :is(.top-blur, .bar-blur) > i, :is(.top-blur, .bar-blur)::after {
+  :is(.top-blur, .bar-blur, .fs-blur) > i, :is(.top-blur, .bar-blur, .fs-blur)::after {
     --a: calc(var(--i) * var(--w) / 7);        /* 從這裡開始淡入 */
     --b: calc(var(--a) + var(--w) * 2 / 7);    /* 到這裡全實 */
     --mx: linear-gradient(to right, transparent var(--a), #000 var(--b), #000 calc(100% - var(--b)), transparent calc(100% - var(--a)));
@@ -85,11 +85,11 @@
             mask: var(--mx), var(--my);
             mask-composite: intersect;
   }
-  :is(.top-blur, .bar-blur) > i {
+  :is(.top-blur, .bar-blur, .fs-blur) > i {
     -webkit-backdrop-filter: blur(calc(0.25px * pow(2, var(--i))));
             backdrop-filter: blur(calc(0.25px * pow(2, var(--i))));
   }
-  :is(.top-blur, .bar-blur)::after {
+  :is(.top-blur, .bar-blur, .fs-blur)::after {
     --a: 0px;
     --b: var(--w);   /* 底色整個羽化寬一起淡 */
     content: '';
@@ -245,8 +245,9 @@
     color: var(--theme-fg);
   }
   .bar-left { justify-self: start; display: flex; align-items: center; gap: var(--bar-gap); }
+  .figure-nav { --bar-gap: var(--spacing-sm); }   /* 放大 dialog 的控制列：鈕之間同底列左邊那一排的間距（下面 .figure-nav） */
   @media (min-width: 768px) {
-    .site-bar { --bar-gap: var(--spacing-md); }
+    .site-bar, .figure-nav { --bar-gap: var(--spacing-md); }
   }
 
   /* 矩形鈕＝矩形＋名字。名字平常視覺隱藏（仍是無障礙名稱、跟語言走，lang.js），hover／鍵盤聚焦才排進版面；
@@ -393,35 +394,23 @@
   .bar-news-copy > span.is-current { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   html:is(.news-open, .news-closing) .bar-news-track { opacity: 0; filter: blur(var(--blur)); }
 
-  /* ── intro 影片 dialog：滿版黑底 ── */
-  .intro-dialog {
-    width: 100vw;
-    height: 100svh;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: var(--color-black);   /* 影片底永遠是黑的，不跟深色模式反過來 */
-    color: var(--color-white);
-  }
-  .intro-dialog::backdrop { background: var(--color-black); }
-  .intro-dialog video { width: 100%; height: 100%; object-fit: contain; }
-  .intro-close { position: absolute; top: var(--spacing-md); right: var(--container-padding); }
-
-  /* ── 右圖放大 dialog（手機，右緣縮圖鈕開；user 2026-11-13）：蓋滿畫面、圖在 logo 區與底列區之間置中。
-     背後＝後面的內容模糊＋疊 60% 白（同選單開著那組：--blur、opacity 0.4；user 2026-11-21，原本白底整個蓋掉），logo 照常清楚：
-     所以不是 dialog 自己 backdrop-filter（top layer 會連 logo 一起糊），而是 dialog 開著時糊 logo 以外的內容與殼（下面 :has 那條）。
+  /* ── 放大 dialog（lightbox：相簿、封面、報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片；user 2026-11-13 起）：蓋滿畫面、透明。
+     內容的頂＝各頁 title 那條線（--top-h）、下面也留 --top-h（user 2026-11-23：「頂點對齊每個頁面的 title 的位置，然後上下對齊」；原本在 logo 區與底列區之間置中）、左右置中。
+     背後＝內容模糊＋疊 60% 白（同選單開著那組：--blur、opacity 0.4；user 2026-11-21，原本白底整個蓋掉）、底列收起來（控制列在底列那條線的正中，下面 .figure-nav），
+     logo 照常清楚：所以不是 dialog 自己 backdrop-filter（top layer 會連 logo 一起糊），而是 dialog 開著時糊 logo 以外的內容與殼（下面 :has 那兩條）。
+     在放影片＝關燈（整頁換深色，同作品頁；chrome.js lights）；首頁的 logo 這時移到頂（home.css）。
      inset 0 撐滿＝跟著實際可視範圍，不靠 ::backdrop 補；fade in 走 keyframes、fade out 由 chrome.js 加 .is-closing 淡完才關。
      ⚠️ display 只能寫在 [open]：寫在 .figure-dialog 會蓋掉瀏覽器「沒開＝display none」 ── */
   .figure-dialog {
+    --fig-w: calc(100vw - 2 * var(--container-padding));   /* 內容最大的框：寬扣兩邊內距、高扣上下各一個 --top-h */
+    --fig-h: calc(100svh - 2 * var(--top-h));
     inset: 0;
     width: auto;
     height: auto;
     max-width: none;
     max-height: none;
     margin: 0;
-    padding: var(--top-h) var(--container-padding) var(--bar-h);
+    padding: 0;
     border: 0;
     background: none;
     color: var(--theme-fg);
@@ -429,19 +418,71 @@
   }
   .figure-dialog::backdrop { background: none; }
   .site-bar { transition: var(--transition-fade); }
-  html:has(#figure-dialog[open]:not(.is-closing)) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb, .site-chrome > .object-canvas.is-on) { filter: blur(var(--blur)); opacity: 0.4; }
-  .figure-dialog[open] { display: flex; align-items: center; justify-content: center; animation: fade-in var(--dur-fade) var(--ease-standard); }
+  html:has(#figure-dialog[open]:not(.is-closing)) :is(#page-content, #custom-scrollbar-thumb, .site-chrome > .object-canvas.is-on) { filter: blur(var(--blur)); opacity: 0.4; }
+  html:has(#figure-dialog[open]:not(.is-closing)) .site-bar { filter: blur(var(--blur)); opacity: 0; }
+  .figure-dialog[open] { display: block; animation: fade-in var(--dur-fade) var(--ease-standard); }
   .figure-dialog.is-closing { opacity: 0; filter: blur(var(--blur)); }
-  /* 放大的右圖（灰底佔位那種）：方形，寬＝內容寬，矮畫面（橫拿）改吃可用高。樣子同桌面右圖（page.css .page-figure > *）。
-     放大的照片（相簿、封面）：照原比例，寬／高都不超過可用範圍 */
-  .figure-dialog-body > :not(img) { width: min(100vw - 2 * var(--container-padding), 100svh - var(--top-h) - var(--bar-h)); }
-  .figure-dialog-body > img { display: block; width: auto; height: auto; max-width: calc(100vw - 2 * var(--container-padding)); max-height: calc(100svh - var(--top-h) - var(--bar-h)); }
-  /* 控制列 ‹ X ›（user 2026-11-18；原本是底列那種矩形鈕）：畫面正中、底貼 --bar-pad、高同底列那一行（同底列的排法）。
-     只有一張（右圖、封面）時左右不出（.has-nav 由 chrome.js 依張數標）；到頭的那邊半透明 */
-  .figure-nav { @apply text-md; position: absolute; left: 50%; bottom: var(--bar-pad); transform: translateX(-50%); display: flex; align-items: center; gap: var(--spacing-md); height: max(1.5em, var(--block-h)); }
-  .figure-nav button { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; }
-  .figure-nav :is(.figure-prev, .figure-next) .icon { font-size: 1.25em; }   /* play icon，大小同底列 play 鈕（user 2026-11-19） */
-  .figure-dialog:not(.has-nav) :is(.figure-prev, .figure-next) { display: none; }
+  /* 內容＋控制列（全螢幕的那一塊，header.html）：撐滿 dialog，內容貼著 --top-h 那條線、左右置中 */
+  .figure-stage { position: relative; height: 100%; display: flex; align-items: flex-start; justify-content: center; padding: var(--top-h) var(--container-padding); transition: var(--transition-fade); }
+  /* 先讓背景跟 logo 動、動完內容（影片＋控制列）才淡出來（user 2026-11-23；chrome.js openFigure 掛 .is-waiting） */
+  .figure-dialog.is-waiting .figure-stage { opacity: 0; filter: blur(var(--blur)); }
+  /* 關燈／開燈（chrome.js lights）：背景跟 logo 的顏色一起過場（user 2026-11-23：「背景跟 logo 同時開始動畫，logo fade 成白色」），時長同 logo 上移；
+     不走整張交叉淡化（fadeSwap）——logo 同時在上移，交叉淡化會疊出兩個。.site-logo 原本的 top／transform 過場（上面那條）要一起寫 */
+  html.is-lights, html.is-lights body { transition: background-color var(--dur-slow) var(--ease-standard); }
+  html.is-lights .site-logo { transition: top var(--dur-slow) var(--ease-standard), transform var(--dur-slow) var(--ease-standard), color var(--dur-slow) var(--ease-standard); }
+  /* 右圖的 object（手機）：方形塞進框。照片（相簿、封面、截圖、作品）照原比例＝page.css 那條（跟右圖那格共用的底在那裡）。影片（YouTube、直連的檔）：16:9 */
+  .figure-dialog-body > :not(img) { width: min(var(--fig-w), var(--fig-h)); }
+  .figure-dialog-body > :is(iframe, video) { display: block; border: 0; aspect-ratio: 16 / 9; width: min(var(--fig-w), var(--fig-h) * 16 / 9); object-fit: contain; }
+  /* 全螢幕（控制列那顆＝.figure-stage 全螢幕：自己的控制列照樣在；SCCD 是讓 <video> 本身全螢幕＝只能用瀏覽器原生的控制列）：框＝整個螢幕、上下置中、黑底 */
+  .figure-stage:fullscreen { --fig-w: 100vw; --fig-h: 100vh; padding: 0; align-items: center; background: var(--color-black); color: var(--color-white); }
+  /* 全螢幕時控制列（連關閉鈕）平常藏著、游標也藏；游標動了／按了鍵才淡出來，停 3 秒（游標不在控制列上）又淡掉（user 2026-11-23：「游標有動那些 ui 才在全螢幕狀態下 fade 出來」；
+     chrome.js 掛 .is-idle，同 SCCD 播放器 3 秒沒動自動收）。YouTube 的 iframe 會把游標事件吃掉（跨網域，量不到有沒有動）→ 全螢幕時蓋一層透明的接住，點它＝播放／暫停 */
+  /* 淡的是裡面的鈕跟毛玻璃每一層自己（下面），不掛在 .figure-nav／.figure-close 上：掛了它們會變 backdrop root，裡面的毛玻璃就糊不到影片（同 .bar-blur 那條） */
+  :is(.figure-nav, .figure-close) > :not(.fs-blur) { transition: var(--transition-fade); }
+  .figure-stage:fullscreen.is-idle :is(.figure-nav, .figure-close) { pointer-events: none; }
+  .figure-stage:fullscreen.is-idle :is(.figure-nav, .figure-close) > :not(.fs-blur) { opacity: 0; filter: blur(var(--blur)); }
+  .figure-stage:fullscreen.is-idle, .figure-stage:fullscreen.is-idle * { cursor: none; }
+  .figure-stage:fullscreen .figure-dialog-body { position: relative; }
+  .figure-stage:fullscreen .figure-dialog-body:has(> iframe)::after { content: ''; position: absolute; inset: 0; }
+  /* 全螢幕時鈕後面的毛玻璃（user 2026-11-23：「這些 ui 在全螢幕的時候，要加上 blur 的底」「參考 logo 的」；第一版是畫面底下整條暗帶，退掉）：
+     同 logo 背後那塊（.top-blur）——每一組（關閉鈕、中間那排）自己一塊、貼著它往外擴 --f、四邊都羽化，6 層漸進模糊＋疊 60% 底色（同 logo 有東西捲到底下時）。
+     中間那排變寬（音量拉桿長出來）它跟著變寬。.figure-close／.figure-nav 掛 z-index＝自己一個疊層，毛玻璃（z -1）才會在影片上面、鈕底下（同 .site-logo 裡的 .top-blur）。
+     跟著鈕一起淡（.is-idle）：淡的是每一層自己的 opacity。平常（不是全螢幕）不出 */
+  .fs-blur { display: none; }
+  .figure-stage:fullscreen :is(.figure-nav, .figure-close) { z-index: 1; }
+  .figure-stage:fullscreen .fs-blur { --f: var(--spacing-lg); --w: calc(var(--f) * 1.5); display: block; position: absolute; inset: calc(-1 * var(--f)); z-index: -1; pointer-events: none; }
+  .fs-blur > i, .fs-blur::after { transition: opacity var(--dur-fade) var(--ease-standard); }
+  .figure-stage:fullscreen .fs-blur::after { opacity: 0.6; }
+  .figure-stage:fullscreen.is-idle .fs-blur > i, .figure-stage:fullscreen.is-idle .fs-blur::after { opacity: 0; }   /* :is() 裡不能放偽元素＝分開寫 */
+  /* 關閉＝menu 鈕那顆骨牌、在它的位置（左下角；user 2026-11-23：「back btn 要保持在左下角」「不需要有個圓形」＝不出圓點）：
+     同底列那一行（左＝內距、底＝--bar-pad、高＝那一行）＝跟 menu 鈕疊在同一個地方 */
+  .figure-close { @apply text-md; position: absolute; left: var(--container-padding); bottom: var(--bar-pad); height: max(1.5em, var(--block-h)); }
+  /* 圓點平常不出、hover／鍵盤聚焦才出（同 menu 鈕，.bar-btn 那幾條；user 2026-11-23：「hover close btn 時，不是調整不透明度，而是加上圓點」） */
+  /* 控制列（user 2026-11-23：「ui 放在中間」；原本畫面正中 ‹ X ›，中間一版在底列左邊）：底列那條線的正中、同樣的間距（底列這時收起來）。
+     .has-video（chrome.js 照現在那個是不是影片標）才有播放／暫停、音量、全螢幕，圖示照 .is-paused／.is-muted 換；
+     .has-nav（一組多於一張）才有上一個／下一個、到頭的那邊半透明；.no-fs＝這台全螢幕不了（iPhone 上的 YouTube）；
+     .no-vol＝這台網頁調不了音量（iPhone：只能用手機的音量鍵，只留靜音） */
+  .figure-nav { @apply text-md; position: absolute; left: 50%; bottom: var(--bar-pad); transform: translateX(-50%); display: flex; align-items: center; gap: var(--bar-gap); height: max(1.5em, var(--block-h)); }
+  .figure-nav button { display: flex; align-items: center; justify-content: center; }
+  .figure-nav .icon { font-size: 1.25em; }   /* 同底列 play 鈕 */
+  .figure-dialog:not(.has-video) .media-btn, .figure-dialog.no-fs .media-fs, .figure-dialog.no-vol .media-vol, .figure-dialog:not(.has-nav) :is(.figure-prev, .figure-next) { display: none; }
+  .figure-dialog:not(.is-paused) .media-play .icon-play, .figure-dialog.is-paused .media-play .icon-pause,
+  .figure-dialog:not(.is-muted) .media-mute .icon-mute, .figure-dialog.is-muted .media-mute .icon-volume { display: none; }
+  /* 音量＝靜音鈕＋拉桿一組（user 2026-11-23：「音量要可以調整大小」）。拉桿＝一條細線＋一根直條當把手（同 logo 的 stroke），左邊實的那段＝現在的音量（--vol，chrome.js 給）。
+     平常收著（寬 0、淡掉），游標移到這一組／鍵盤聚焦進來（:focus-visible：滑鼠拖完拉桿還有焦點，用 :focus-within 移開了也不收）才長出來（user：「hover btn 時才會出現」）；整排跟著變寬、重新置中——
+     游標一直在這一組裡（鈕往左、拉桿往右長），不會一長一收地閃 */
+  .media-vol-wrap { display: flex; align-items: center; }
+  .media-vol {
+    -webkit-appearance: none; appearance: none; width: 0; height: 1.5em; margin: 0; background: none; cursor: pointer; --vol: 100%;
+    opacity: 0; filter: blur(var(--blur));
+    transition: var(--transition-fade), width var(--dur-fade) var(--ease-standard), margin var(--dur-fade) var(--ease-standard);
+  }
+  .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol { width: 5em; margin-left: calc(0.5 * var(--bar-gap)); opacity: 1; filter: none; }   /* 跟靜音鈕一組：間距減半 */
+  @media (max-width: 767px) { .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol { width: 3.5em; } }
+  .media-vol::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(to right, currentColor var(--vol), rgb(var(--theme-fg-rgb), 0.3) var(--vol)); }
+  .media-vol::-moz-range-track { height: 2px; background: linear-gradient(to right, currentColor var(--vol), rgb(var(--theme-fg-rgb), 0.3) var(--vol)); }
+  .media-vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 0.2em; height: 1em; margin-top: calc(1px - 0.5em); border: 0; border-radius: 0; background: currentColor; }
+  .media-vol::-moz-range-thumb { width: 0.2em; height: 1em; border: 0; border-radius: 0; background: currentColor; }
   .figure-nav button:disabled { opacity: 0.5; cursor: default; }
   @media (hover: hover) { .figure-nav button:not(:disabled):hover { opacity: 0.6; } }
 }
