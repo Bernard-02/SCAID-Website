@@ -9,7 +9,9 @@
  * 流程（同日）：
  *   - 第一次載入先演進場（首頁接著展開成系名），演完才拿掉 html.is-intro＝其他東西 fade in（chrome.css）。
  *   - 首頁：系名的 stroke（17 根）和文字之間一直來回；滑鼠在上面／鍵盤聚焦＝先不換（WCAG 2.2.2）。
- *   - 離開首頁：正好是文字就先變回 stroke 才換頁（router.js 等 logoToStroke()）。
+ *   - 離開首頁：正好是文字就先變回沒有名字的 stroke 版（系名的 17 根）才換頁（router.js 等 logoToStroke()）；
+ *     這個樣子整個上移，移完才換成 object 名字的長度、右圖才出場（user 2026-11-23；原本邊上移邊換長度）——
+ *     上移的途中 router.js 掛 html.logo-moving＝want() 停在現在的樣子。
  *   - 內頁：stroke 的長度＝右圖 object 的名字（object.js 回報，logoObject()）；只在 stroke 的狀態換長度。游標在 object 上＝露出名字。
  *     看不到 object 的時候（手機沒打開、模型還沒載到）＝系名的 17 根。
  * 座標用 SVG viewBox 的單位、寫成無單位的 CSS 變數（--tall、--x、--y、--w、--h），長度由 CSS 的 --u 換算：版面寬變了不用重量。
@@ -38,6 +40,11 @@ let VW = 0, VH = 0, SH = 0, DEPT = 0;          // 文字版 viewBox 的寬、高
 let loop = 0, timer = 0;
 const widths = new Map();                       // 名字 → 長度（量過的）
 const still = () => prefersReducedMotion() || root.hasAttribute('data-logo-still');
+/** 尺寸照 CSS（variables.css）：文字版 viewBox 的寬、高（手機用 Logo Text Mobile.svg、≥768 用 Logo Text.svg；英文版的高只到英文最後一行）、stroke 的高 */
+function geometry() {
+  const cs = getComputedStyle(root), num = (/** @type {string} */ k) => parseFloat(cs.getPropertyValue(k));
+  VW = num('--logo-vb-w'); VH = num('--logo-vb-h'); SH = num('--logo-stroke-vb-h'); DEPT = VW - 2 * (BLOCK + GAP);
+}
 const atHome = () => document.body.dataset.page === 'index';
 
 // stroke 區：文字長度（幾個 stroke 寬）→ 每一根的左緣。a＝第一根左緣到正中那根右緣，每邊中間放 ⌊a÷3⌋ 根；
@@ -58,6 +65,7 @@ function measure(/** @type {string} */ text, /** @type {boolean} */ zh) {
 }
 /** 現在該是什麼樣子 @returns {Look} */
 function want() {
+  if (shown && root.classList.contains('logo-moving')) return shown;   // 首頁 → 內頁上移的途中：原樣不變（router.js）
   if (atHome()) return { kind: 'dept', text: '', zh: false, L: DEPT, mode: still() ? 'text' : homeMode };
   if (obj) return { kind: 'obj', text: obj.text, zh: obj.zh, L: measure(obj.text, obj.zh), mode: obj.reveal ? 'text' : 'stroke' };
   return { kind: 'dept', text: '', zh: false, L: DEPT, mode: 'stroke' };
@@ -74,7 +82,7 @@ function draw(/** @type {Look} */ a, /** @type {Look} */ b = a, type = '', e = 0
   const mid = type === 'merge' ? e : 0;                                                                 // 中間那塊：從正中往兩邊長（併）
   const side = type === 'close' ? e : type === 'open' || type === 'cut' ? 1 - e : type && type !== 'merge' ? 1 : 0;   // 左右兩塊：縮回去＝切開／打開，伸出來＝蓋回來
   const set = (/** @type {HTMLElement} */ node, /** @type {Record<string, number>} */ vars) => { for (const k in vars) node.style.setProperty('--' + k, String(vars[k])); };
-  set(el, { tall });
+  set(el, { tall, edge: xl });   // edge＝左骨牌左緣（右骨牌的右緣跟它對稱）：背後的毛玻璃照這個寬（chrome.css .top-blur）
   set(parts.blocks[0], { x: xl, y: 0 }); set(parts.blocks[1], { x: xr, y: (VH - SH) * tall });
   parts.text.style.opacity = text && dept ? '1' : '0';
   parts.word.style.opacity = text && !dept ? '1' : '0';
@@ -93,22 +101,35 @@ function draw(/** @type {Look} */ a, /** @type {Look} */ b = a, type = '', e = 0
 }
 
 // 一段一段演完 a → b
+let cut = 0;   // 叫停正在演的那段（logoToStroke(true)）：加一＝下一幀就停，settle 直接切到現在該有的樣子
 async function play(/** @type {Look} */ a, /** @type {Look} */ b, slow = false) {
-  const steps = a.L < 0 ? [] : a.mode === 'text' ? (a.kind === 'dept' ? ['close', 'short'] : ['close']) : ['merge'];   // 進場（骨牌貼著、沒有 stroke 區）不用先併
+  const grow = VH - SH > .5;   // 系名文字版比一行高才有「帶往下長／縮回」那段（桌面英文版兩行剛好一個骨牌高＝不用，variables.css）
+  const steps = a.L < 0 ? [] : a.mode === 'text' ? (a.kind === 'dept' && grow ? ['close', 'short'] : ['close']) : ['merge'];   // 進場（骨牌貼著、沒有 stroke 區）不用先併
   if (Math.abs(a.L - b.L) > .01) steps.push('resize');
-  if (b.mode === 'text') steps.push(...(b.kind === 'dept' ? ['tall', 'open'] : ['open'])); else steps.push('cut');
+  if (b.mode === 'text') steps.push(...(b.kind === 'dept' && grow ? ['tall', 'open'] : ['open'])); else steps.push('cut');
+  const c = cut;
   for (const type of steps) await new Promise(done => {
     const dur = (type === 'resize' && slow ? DUR.medium : DUR.fast) * 1000;
     let t0 = 0;
-    const frame = (/** @type {number} */ now) => { t0 ||= now; const t = Math.min(1, (now - t0) / dur); draw(a, b, type, ease(t)); if (t < 1) requestAnimationFrame(frame); else done(undefined); };
+    const frame = (/** @type {number} */ now) => {
+      if (c !== cut) { done(undefined); return; }
+      t0 ||= now; const t = Math.min(1, (now - t0) / dur); draw(a, b, type, ease(t)); if (t < 1) requestAnimationFrame(frame); else done(undefined);
+    };
     requestAnimationFrame(frame);
   });
+  if (c !== cut) return;   // 被叫停：不畫完（settle 接著切）
   shown = b; draw(b);
 }
-// 一直演到「畫面上的樣子＝現在該有的樣子」；同時只跑一個
+// 一直演到「畫面上的樣子＝現在該有的樣子」；同時只跑一個。被叫停＝硬切到現在該有的樣子（同 logo 換內容本來就是硬切）
 function settle() {
   if (!busy) busy = (async () => {
-    for (;;) { const w = want(); if (same(shown, w)) break; if (still() || !shown) { shown = w; draw(w); break; } await play(shown, w); }
+    for (;;) {
+      const w = want(), c = cut;
+      if (same(shown, w)) break;
+      if (still() || !shown) { shown = w; draw(w); break; }
+      await play(shown, w);
+      if (c !== cut) { shown = want(); draw(shown); break; }
+    }
   })().finally(() => { busy = null; });
   return busy;
 }
@@ -134,8 +155,12 @@ export function initLogo() {
   if (!el) { reveal(); return; }   // 殼沒載到：至少別讓內容一直藏著
   const q = (/** @type {string} */ s) => /** @type {HTMLElement[]} */ ([...(/** @type {HTMLElement} */ (el)).querySelectorAll(s)]);
   parts = { text: q('.logo-text')[0], word: q('.logo-word')[0], ruler: q('.logo-ruler')[0], bars: q('.logo-bars i'), band: q('.logo-band i'), blocks: q('.logo-block') };
-  const cs = getComputedStyle(root), num = (/** @type {string} */ k) => parseFloat(cs.getPropertyValue(k));
-  VW = num('--logo-vb-w'); VH = num('--logo-vb-h'); SH = num('--logo-stroke-vb-h'); DEPT = VW - 2 * (BLOCK + GAP);
+  geometry();
+  // 手機／桌面兩套 logo 圖（寬不同）、英文版文字版的高只到英文最後一行（variables.css）：換版型、換語言＝重讀尺寸，直接畫到位
+  // （換語言本身是整個畫面 fade 過去，chrome.js fadeSwap；lang.js 改 <html lang>）
+  const refit = () => { geometry(); widths.clear(); if (shown) { shown = want(); draw(shown); } };
+  matchMedia('(min-width: 768px)').addEventListener('change', refit);
+  new MutationObserver(refit).observe(root, { attributes: true, attributeFilter: ['lang'] });
   document.fonts?.ready.then(() => { widths.clear(); settle(); });   // 字體載好：名字的長度重量
   if (still()) { settle(); reveal(); return; }
   // 進場：兩個骨牌貼在一起（長度＝負的兩個間隙）→ 拉開成帶 → 切成 stroke；首頁再停一下、展開成系名
@@ -150,14 +175,17 @@ export function initLogo() {
   });
 }
 
-/** 要離開首頁了：停止來回，正好是文字就先變回 stroke（router.js 等它） */
-export async function logoToStroke() {
+/** 要離開首頁了：停止來回，正好是文字就先變回沒有名字的 stroke 版（router.js 等它；這個樣子整個上移，user 2026-11-23）。
+ *  now＝正在演的那段不等它演完、直接切到 stroke（首頁開 intro 影片，chrome.js：剛好在 stroke → 文字的途中，不然會在頂上變成三行字再變回來）
+ *  @param {boolean} [now] */
+export async function logoToStroke(now = false) {
   stopLoop(); homeMode = 'stroke';
   if (!el) return;
+  if (now && busy) cut++;
   do { await settle(); } while (!same(shown, want()));
 }
 
-/** 換頁了（router.js）：首頁＝開始來回；內頁＝換成 object 的長度 */
+/** 換頁了（router.js；首頁 → 內頁的上移移完也叫一次）：首頁＝開始來回；內頁＝換成 object 的長度 */
 export function logoPage() {
   if (!el) return;
   if (atHome()) startLoop(); else stopLoop();

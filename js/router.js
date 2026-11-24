@@ -6,6 +6,7 @@
 import { initPageModules, cleanupPageModules } from './main.js';
 import { closeOverlays } from './modules/ui/chrome.js';
 import { logoToStroke, logoPage } from './modules/ui/logo.js';
+import { syncObject } from './modules/ui/object.js';
 import { SITE_BASE_PATHNAME, sitePath } from './modules/ui/site-base.js';
 import { DUR } from './modules/ui/motion.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
@@ -94,7 +95,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
     // 選單開著點連結：先收選單（內容滑回原位，--dur-medium），收完才淡出（user 2026-11-18）。fetch 先發不等。
     // 內容裡的連結：chrome.js 在 pointerdown 就把選單收了，click 進來時 class 已沒了但內容還在滑 → 看 transform 還沒回 0 也等
     const fetching = fetch(sitePath(route.htmlFile));
-    // 離開首頁：logo 停止來回，正好是文字版就先變回 stroke 才換頁（user 2026-11-22；logo.js）。跟下面的收選單、淡出並行
+    // 離開首頁：logo 停止來回，正好是文字版就先變回沒有名字的 stroke 版（系名的 17 根）才換頁（user 2026-11-22；logo.js）。跟下面的收選單、淡出並行
     const strokeFirst = document.body.dataset.page === 'index' && route.page !== 'index' ? logoToStroke() : null;
     const shifted = Math.abs(new DOMMatrix(getComputedStyle(main).transform).m41) > 0.5;
     if (root.classList.contains('menu-open') || shifted) {
@@ -125,9 +126,13 @@ async function loadPage(route, search = '', fromUserNav = false) {
     window.scrollTo({ top: 0, behavior: 'instant' });   // 淡出中瞬間回頂（html 有 scroll-behavior:smooth，不寫 instant 會在淡入時看到捲動）
     main.innerHTML = newMain.innerHTML;
     main.className = newMain.className || '';
+    // 首頁 → 內頁（user 2026-11-23）：沒有名字的 stroke 版整個先上移，移完才換成 object 名字的長度、右圖才出場
+    // （上移的途中掛 html.logo-moving：logo.js want 停在原樣、object.js visible＝先不出場只抓模型；移完再叫兩邊對一次）
+    if (logoFirst) root.classList.add('logo-moving');
+    const moved = logoFirst ? wait(DUR.slow * 1000).then(() => { root.classList.remove('logo-moving'); syncObject(); logoPage(); }) : null;
     document.body.dataset.page = route.page;
     current = { page: route.page, search };
-    logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（邊上移邊換）
+    logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（從首頁來＝移完才換，見上）
     // 後台的內容換好才淡入（user 2026-11-22：沒資料的老師，HTML 示意的學歷會先閃一下再被收掉）；後台慢就最多等 1.5 秒、先顯示示意
     const cmsReady = Promise.race([initPageModules(route.page, new URLSearchParams(search), fromUserNav), wait(1500)]);
     if (fromUserNav) announceAndFocusMain(main);
@@ -135,7 +140,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
       void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
       main.style.transition = '';
     }
-    await Promise.all([cmsReady, wait(logoFirst ? DUR.slow * 1000 : 0)]);   // logoFirst：logo 上移（chrome.css .site-logo）
+    await Promise.all([cmsReady, moved]);   // logoFirst：logo 上移（chrome.css .site-logo）移完內容才淡入
     if (isStale()) return;
     root.classList.remove('page-leaving');   // 淡入
   } catch (err) {

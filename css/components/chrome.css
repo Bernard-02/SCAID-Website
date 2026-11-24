@@ -66,7 +66,9 @@
     z-index: -1;
     pointer-events: none;
   }
-  .top-blur { inset: calc(-1 * var(--w)) calc(-1 * var(--f)) calc(-1 * var(--f)); transition: top var(--dur-slow) var(--ease-standard); }   /* 過場同 .site-logo 上移 */
+  /* 左右跟著 logo 實際的寬（user 2026-11-23：原本是整個 logo 框，logo 短的時候糊到旁邊的東西）：--edge＝左骨牌左緣（viewBox 單位，logo.js 每次畫都給），
+     兩邊對稱；換長度的動畫逐幀給＝跟著滑 */
+  .top-blur { inset: calc(-1 * var(--w)) calc(var(--u) * var(--edge, 0) - var(--f)) calc(-1 * var(--f)); transition: top var(--dur-slow) var(--ease-standard); }   /* 過場同 .site-logo 上移 */
   /* 漸進模糊（羽化）：單層 blur＋遮罩只是糊／不糊交叉淡化（有重影）→ 疊 6 層（header.html 的 <i>），模糊每層加倍（0.25→8px），
      第 i 層從外緣往內 i 格開始淡入、淡兩格才全實（一格＝--w/7，跟鄰層重疊＝更柔）；後層糊的是前層糊過的＝越往 logo 越糊。
      遮罩＝左右、上下兩條漸層取交集。遮罩不能掛在 .top-blur 本身：mask 會變 backdrop root，子層就糊不到底下內容 */
@@ -95,6 +97,10 @@
     transition: var(--transition-fade);
   }
   html.is-scrolled .top-blur::after { opacity: 0.6; }
+  /* 模糊也一樣：有東西捲到 logo 底下（html.is-scrolled）才出（user 2026-11-23：「logo 的 blur 應該是有被遮擋才會加，不然預設沒有，它不是常駐在 logo 後面的」；
+     原本漸進模糊常駐、捲上來只多疊底色）。淡的是每一層自己的 opacity（同 .bar-blur：掛在 .top-blur 上它會變 backdrop root）；收著＝visibility hidden（不花 backdrop-filter 的力氣） */
+  .top-blur > i { opacity: 0; visibility: hidden; transition: opacity var(--dur-fade) var(--ease-standard), visibility 0s var(--dur-fade); }
+  html.is-scrolled .top-blur > i { opacity: 1; visibility: visible; transition: opacity var(--dur-fade) var(--ease-standard), visibility 0s; }
   /* 選單開著／放大 dialog 開著整片內容已經疊白（#page-content 那幾條）→ 這塊不重複疊（user 2026-11-21） */
   html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .top-blur::after { opacity: 0; }
 
@@ -102,8 +108,10 @@
      現在出哪一版、帶蓋到哪由 logo.js 每一幀給（硬切、不淡）。
      mask 寬一律＝框寬、高照圖的比例、貼左上（user 2026-11-22：兩版寬度不一樣）：原本 center / contain，框高被捨成整數像素時
      contain 改看高、寬跟著少幾 px 再置中，哪一版變窄看縮放比例（150% 文字版窄 4px、100% stroke 版窄 6px），也跟 logo.js 畫的骨牌對不齊 */
+  /* 手機用 Logo Text Mobile.svg（user 2026-11-23：窄、英文拆三行），≥768 用 Logo Text.svg；比例跟著 variables.css 的 --logo-vb-w／h。
+     英文版框只到英文最後一行（--logo-vb-h 換掉）＝中文那行在框外、mask 畫不出來（mask 只畫在框裡）；圖裡兩端的骨牌跟 logo.js 排的骨牌疊在同一個地方 */
   .logo-text {
-    --logo: url('../images/Logo Text.svg');
+    --logo: url('../images/Logo Text Mobile.svg');
     position: absolute;
     inset: 0 0 auto;
     aspect-ratio: var(--logo-vb-w) / var(--logo-vb-h);   /* ＝viewBox（variables.css） */
@@ -112,6 +120,7 @@
             mask: var(--logo) 0 0 / 100% auto no-repeat;
     opacity: 0;
   }
+  @media (min-width: 768px) { .logo-text { --logo: url('../images/Logo Text.svg'); } }
   /* stroke 區的零件（2026-11-22 起 stroke 版不再是一張圖，是 logo.js 排的直條：長度要跟著右圖 object 的名字變）：
      直條（17 根輪著用）、帶（實心，連骨牌旁邊的間隙一起蓋：左、中、右三塊）、兩個骨牌（website-icons/block.svg，45×70）。位置都由 logo.js 給 */
   .logo-bars i, .logo-band i, .logo-block { position: absolute; left: calc(var(--u) * var(--x, 0)); top: calc(var(--u) * var(--y, 0)); background: currentColor; }

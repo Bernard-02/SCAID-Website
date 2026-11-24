@@ -51,7 +51,7 @@ const A = strokes(), B = strokes();
 const off = () => root.hasAttribute('data-logo-still');   // 煙霧測試：整個不跑（不載模型、不畫），logo 也就一直是系名
 const still = () => prefersReducedMotion();
 const slot = () => document.querySelector('#page-content .page-figure > *');
-const visible = () => !off() && (inDialog || (wide.matches && !!slot()));
+const visible = () => !off() && !root.classList.contains('logo-moving') && (inDialog || (wide.matches && !!slot()));
 const dark = () => root.dataset.theme === 'dark';
 
 // 模型從某個視角打光，算進 sb（每個點多亮；0＝沒東西）。z-buffer，亮度在三角形裡平滑內插
@@ -178,6 +178,7 @@ function sync() {
   if (!canvas || !list.length) return;
   const on = visible();
   canvas.classList.toggle('is-on', on && !inDialog);
+  if (on && !cur && !nxt) advance();   // 第一個模型已經抓好（logo 上移的途中先抓了）＝馬上開始進場，名字同時給 logo
   if (on && !raf) { last = performance.now(); drawn = ''; raf = requestAnimationFrame(frame); }
   report();
 }
@@ -218,8 +219,13 @@ export function initObject() {
   new MutationObserver(() => { drawn = ''; report(); }).observe(root, { attributes: true, attributeFilter: ['lang', 'data-theme'] });   // 換語言＝名字換；換深淺色＝墨多的那一面反過來
 }
 
-/** 換頁了（chrome.js syncFigure）：找這一頁右圖那一格 */
-export function syncObject() { placed = ''; sync(); }
+/** 換頁了（chrome.js syncFigure；首頁 → 內頁的 logo 移完 router.js 再叫一次）：找這一頁右圖那一格。
+ * logo 上移的途中（html.logo-moving）先不出場，只先把第一個模型抓下來 */
+export function syncObject() {
+  placed = '';
+  if (root.classList.contains('logo-moving') && list.length && !cur) load(pending ??= list[order[at = (at + 1) % order.length]]);
+  sync();
+}
 
 /** 手機：畫布搬進放大 dialog（chrome.js）；關掉搬回殼上 @param {Element} box */
 export function openObject(box) {

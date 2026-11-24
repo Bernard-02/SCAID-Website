@@ -66,11 +66,13 @@
   --spacing-7xl: 10rem;   /* 160px */
   --spacing-8xl: 12rem;   /* 192px */
 
-  /* images/Logo Text.svg 的 viewBox 寬、高（圖剛好撐滿 viewBox）：logo 的比例（chrome.css .logo-text）與骨牌大小都從這裡算。
-     設計重出圖、viewBox 變了＝只改這兩個（煙霧測試直接讀 SVG 檔比對）。比例對不上的話圖會縮在框裡、看起來比動態窄 */
-  --logo-vb-w: 1042.02;
-  --logo-vb-h: 115.88;
-  --logo-stroke-vb-h: 70;   /* images/Logo Stroke.svg（內頁那版、沒字）的 viewBox 高；寬要跟上面同一個（兩版的骨牌才疊得齊） */
+  /* 文字版 logo 的 viewBox 寬、高（圖剛好撐滿 viewBox）：logo 的比例（chrome.css .logo-text）與骨牌大小都從這裡算。
+     手機＝images/Logo Text Mobile.svg（user 2026-11-23：窄、英文拆三行＝骨牌放大）；≥768＝images/Logo Text.svg（下面 @media）。
+     設計重出圖、viewBox 變了＝只改這兩個（煙霧測試直接讀 SVG 檔比對）。比例對不上的話圖會縮在框裡、看起來比動態窄。
+     英文版的高另外（下面 html[lang="en"]）：去掉中文那行＝只到英文最後一行的底 */
+  --logo-vb-w: 642.66;
+  --logo-vb-h: 160.88;
+  --logo-stroke-vb-h: 70;   /* images/Logo Stroke*.svg（內頁那版、沒字）的 viewBox 高；寬要跟上面同一個（兩版的骨牌才疊得齊） */
   /* logo 兩端那顆骨牌（Logo Text.svg：骨牌高 70）：底列 menu 鈕同大（user 2026-11-18）。
      所有 hover／選中的圓點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18） */
   --block-h: calc(var(--logo-w) * 70 / var(--logo-vb-w));
@@ -84,7 +86,7 @@
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
-  --logo-w: calc(100vw - 2 * var(--container-padding));   /* 全站 logo 寬（chrome.css .site-logo）：手機扣左右內距吃滿 */
+  --logo-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));   /* 全站 logo 寬（chrome.css .site-logo）：手機＝內頁內文欄的寬（再扣兩邊的 rail）＝logo 跟標題、內文左右對齊（user 2026-11-23：「手機上不需要那麼寬」；原本扣內距吃滿） */
   --rail-w: calc(2rem + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝對稱留著（原本讓給右緣的右圖縮圖鈕，2026-11-23 鈕搬到底列右下角；page.css .page-body）；桌面走 grid＝0 */
 
   /* ===== Motion tokens（全站單一來源）=====
@@ -156,5 +158,15 @@
     --col-w: min(60vw, 32rem);
     --logo-w: var(--col-w);     /* 桌面 logo 同動態欄寬 */
     --rail-w: 0px;
+    --logo-vb-w: 1042.02;       /* images/Logo Text.svg（手機那張在上面） */
+    --logo-vb-h: 115.88;
   }
+}
+
+/* 英文版（lang.js 掛 <html lang="en">）：logo 文字版去掉中文那行（user 2026-11-23：「要做位移對齊，不是直接切」）＝框的高只到英文最後一行的底，
+   右骨牌（logo.js：降到 --logo-vb-h − 骨牌高）就對齊那一行、中文那行在框外。手機英文三行（底 115.02）；桌面兩行（底 70.01＝剛好一個骨牌高：
+   文字版跟 stroke 版一樣一行高，右骨牌不往下降） */
+html[lang="en"] { --logo-vb-h: 115.02; }
+@media (min-width: 768px) {
+  html[lang="en"] { --logo-vb-h: 70.01; }
 }

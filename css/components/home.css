@@ -6,7 +6,7 @@
      上下以「文字版三行的高」置中、不看現在的高：logo 在 stroke 與文字之間來回（logo.js）時左上角不動，帶是往下長 */
   html:not(.news-open) body[data-page="index"] {
     --logo-top: 50%;
-    --logo-tf: translate(-50%, calc(var(--logo-w) * var(--logo-vb-h) / var(--logo-vb-w) * -0.5));
+    --logo-tf: translate(-50%, -50%);
   }
   /* logo 在正中：背後的毛玻璃往上也只外擴 --f＝四邊一樣羽化（在頂時往上擴 --w、上緣的羽化在畫面外；chrome.css .top-blur） */
   html:not(.news-open) body[data-page="index"] .top-blur { top: calc(-1 * var(--f)); }
