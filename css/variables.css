@@ -5,8 +5,6 @@
    ======================================== */
 
 :root {
-  /* Custom Cursors：--cursor-* 由 js/utils/helpers.js setCursorVars() 開機寫在 :root。CSS 與 JS 一律寫 var(--cursor-X) */
-
   /* ===== Colors：介面色（黑白＋灰階；網站內容是彩色的，不轉灰階，user 2026-11-19） ===== */
   --color-black: #000000;
   --color-white: #FFFFFF;
@@ -48,7 +46,7 @@
   /* 行距綁字級：Tailwind fontSize 用 [size, line-height] tuple → .text-* 自帶該階行距 */
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
-  --line-height-s: 1.7;
+  --line-height-s: 1.5;   /* 內文（純文字）：user 2026-11-24「行距可以小一點」，原本 1.7 */
   --line-height-xs: 1.4;
   --line-height-base: 1.5;    /* <body> 預設 */
 
@@ -72,7 +70,7 @@
      英文版的高另外（下面 html[lang="en"]）：去掉中文那行＝只到英文最後一行的底 */
   --logo-vb-w: 642.66;
   --logo-vb-h: 160.88;
-  --logo-stroke-vb-h: 70;   /* images/Logo Stroke*.svg（內頁那版、沒字）的 viewBox 高；寬要跟上面同一個（兩版的骨牌才疊得齊） */
+  --logo-stroke-vb-h: 70;   /* stroke 版（內頁那版、沒字）的高＝一個骨牌高（原本 images/Logo Stroke*.svg 的 viewBox 高；2026-11-24 圖刪了，logo.js 照長度畫）；寬同上（兩版的骨牌才疊得齊） */
   /* logo 兩端那顆骨牌（Logo Text.svg：骨牌高 70）：底列 menu 鈕同大（user 2026-11-18）。
      所有 hover／選中的圓點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18） */
   --block-h: calc(var(--logo-w) * 70 / var(--logo-vb-w));
@@ -81,13 +79,19 @@
   /* ===== Layout ===== */
   --spacing-gutter: 1rem;      /* .site-grid gap（Tailwind gap-gutter） */
   --container-padding: 1rem;    /* .site-container 左右：照 Apple iOS 的 layout margin（user 2026-11-22）＝一般 iPhone 16、大尺寸 20（下面 ≥414） */
-  --top-h: 6rem;                /* 頂部 logo 鎖定版區高（chrome.css .site-logo，頂到最頂）：#page-content padding-top */
+  --top-h: calc(2 * var(--block-h));   /* 各頁內容（h1）的起始線＝#page-content padding-top、選單第一項（往上捲過它就淡出、模糊，chrome.css .menu-blur）：手機＝logo（頂到最頂、stroke 版一行＝骨牌高）的兩倍（user 2026-11-24，原本 6rem）；桌面在下面 */
   --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
-  --logo-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));   /* 全站 logo 寬（chrome.css .site-logo）：手機＝內頁內文欄的寬（再扣兩邊的 rail）＝logo 跟標題、內文左右對齊（user 2026-11-23：「手機上不需要那麼寬」；原本扣內距吃滿） */
-  --rail-w: calc(2rem + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝對稱留著（原本讓給右緣的右圖縮圖鈕，2026-11-23 鈕搬到底列右下角；page.css .page-body）；桌面走 grid＝0 */
+  --logo-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));   /* 全站 logo 寬（chrome.css .site-logo）：手機＝內頁內文欄的寬＝第 1 欄正中 → 第 4 欄正中（user 2026-11-24） */
+  /* 內頁內文欄的寬（絕對值）：手機＝扣內距、扣兩邊 rail；桌面＝12 欄裡的 6 欄（下面 768 那段；PC col 2–7、iPad col 4–9 都是）。
+     清單縮圖／詳細頁照片＝它的 1.5 欄（user 2026-11-18）：內文欄手機當 4 欄、桌面 6 欄，1.5 欄＝1.5 個欄寬＋半個 gutter。
+     寫成絕對值、放在這裡：首頁動態（PC 同清單列，user 2026-11-24：圖跟 list 一樣大）也用；% 寫在圖上會變成框的 %，容器查詢（cqw）碰到 View Transition Windows 的 WebKit 會當 */
+  --body-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));
+  /* 手機＝內文欄（4 欄）的 2 欄（2 個欄寬＋1 個 gutter；user 2026-11-24：「手機的 list 上的 thumbnail…目前有點小」——手機是圖在上、字在下，不跟字搶寬；原本 1.5 欄） */
+  --item-thumb-w: calc((var(--body-w) - 3 * var(--spacing-gutter)) / 4 * 2 + var(--spacing-gutter));
+  --rail-w: calc((100vw - 2 * var(--container-padding) - 3 * var(--spacing-gutter)) / 8);   /* 手機內頁內文左右各讓出的寬＝半欄（user 2026-11-24：內文、logo 都從第 1 欄正中排到第 4 欄正中；原本固定 2rem＋gutter）。左＝段落導覽／返回鈕，右＝對稱留著；page.css .page-body；桌面走 grid＝0 */
 
   /* ===== Motion tokens（全站單一來源）=====
      duration：GSAP 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS transition 與 GSAP tween 同步
@@ -158,6 +162,8 @@
     --col-w: min(60vw, 32rem);
     --logo-w: var(--col-w);     /* 桌面 logo 同動態欄寬 */
     --rail-w: 0px;
+    --body-w: calc((100vw - 2 * var(--container-padding) - var(--spacing-gutter)) / 2);
+    --item-thumb-w: calc((var(--body-w) - 5 * var(--spacing-gutter)) / 6 * 1.5 + var(--spacing-gutter) / 2);
     --logo-vb-w: 1042.02;       /* images/Logo Text.svg（手機那張在上面） */
     --logo-vb-h: 115.88;
   }

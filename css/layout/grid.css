@@ -19,6 +19,8 @@
   html.show-grid .grid-overlay { display: block; }
   .grid-overlay .site-grid { height: 100%; }
   .grid-overlay span { background: rgba(255, 0, 0, 0.08); outline: 1px solid rgba(255, 0, 0, 0.35); outline-offset: -1px; }
+  /* 手機內文左右讓出的 --rail-w（藍）：兩條藍的中間＝內頁內文欄＝手機 logo 寬（variables.css --logo-w）。桌面 rail＝0＝不出 */
+  .grid-overlay::before { content: ''; position: absolute; inset: 0 var(--container-padding); border-inline: var(--rail-w) solid rgba(0, 0, 255, 0.12); }
   @media (max-width: 767px) {
     .grid-overlay span:nth-child(n+5) { display: none; }   /* 手機 4 欄 */
   }

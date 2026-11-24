@@ -3,7 +3,8 @@
  * 標記法：中文直接寫在內文，英文寫 data-en；第一次套用時把中文記到 data-zh，之後來回切都有得換（textContent，不吃 HTML →
  * 內含子元素的要拆成各自的 span）。頁面內容之後接 Directus 再依 lang 抓對應欄位。
  */
-import { fadeSwap } from './motion.js';
+import { DUR, fadeSwap } from './motion.js';
+import { prefersReducedMotion } from './reduce-motion.js';
 
 const KEY = 'scaid:lang';
 
@@ -26,11 +27,21 @@ export function applyLang(root = document) {
   });
 }
 
+/** 切一次：留著的直條（選單選中那項、hover 著的）先切出去 → 換字＝整個畫面 fade（user 2026-11-21）→ 照新的字切進來
+ * （user 2026-11-24：「切換成英文的時候，應該要看英文的寬度，再做一次 stroke 的進出場」；chrome.css html.strokes-out／strokes-in） */
+async function toggle() {
+  try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}
+  const html = document.documentElement, still = prefersReducedMotion(), wait = () => new Promise(r => setTimeout(r, DUR.fast * 1000));
+  if (!still) { html.classList.add('strokes-out'); await wait(); }
+  await fadeSwap(() => applyLang());
+  if (!still) { html.classList.replace('strokes-out', 'strokes-in'); await wait(); html.classList.remove('strokes-in'); }
+}
+
 export function initLang() {
+  let queue = Promise.resolve();
   document.addEventListener('click', (e) => {
     if (!(e.target instanceof Element) || !e.target.closest('.lang-btn')) return;
-    try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}
-    fadeSwap(() => applyLang());   // 切語言＝整個畫面 fade 過去（user 2026-11-21）
+    queue = queue.then(toggle).catch(() => {});   // 切到一半又按＝這一段做完再切；出錯也不卡住之後的切換
   });
   applyLang();
 }

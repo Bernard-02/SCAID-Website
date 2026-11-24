@@ -48,8 +48,10 @@ export const EASE = {
  * 時長與曲線吃 --dur-fade（chrome.css ::view-transition-*）——顏色變數、mask 上色的 logo、換掉的文字都不用各自寫過場。
  * DOM 是下一幀才改（先拍舊畫面）。瀏覽器不支援／減少動態＝直接切。
  * @param {() => void} apply 真的去改 DOM 的那一步
+ * @returns {Promise<void>} 淡完了（沒有過場＝馬上）
  */
 export function fadeSwap(apply) {
-  if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) document.startViewTransition(apply);
-  else apply();
+  if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) return document.startViewTransition(apply).finished.catch(() => {});
+  apply();
+  return Promise.resolve();
 }

@@ -22,6 +22,7 @@ import { initAccordion } from './modules/ui/accordion.js';
 import { initItemMarquee } from './modules/ui/item-marquee.js';
 import { initThumbBoard } from './modules/ui/thumb-board.js';
 import { applyUiLabels } from './modules/ui/ui-labels.js';
+import { initSiteIcons } from './modules/ui/site-assets.js';
 
 // 片段注入：pages/header.html → #site-header
 // cache: 'no-cache' 強制 revalidate：開發時改片段立即看到（SPA 不 hard reload）
@@ -88,11 +89,12 @@ initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
 initAccordion();        // 摺疊（<details>）展開／收起的動畫
 initItemMarquee();      // 清單列的標題／副標：放不下右邊淡掉、hover 跑馬燈
+initSiteIcons();        // 網頁 icon：後台「網頁 icon」換了圖＝換成後台那張（抓不到＝本地的 website-icons/）
 if (DECOR) initThumbBoard();   // 清單列的圖片：hover 浮一塊流動的中空板
 loadPartial('site-header', 'pages/header.html').then(() => {
   updateNavActive(); syncFigure(); syncTheme(); applyLang(); fitBar();
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
   initObject();          // 右圖的 object（殼上的畫布；模型清單載到才開始）
   initLogo();            // logo 的進場動畫：演完才把其他東西放出來（html.is-intro，各頁 <head> 的 inline script 先掛上）
-  import('./modules/pages/cms-pages.js').then(m => { m.loadBarNews(); m.loadIntroVideo(); });   // 底列：跑馬燈＝後台「首頁動態」前 8 則的標題；▶ 鈕的影片＝「首頁影片」
+  import('./modules/pages/cms-pages.js').then(m => { m.loadBarNews(); m.loadIntroVideo(); });   // 底列：跑馬燈＝後台首頁的 news 前 8 則的標題；▶ 鈕的影片＝「首頁影片」
 });

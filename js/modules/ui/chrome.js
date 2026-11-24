@@ -86,7 +86,8 @@ export function syncPageTheme(page, fade = true) {
     if (dark) html.dataset.theme = 'dark'; else delete html.dataset.theme;
     syncTheme();
   };
-  if (fade) fadeSwap(apply); else apply();
+  // 首頁 → 作品頁：logo 正在上移（router 掛 logo-moving），整張交叉淡化＝舊截圖的黑 logo 定在正中淡掉、白的在移＝卡、疊兩個（user 2026-11-24）→ 同關燈
+  if (!fade) apply(); else if (html.classList.contains('logo-moving')) glide(apply); else fadeSwap(apply);
 }
 function toggleTheme() {
   const dark = html.dataset.theme !== 'dark';
@@ -144,6 +145,7 @@ function openObjectDialog(e) {
   const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
   if (!dialog || !box) return;
   figureItems = []; dialog.classList.remove('has-nav', 'has-video'); dialog.setAttribute('aria-label', '圖片');
+  dialog.classList.add('is-object');   // 沒有 ‹ X ›、關閉＝右下角那顆骨牌（chrome.css .figure-obj-close；user 2026-11-24）
   openObject(box);
   dialog.showModal();
   if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();   // 同 openFigure：滑鼠／觸控點開的不亮焦點框
@@ -152,9 +154,11 @@ function openObjectDialog(e) {
 // 同一組「封面（第一張）＋相簿」可左右切（user 2026-11-19；原本點封面只有那一張）。多於一張才出 ‹ ›（.has-nav）；到頭的那邊 disabled
 // 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕，關閉＝menu 鈕那顆）、開著＝關燈
 let figureItems = /** @type {Element[]} */ ([]), figureIndex = 0;
+let figureStep = /** @type {((i: number) => void) | null} */ (null);   // 切到第幾個時叫（openFigure 給；作品總覽：背景跟著捲過去）
 function renderFigure() {
   const dialog = figureDialog();
   if (!dialog || !figureItems[figureIndex]) return;
+  dialog.classList.remove('is-object');   // 手機的右圖 object 那種（openObjectDialog）以外＝照常有控制列
   const node = /** @type {Element} */ (figureItems[figureIndex].cloneNode(true)), video = node instanceof HTMLVideoElement, yt = node instanceof HTMLIFrameElement;
   if (yt) node.src += '&controls=0&enablejsapi=1';   // YouTube 收掉它自己的控制列、開 postMessage（下面 mediaAct）
   if (video) node.controls = false;
@@ -174,12 +178,15 @@ function renderFigure() {
 /** 動態那則的一組圖：封面縮圖在前、相簿照順序（不在摺疊裡的相簿＝只有那本） @param {Element} el */
 const galleryOf = (el) => [...(el.closest('details') ?? el.closest('.album'))?.querySelectorAll(':scope > summary .item-thumb img, .album button img') ?? []];
 /** 作品頁的總覽也用它（user 2026-11-23：點了就地開 lightbox，一組＝總覽全部；影片的節點＝youtubeFrame，切到才載、切走就停）
- *  @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張） */
-export function openFigure(node, e, items) {
+ *  @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張）
+ *  @param {(i: number) => void} [onStep] 上一個／下一個切到第 i 個時叫（作品總覽：背景的總覽跟著捲到那一個） */
+export function openFigure(node, e, items, onStep) {
   const dialog = figureDialog();
   if (!dialog || !node) return;
   figureItems = items?.length ? items : [node];
   figureIndex = Math.max(0, figureItems.indexOf(node));
+  figureStep = onStep || null;
+  clearTimeout(swapTimer); dialog.classList.remove('is-swapping');   // 上次切到一半就關了
   // 先讓背景跟 logo 動（user 2026-11-23：「背景跟 logo 同時開始動畫，logo 淡成白色；logo 動畫好了之後，影片跟 ui 才開始 fade 出來」）：
   // 首頁（intro）logo 從正中移到頂（home.css）、停在 stroke；影片＝關燈（lights，顏色過場同 logo 上移的時長）。這段內容藏著（.is-waiting）、影片先不播，動完才淡出來、開始播
   const home = document.body.dataset.page === 'index', item = figureItems[figureIndex];
@@ -212,24 +219,27 @@ function wakeControls(e) {
   if (!st) return;
   st.classList.remove('is-idle');
   clearTimeout(idleTimer);
-  if (e.target instanceof Element && e.target.closest('.figure-nav, .figure-close')) return;   // 游標在控制列上＝先不藏
+  if (e.target instanceof Element && e.target.closest('.figure-ctrl, .media-play')) return;   // 游標在控制列（含影片正中的播放鈕）上＝先不藏
   idleTimer = window.setTimeout(() => st.classList.add('is-idle'), IDLE);
 }
 // 這台能不能用網頁調音量（iPhone 不行：volume 設了還是 1，只能用手機的音量鍵）→ 不行就只留靜音（chrome.css .no-vol）
 const canVolume = (() => { const v = document.createElement('video'); v.volume = 0.5; return v.volume === 0.5; })();
 let volume = 1;   // 現在的音量（0～1；靜音另外記）
-/** 播著沒、靜音沒、音量 → dialog 的 class（控制列的圖示照它換，chrome.css）、鈕的 aria-pressed、拉桿（靜音＝拉到 0）
- *  @param {boolean} paused @param {boolean} muted @param {number} [v] */
+const BARS = 20;   // 音量拉桿的直條數＝一根 5%（樣子照 ai 的 volume、長度照一般播放器；header.html 那個 range 的 max、chrome.css --bars）
+/** 播著沒、靜音沒、音量 → dialog 的 class（控制列的圖示照它換，chrome.css：靜音 silence、一半以下 half、其他 loud）、鈕的 aria-pressed、
+ *  拉桿亮幾根（靜音＝0 根） @param {boolean} paused @param {boolean} muted @param {number} [v] */
 function mediaState(paused, muted, v = volume) {
   const d = figureDialog();
   if (!d) return;
   volume = v;
+  const level = muted ? 0 : Math.round(v * BARS);
   d.classList.toggle('is-paused', paused);
   d.classList.toggle('is-muted', muted);
+  d.classList.toggle('is-half', level > 0 && level <= BARS / 2);
   d.querySelector('.media-play')?.setAttribute('aria-pressed', String(!paused));
   d.querySelector('.media-mute')?.setAttribute('aria-pressed', String(muted));
-  const range = d.querySelector('.media-vol'), shown = muted ? 0 : v;
-  if (range instanceof HTMLInputElement) { range.value = String(shown); range.style.setProperty('--vol', `${Math.round(shown * 100)}%`); }
+  const range = d.querySelector('.media-vol');
+  if (range instanceof HTMLInputElement) { range.value = String(level); range.parentElement?.style.setProperty('--level', String(level)); }
 }
 /** YouTube 的播放器（enablejsapi）：叫它做事 @param {HTMLIFrameElement} f @param {string} func @param {unknown[]} [args] */
 const ytSend = (f, func, args = []) => f.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
@@ -273,21 +283,34 @@ function listen(f) {
 // 關燈（user 2026-11-23：開影片＝像作品頁那樣整頁變暗）：放大 dialog 在放影片＝深色，關掉／換到圖片＝回到這頁該有的那種（syncPageTheme）。
 // 不走 fadeSwap 的整張交叉淡化（logo 同時在上移，會疊出兩個）：掛 html.is-lights 這段＝背景、logo 的顏色自己過場（chrome.css）
 let lightsTimer = 0;
+/** 換深淺、顏色自己過場（--dur-slow，同 logo 上移） @param {() => void} apply */
+function glide(apply) {
+  html.classList.add('is-lights');
+  clearTimeout(lightsTimer);
+  lightsTimer = window.setTimeout(() => html.classList.remove('is-lights'), DUR.slow * 1000 + 100);
+  apply();
+}
 /** @param {boolean} off */
 function lights(off) {
   if (off === lightsOff) return;
   lightsOff = off;
-  html.classList.add('is-lights');
-  clearTimeout(lightsTimer);
-  lightsTimer = window.setTimeout(() => html.classList.remove('is-lights'), DUR.slow * 1000 + 100);
-  syncPageTheme(document.body.dataset.page || '', false);
+  glide(() => syncPageTheme(document.body.dataset.page || '', false));
 }
-/** 上一張／下一張（到頭不動） @param {number} dir */
+/** 上一張／下一張（到頭不動）。作品頁＝淡出 → 換 → 淡入（user 2026-11-24：「作品頁面中的影片跟圖片切換，要用 fade in out」；網站 fade，
+ *  chrome.css .is-swapping）；連按＝只換到最後那一個。其他頁（動態的相簿）照舊直接換 @param {number} dir */
+let swapTimer = 0;
 function stepFigure(dir) {
-  const i = figureIndex + dir;
-  if (!figureDialog()?.open || i < 0 || i >= figureItems.length) return;
+  const i = figureIndex + dir, d = figureDialog();
+  if (!d?.open || i < 0 || i >= figureItems.length) return;
   figureIndex = i;
-  renderFigure();
+  figureStep?.(i);
+  if (document.body.dataset.page !== 'works' || prefersReducedMotion()) { renderFigure(); return; }
+  d.classList.add('is-swapping');
+  clearTimeout(swapTimer);
+  swapTimer = window.setTimeout(() => {
+    if (d.open && !d.classList.contains('is-closing')) renderFigure();
+    d.classList.remove('is-swapping');
+  }, DUR.fade * 1000);
 }
 // 關＝先淡出（.is-closing）、淡完才真的 close()；全螢幕先退、開燈跟著淡出一起
 function closeFigure() {
@@ -411,7 +434,8 @@ export function initChrome() {
     if (t.closest('.media-play, .figure-dialog-body > video') || (t.matches('.figure-dialog-body') && fsStage())) { mediaAct('play'); return; }
     if (t.closest('.media-mute')) { mediaAct('mute'); return; }
     if (t.closest('.media-fs')) { mediaAct('fs'); return; }
-    if (t.closest('.figure-nav')) return;   // 控制列的空隙、音量拉桿：不算「點旁邊」（關閉鈕在列外、左下角）
+    if (t.closest('.figure-close')) { closeFigure(); return; }   // 關閉（X）在正中那排裡（user 2026-11-24），下一行之前先接
+    if (t.closest('.figure-ctrl')) return;   // 控制列的空隙、音量拉桿：不算「點旁邊」
     const shot = t.closest('.album button');
     if (shot) { openFigure(shot.querySelector('img'), e, galleryOf(shot)); return; }
     // 清單列掛 data-zoom（報導，user 2026-11-21）：不換頁、不另開，放大 dialog 直接看 href 那張圖（報導的截圖）
@@ -449,12 +473,13 @@ export function initChrome() {
   document.addEventListener('close', (e) => { if (e.target === figureDialog()) closeObject(); }, true);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeOverlays();
-    // 放大 dialog 開著：左右鍵切上一張／下一張
-    if (e.key === 'ArrowLeft') stepFigure(-1); else if (e.key === 'ArrowRight') stepFigure(1);
+    // 放大 dialog 開著：左右鍵切上一張／下一張（焦點在音量拉桿上＝左右鍵是調音量，不切）
+    if (!(e.target instanceof HTMLInputElement)) { if (e.key === 'ArrowLeft') stepFigure(-1); else if (e.key === 'ArrowRight') stepFigure(1); }
     // 影片：空白鍵＝播放／暫停（user 2026-11-23）。焦點在控制列的鈕上＝照那顆鈕自己的（空白鍵按它）；其他地方都是播放／暫停——
     // 包括一開就聚焦的關閉鈕（autofocus，不然鍵盤開的一按空白鍵就關了；關＝Enter／Esc）。按著不放的重複不算
     const d = figureDialog();
-    if (e.key === ' ' && d?.open && d.classList.contains('has-video') && !(document.activeElement instanceof HTMLButtonElement && document.activeElement.closest('.figure-nav'))) {
+    const own = document.activeElement instanceof HTMLButtonElement && document.activeElement.closest('.figure-ctrl, .media-play') && !document.activeElement.matches('.figure-close');
+    if (e.key === ' ' && d?.open && d.classList.contains('has-video') && !own) {
       e.preventDefault();
       if (!e.repeat) mediaAct('play');
     }
@@ -510,8 +535,8 @@ export function initChrome() {
     if (st) st.classList.add('is-idle');
     else document.querySelector('.figure-stage.is-idle')?.classList.remove('is-idle');
   });
-  // 音量拉桿（拉的途中就一直調）
-  document.addEventListener('input', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('.media-vol')) mediaVolume(Number(e.target.value)); });
+  // 音量拉桿（拉的途中就一直調）：亮幾根 → 0～1
+  document.addEventListener('input', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('.media-vol')) mediaVolume(Number(e.target.value) / BARS); });
   // YouTube 的播放器回報（listen 之後）：onStateChange／infoDelivery 的 playerState（1 在播、3 緩衝也算在播；-1 還沒開始＝不算數）、muted、volume（0～100）
   window.addEventListener('message', (e) => {
     const f = shownMedia(), d = figureDialog();

@@ -66,7 +66,8 @@ function measure(/** @type {string} */ text, /** @type {boolean} */ zh) {
 /** 現在該是什麼樣子 @returns {Look} */
 function want() {
   if (shown && root.classList.contains('logo-moving')) return shown;   // 首頁 → 內頁上移的途中：原樣不變（router.js）
-  if (atHome()) return { kind: 'dept', text: '', zh: false, L: DEPT, mode: still() ? 'text' : homeMode };
+  // 首頁動態展開著＝停在 stroke（user 2026-11-24：「在 news 打開的時候，logo 不需要改變，保持 stroke 的版本」——三行字的版本在手機會壓到清單第一則）
+  if (atHome()) return { kind: 'dept', text: '', zh: false, L: DEPT, mode: root.classList.contains('news-open') ? 'stroke' : still() ? 'text' : homeMode };
   if (obj) return { kind: 'obj', text: obj.text, zh: obj.zh, L: measure(obj.text, obj.zh), mode: obj.reveal ? 'text' : 'stroke' };
   return { kind: 'dept', text: '', zh: false, L: DEPT, mode: 'stroke' };
 }
@@ -89,14 +90,19 @@ function draw(/** @type {Look} */ a, /** @type {Look} */ b = a, type = '', e = 0
   if (text && !dept) { parts.word.textContent = c.text; parts.word.classList.toggle('is-zh', c.zh); set(parts.word, { x: xl + BLOCK + GAP }); }
   const strokes = !text && type !== 'resize' && type !== 'tall' && type !== 'short';                    // 帶蓋滿的那幾段不用畫 stroke
   const at = strokes ? bars(c.L / STROKE) : [];
-  parts.bars.forEach((bar, j) => {
-    bar.style.opacity = strokes ? '1' : '0';
-    if (strokes) set(bar, { x: xl + BLOCK + GAP + at[at.length === 1 ? 0 : Math.round(j * (at.length - 1) / (parts.bars.length - 1))] * STROKE });
-  });
   const h = SH + (VH - SH) * tall, w = span * side * .505;                                              // 多 0.5%／0.5 單位：兩塊在正中、帶跟骨牌之間不留細縫
-  set(parts.band[0], { x: xl + BLOCK - .5, w: w ? w + .5 : 0, h });
-  set(parts.band[1], { x: VW / 2 - span * mid / 2, w: span * mid, h: SH });
-  set(parts.band[2], { x: xr - w, w: w ? w + .5 : 0, h });
+  const pieces = [[xl + BLOCK - .5, w ? w + .5 : 0, h], [VW / 2 - span * mid / 2, span * mid, SH], [xr - w, w ? w + .5 : 0, h]];
+  pieces.forEach(([x, pw, ph], k) => set(parts.band[k], { x, w: pw, h: ph }));
+  // 一個位置只露一根直條（17 根輪著用，位置少的時候會兩根疊在一起）、帶整個蓋住的直條先藏：兩層的邊疊在一起，小數像素高的最後一列會比骨牌、帶深一截
+  // ＝看起來比骨牌高（user 2026-11-24：「動畫遮罩似乎比骨牌高一點」；手機 1.5 倍量到單層 50%、兩層 75%、帶疊在上面 87%）
+  const used = new Set();
+  parts.bars.forEach((bar, j) => {
+    const k = at.length === 1 ? 0 : Math.round(j * (at.length - 1) / (parts.bars.length - 1)), x = xl + BLOCK + GAP + (at[k] ?? 0) * STROKE;
+    const off = !strokes || used.has(k) || pieces.some(([px, pw]) => pw > 0 && x >= px - .01 && x + STROKE <= px + pw + .01);
+    if (!off) used.add(k);
+    bar.style.opacity = off ? '0' : '1';
+    if (strokes) set(bar, { x });
+  });
   el.dataset.kind = c.kind; el.dataset.mode = c.mode; el.toggleAttribute('data-busy', !!type);
 }
 
@@ -141,7 +147,7 @@ function startLoop() {   // 首頁：stroke ⇄ 文字
   const id = loop;
   const tick = () => {
     if (id !== loop || !el) return;
-    if ((window.SCAIDHelpers.canHover() && el.matches(':hover')) || el.matches(':focus-visible')) { timer = window.setTimeout(tick, 500); return; }
+    if ((window.SCAIDHelpers.canHover() && el.matches(':hover')) || el.matches(':focus-visible') || root.classList.contains('news-open')) { timer = window.setTimeout(tick, 500); return; }   // 動態展開著也先不換（停在 stroke，want）
     homeMode = homeMode === 'text' ? 'stroke' : 'text';
     settle().then(() => { if (id === loop) timer = window.setTimeout(tick, homeMode === 'text' ? TEXT_HOLD : STROKE_HOLD); });
   };
@@ -161,6 +167,12 @@ export function initLogo() {
   const refit = () => { geometry(); widths.clear(); if (shown) { shown = want(); draw(shown); } };
   matchMedia('(min-width: 768px)').addEventListener('change', refit);
   new MutationObserver(refit).observe(root, { attributes: true, attributeFilter: ['lang'] });
+  // 首頁動態展開／收起（chrome.js setNews 掛 html.news-open）：展開＝變回 stroke、收起＝接著來回（want）
+  let newsWas = root.classList.contains('news-open');
+  new MutationObserver(() => {
+    const now = root.classList.contains('news-open');
+    if (now !== newsWas) { newsWas = now; if (shown) settle(); }
+  }).observe(root, { attributes: true, attributeFilter: ['class'] });
   document.fonts?.ready.then(() => { widths.clear(); settle(); });   // 字體載好：名字的長度重量
   if (still()) { settle(); reveal(); return; }
   // 進場：兩個骨牌貼在一起（長度＝負的兩個間隙）→ 拉開成帶 → 切成 stroke；首頁再停一下、展開成系名
