@@ -1,6 +1,6 @@
 // 後台資料 ← 直接解析前台各頁 HTML（各頁的示意內容是唯一來源；HTML 改好、決定要同步時跑這支，不另抄一份）。
 // user 2026-11-21：全站接後台、把現在的文字實際放進後台，之後在後台改。只放文字（圖之後在後台上傳）。
-// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id；首頁動態的「入學頁的哪一則」照標題對到動態的 id）→ 每頁的單例（關於、捐款、規章、師資頁、合作企業頁）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
+// 順序：庫（人名／單位／媒體）→ 內容（選庫的照名字對到 id；首頁 news 的「入學頁的哪一則」照標題對到入學的 id）→ 每頁的單例（關於、捐款、規章、師資頁、合作企業頁）→ 介面文字（ui_labels，掃 HTML 的 data-label）。
 // 安全版、可重跑：內容集合還是空的才塞（單例＝每個欄位都空著）；庫只補沒有的名字（中英都一樣才算同一個）；
 // 介面文字只補沒有的 key（後台改過的字不蓋）。
 //
@@ -58,9 +58,15 @@ const subsOf = el => kids(el, tag('p')).map(p => ({ text_zh: text(p), text_en: p
 const entriesOf = ul => kids(ul, tag('li')).map(li => { const ps = kids(li, tag('p')); return ps.length === 2 ? { year: text(ps[0]), text_zh: text(ps[1]), text_en: ps[1].attrs['data-en'] ?? text(ps[1]) } : { year: '', text_zh: text(li), text_en: li.attrs['data-en'] ?? text(li) }; });
 const sections = root => findAll(root, e => e.tag === 'section' && cls('page-section')(e));
 const titleOf = sec => find(sec, cls('section-title'));
-const pub = rows => rows.map((r, i) => ({ status: 'published', sort: i + 1, ...r }));
-// 日期＝時間那行的第一個日期（2026.11.22／2027.04 → 2027-04-01），排序用
-const dateOf = el => { const m = (el ? text(el) : '').match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/); return m ? `${m[1]}-${m[2].padStart(2, '0')}-${(m[3] || '1').padStart(2, '0')}` : null; };
+const pub = rows => rows.map((r, i) => ({ sort: i + 1, ...r }));   // 沒有上架／草稿（user 2026-11-24：都不需要狀態）
+// 時間那行（2026.11.22 14:00–16:00／2025.12.20–12.27／2027.04）→ 日期、結束日期（後台用選的，user 2026-11-24）。
+// 幾點不記：動態、入學都沒有開始／結束時間了（user 同一天：「後臺不需要有 time 的設定」「入學也拿掉，留下日期即可」）
+const when = el => {
+  const m = (el ? text(el) : '').match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?(?:–(?:(\d{4})\.)?(\d{1,2})\.(\d{1,2}))?/);
+  if (!m) return { date: null };
+  const [, y, mo, d, y2, mo2, d2] = m, p = x => String(x).padStart(2, '0');
+  return { date: `${y}-${p(mo)}-${p(d || 1)}`, end_date: d2 ? `${y2 || y}-${p(mo2)}-${p(d2)}` : null };
+};
 // 從庫選的欄位：先記名字，寫進後台前換成庫裡那筆的 id
 const pool = (p, el) => el ? { $pool: p, name_zh: text(el), name_en: el.attrs['data-en'] ?? text(el) } : null;
 const keyOf = r => `${(r.name_en || '').trim().toLowerCase()}|${(r.name_zh || '').trim()}`;
@@ -80,25 +86,16 @@ function rich(n, lang) {
 }
 
 // ── 各集合（照各頁現在的標記；標記改了這裡跟著改） ──
-// 動態：動態頁每則（縮圖＋標題＋分類；展開＝時間、地點）＋入學頁每則（標題＋時間；展開＝說明；勾 admission）
-function news() {
-  const meta = d => kids(find(d, cls('fold-meta')), tag('p'));
-  const list = findAll(read('news'), tag('details')).map(d => {
-    const sum = find(d, tag('summary')), [time, place] = meta(d);
-    return { status: 'published', date: dateOf(time), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(find(sum, tag('p')), 'category'), ...zhEn(time, 'time'), ...zhEn(place, 'place') };
-  });
-  const adm = findAll(read('admission'), tag('details')).map(d => {
-    const sum = find(d, tag('summary')), time = find(sum, tag('p'));
-    return { status: 'published', admission: true, date: dateOf(time), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(time, 'time'), ...zhEn(kids(find(d, cls('fold-body')), tag('p'))[0], 'summary') };
-  });
-  // 兩頁都有的同一則（標題一樣）＝一筆、勾入學（user 2026-11-21：入學頁＝勾了「入學」的動態），不重複建
-  for (const a of adm) {
-    const n = list.find(x => x.title_zh === a.title_zh);
-    if (n) Object.assign(n, { admission: true }, a.summary_zh ? { summary_zh: a.summary_zh, summary_en: a.summary_en } : {});
-    else list.push(a);
-  }
-  return list;
-}
+// 動態、入學各一個集合（user 2026-11-24；原本共用 news、勾「入學」）。動態頁每則＝縮圖＋標題＋分類，展開＝時間、地點；入學頁每則＝標題＋時間，展開＝說明
+const meta = d => kids(find(d, cls('fold-meta')), tag('p'));
+const activities = () => findAll(read('activities'), tag('details')).map(d => {
+  const sum = find(d, tag('summary')), [time, place] = meta(d);
+  return { ...when(time), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(find(sum, tag('p')), 'category'), ...zhEn(place, 'place') };
+});
+const admission = () => findAll(read('admission'), tag('details')).map(d => {
+  const sum = find(d, tag('summary'));
+  return { ...when(find(sum, tag('p'))), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(kids(find(d, cls('fold-body')), tag('p'))[0], 'summary') };
+});
 // 師資：三段（介面文字 faculty.type.*）；名字進人名庫；履歷只有 faculty-detail.html 那一位有（名字對得上的才掛）
 const FAC_CAT = { 'faculty.type.full_time': 'full_time', 'faculty.type.part_time': 'part_time', 'faculty.type.mentor': 'mentor' };
 function faculty() {
@@ -140,14 +137,14 @@ const records = () => pub(findAll(read('records'), tag('details')).map(d => {
   return { country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null, ...zhEn(find(box, cls('sr-only')), 'country'),
     ...zhEn(find(box, tag('h3')), 'award'), ...zhEn(kids(box, tag('p'))[0], 'winner'), organizer: pool('organizations', org), ...zhEn(prize, 'prize') };
 }));
-// 首頁動態（home_news；user 2026-11-23 跟動態頁拆開）：首頁展開那串一則一個 li（p＝標題；裡面兩個 span.block＝標題＋說明），照順序。
+// 首頁的 news（user 2026-11-24：原本叫 home_news；2026-11-23 跟動態頁拆開）：首頁展開那串一則一個 li（p＝標題；裡面兩個 span.block＝標題＋說明），照順序。
 // 點了去哪 HTML 示意沒有：寫進後台時，標題跟入學頁的某一則一樣＝連到那一則（下面主程式；同動態／入學「標題一樣＝同一則」）
-const homeNews = () => pub(findAll(find(parse('index.html'), cls('home-news-list')), tag('li')).map(li => {
+const homeNews = () => findAll(find(parse('index.html'), cls('home-news-list')), tag('li')).map((li, i) => {
   const p = find(li, tag('p')), [t, s] = kids(p, tag('span'));
-  return t ? { ...zhEn(t, 'title'), ...zhEn(s, 'summary') } : zhEn(p, 'title');
-}));
+  return { sort: i + 1, ...(t ? { ...zhEn(t, 'title'), ...zhEn(s, 'summary') } : zhEn(p, 'title')) };
+});
 // 報導：媒體進媒體庫；截圖之後在後台上傳（沒截圖前台那列不能點）
-const press = () => findAll(read('press'), cls('item-row')).map(row => ({ status: 'published', ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
+const press = () => findAll(read('press'), cls('item-row')).map(row => ({ ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
 // 段落內文＝一段 rich text（捐款、規章）
 const richBody = s => { const body = kids(s).filter(n => !cls('section-title')(n)); return { body_zh: body.map(n => rich(n, 'zh')).filter(Boolean).join('\n'), body_en: body.map(n => rich(n, 'en')).filter(Boolean).join('\n') }; };
 // 關於的段落內文＝小節（user 2026-11-23：標題＋純文字、可以一直加，不要一整段 rich text；子集合 about_subsections）：
@@ -189,7 +186,7 @@ function labels() {
 }
 
 const POOLS = ['people', 'organizations', 'media_outlets'];
-// 每頁一個單例（user 2026-11-22，照 SCCD）。關於的段落是子集合（about_sections，有上架狀態與排序）、其他是重複列
+// 每頁一個單例（user 2026-11-22，照 SCCD）。關於的段落是子集合（about_sections，有排序）、其他是重複列
 const SINGLES = {
   about: () => { const r = page('about', subsections); return { ...r, sections: pub(r.sections || []) }; },
   donate: () => page('donate'),
@@ -201,7 +198,7 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
 
 (async () => {
   console.log(`Directus ${BASE}${DRY ? '（dry run，只印不寫）' : ''}`);
-  const content = { news: news(), home_news: homeNews(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
+  const content = { activities: activities(), admission: admission(), news: homeNews(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
   for (const [col, rows] of Object.entries(content)) if (!rows.length) throw new Error(`${col}：HTML 解析出 0 筆，標記大概改了，先修 seed 的解析`);
 
   // 內容集合還是空的才塞 → 庫也只補那幾個集合要用到的名字（不然後台改過名字、HTML 還是舊的，會多一個沒人用的）
@@ -225,8 +222,8 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
   for (const [col, rows] of Object.entries(content)) {
     const n = counts[col];
     if (n > 0) { console.log(`= ${col} 已有 ${n} 筆，跳過`); continue; }
-    if (col === 'home_news') {   // 標題跟入學頁的某一則一樣＝連過去（動態排在前面＝這時候已經寫進去了）
-      const adm = new Map(((await api('GET', '/items/news?limit=-1&filter[admission][_eq]=true&fields=id,title_zh')) || []).map(r => [r.title_zh, r.id]));
+    if (col === 'news') {   // 標題跟入學頁的某一則一樣＝連過去（入學排在前面＝這時候已經寫進去了）
+      const adm = new Map(((await api('GET', '/items/admission?limit=-1&fields=id,title_zh')) || []).map(r => [r.title_zh, r.id]));
       for (const r of rows) r.admission_item = adm.get(r.title_zh) ?? null;
     }
     console.log(`+ ${col} ${rows.length} 筆`);

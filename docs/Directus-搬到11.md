@@ -50,6 +50,14 @@ user 2026-11-23 決定：現在的後台是 Directus 12（12.6.1），沒有付�
 - v11 上前台用的公開讀取都正常（動態、關於、師資連人名庫、介面文字、作品資料夾的圖、`/assets` 讀得到檔案）。
 - 本機裝 v11 時 `isolated-vm` 要現場編譯（Windows 沒有 Visual Studio 編不起來）→ 請求單已請 IT 先裝 `build-essential`、`python3`。
 
+## 實際（2026-11-24）
+
+- IT 沒走暫用網域：直接把 `scaidcms.usc.edu.tw` 切到新裝的 v11.17.4（空的）。新的那台的 token 存在 `scripts/.directus-token`（沒有 `-v11`）。
+- 建結構：`setup-directus.cjs`（不用給 `DIRECTUS_URL`，預設就是這個網域）。
+- 舊的 12 外面連不到了 → 改從上面「實測」留在本機的副本（11-23 18:18）搬：`FROM_URL=http://127.0.0.1:8056 FROM_TOKEN=<副本的 token> TO_URL=https://scaidcms.usc.edu.tw TO_TOKEN=$(cat scripts/.directus-token)`，✓ 比對完全一致（25 個集合、1 個檔案）。
+  副本之後舊的那台只改過首頁影片的網址（11-23 20:06；翻各對話的操作紀錄，user 也確認自己沒在後台改）→ 搬完補上。
+- 步驟 8 還剩：編輯者帳號、一個月後請 IT 刪舊的 12。之後要再從舊的 12 補東西＝IT 給它一個暫用網址、`FROM_URL`＋`FROM_TOKEN`（舊的那台的；預設的檔現在是新的那台的）指過去重跑——搬完之後在新後台改的會被蓋掉。
+
 ## 注意
 
 - v11 的 `PATCH /relations` 會讓伺服器當掉（SCCD 2026-07-16 踩過）：腳本都只 `POST` 關聯；別在 API 改關聯的設定。

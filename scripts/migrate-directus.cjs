@@ -1,4 +1,4 @@
-// 後台搬家：舊的那台 Directus（現在的 v12，scaidcms）→ 新的那台（v11；user 2026-11-23 決定改裝 11：12 的免費 Core 方案只給 25 個集合、3 個帳號）。
+// 後台搬家：舊的那台 Directus（v12，2026-11-24 前的 scaidcms）→ 新的那台（v11；user 2026-11-23 決定改裝 11：12 的免費 Core 方案只給 25 個集合、3 個帳號）。
 // 全部照原本的編號搬：檔案庫的資料夾 → 檔案（連實體檔）→ 每個集合的內容（單例、清單、子表、junction）→ 專案設定（名稱、顏色、語言）。
 // 舊的那台只讀（只發 GET），不會改到它。帳號（密碼搬不了）、書籤、Flow（目前沒有）不搬：新的那台自己開。
 // 完整流程（IT 裝好 → 建結構 → 搬 → 比對 → 切網址）見 docs/Directus-搬到11.md。
@@ -8,6 +8,7 @@
 //    真的搬：            TO_URL=<新網址> TO_TOKEN=<新的那台的 token> node scripts/migrate-directus.cjs
 // 最後逐筆比對兩邊（每個集合的每一筆、每個檔案）。可以重跑：新的那台已經有的那一筆＝照舊的那台蓋過去、檔案只更新資料不重傳。
 // 舊的那台：FROM_URL（預設 js/config/api.js 的網域）＋FROM_TOKEN（預設 scripts/.directus-token）。token 都要是管理員的（讀得到草稿、系統表）。
+// 2026-11-24 搬完之後這兩個預設都已經是新的 v11：要再從舊的搬，FROM_URL、FROM_TOKEN 都要指定。
 
 const fs = require('fs');
 const DRY = process.argv.includes('--dry');
