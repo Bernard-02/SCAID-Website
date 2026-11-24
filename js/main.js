@@ -75,8 +75,10 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
 }
 
 // ── 開機 ──
+// 背景（筆跡＋中空板）與清單圖片 hover 的中空板：先關掉（user 2026-11-23），要開回來改 true（煙霧測試讀這一行決定測不測）
+const DECOR = false;
 installReducedMotionGsap();
-try { initBg(); } catch (e) { console.warn('[bg] 背景載入失敗', e); }   // 背景：畫布（筆跡）＜ 中空板 ＜ 內文；純裝飾，出錯也不能卡住後面的開機
+if (DECOR) try { initBg(); } catch (e) { console.warn('[bg] 背景載入失敗', e); }   // 背景：畫布（筆跡）＜ 中空板 ＜ 內文；純裝飾，出錯也不能卡住後面的開機
 initLang();
 initChrome();          // 先於 router：底列動態在首頁要攔 click（preventDefault → router 放行）
 initRouter();
@@ -84,7 +86,7 @@ initCustomScrollbar();
 initGridOverlay();      // 開發用：按 G 顯示 grid
 initAccordion();        // 摺疊（<details>）展開／收起的動畫
 initItemMarquee();      // 清單列的標題／副標：放不下右邊淡掉、hover 跑馬燈
-initThumbBoard();       // 清單列的圖片：hover 浮一塊流動的中空板
+if (DECOR) initThumbBoard();   // 清單列的圖片：hover 浮一塊流動的中空板
 loadPartial('site-header', 'pages/header.html').then(() => {
   updateNavActive(); syncFigure(); syncTheme(); applyLang(); fitBar();
   applyUiLabels(document.getElementById('site-header') || document);   // 殼的介面文字（選單、底列）
