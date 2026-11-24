@@ -297,33 +297,53 @@
     background: none;
   }
 
-  /* 段落圖片輪播（user 2026-11-18 about 起；slideshow.js 只算誰在中間、寫 data-pos）：中間 --slide-c 最大壓最上層，
-     左右兩張 --slide-s 最小在後面、邊緣被中間蓋住，再外面（|pos|≥2）藏在左右那張底下。圖 3:2，容器高＝中間那張（25/11＝0.66×2/3）。
-     left／width／opacity 轉場＝點了（或自動播放）滑過去（時長同網站 fade）。
-     景深（user 2026-11-21，參考圖＝三個公仔站前中後）：焦點永遠在中間那個位置——中間那張清楚，左右兩張失焦、再外面藏著的更糊；
-     模糊跟著位置走、不跟著照片走：圖滑到中間的途中慢慢對焦、退到旁邊慢慢失焦（filter 跟 left／width 同一組過場）。
-     整張連邊緣一起失焦：filter 掛在 .slide 本身＝糊開的邊暈出自己的框（不是框裡面的圖變糊）。
-     試過、被 user 退掉的：蓋一層漸進模糊在輪播上（「不是套在照片本身」）、圖不動改成點哪張哪張對焦（「中間那個一定是比較清晰的…不會切換不同照片的模糊程度」）、
-     五張／三張由大到小排一排（「是之前那樣的設計」） */
+  /* 段落圖片輪播（user 2026-11-18 about 起；slideshow.js）：一列、每張一樣高（＝框高）、寬照後台檔案的比例、不裁
+     （user 2026-11-23：「照片應該以後台的 size 為主，不要 crop 原本上傳的 size」「要一樣大的高度」）；目前那張在正中、其他隔一個 gutter
+     接在兩邊（column-gap，slideshow.js 讀），超出框的切掉；換張＝整列滑過去（left／width 過場，時長同網站 fade）。
+     框高＝同小節圖（.page-section > img，user 2026-11-23：「段落應該跟小節圖同步」；原本＝欄寬 × 0.44、螢幕越寬越大）：
+     最高 16rem（這裡的 max-height），而且最寬的那張也放得進內文欄＝slideshow.js 算 min(16rem, 欄寬 ÷ 最寬那張的比例) 寫進 height。
+     框的左右兩側＝漸進模糊（.slide-blur，slideshow.js 插；user 2026-11-23：「blur 改成這個 box 的左右兩邊加上 blur 到清晰的漸層，不是加在左右兩張圖片」）：
+     同 logo 後面 .top-blur 那套＝疊幾層、每層模糊加倍；越糊的那層越窄＝越外面越糊、往中間淡到清楚。照片本身不糊。
+     試過、被 user 退掉的：中間大兩邊小＋左右兩張各自失焦（景深，11-21～23；那時也退過「蓋一層漸進模糊」，11-23 改要框兩側的漸層）、
+     圖不動改成點哪張哪張對焦、五張／三張由大到小排一排 */
   .slideshow {
-    --slide-c: 66%; --slide-s: 24%;
-    --step: 1.1cqw;   /* 離中間每遠一格多糊多少；cqw＝跟框寬等比，手機桌面看起來一樣（框寬 568px 時一格 6.2px） */
-    position: relative; aspect-ratio: 25 / 11; margin-top: var(--spacing-md);   /* 標題 → 圖 → 內文（user 2026-11-18）；下面的 h3／p 自帶上距 */
-    container-type: inline-size;
+    position: relative; height: 16rem; max-height: 16rem; margin-top: var(--spacing-md);   /* 高由 slideshow.js 寫（16rem＝還沒算之前）；標題 → 圖 → 內文（user 2026-11-18） */
+    column-gap: var(--spacing-gutter);   /* 張與張之間（slideshow.js 讀；框本身不是 flex／grid，這個值只給 JS 用） */
+  }
+  /* 照片＋兩側模糊那幾層（slideshow.js 包）：左右各伸出框外 --out，透明度從伸出去的外緣淡進來、到框內 --out 才全實
+     ＝框的邊線落在半透明、糊開的地方（user 2026-11-23：「blur 是包含整個 box 的邊緣要有，不只是往內加上 blur」；原本框 overflow hidden、一刀切）。
+     mask 也讓它變成 backdrop root＝裡面那幾層只糊得到照片（要的就是這個）。
+     超出列的照片 overflow: clip 切掉（切在 mask 已經淡到 0 的外緣＝看不出來）：不用 hidden——hidden 的框程式還捲得動，
+     點／聚焦到旁邊那張時瀏覽器會把整列捲歪（2026-11-23 煙霧測試踩過）；也不讓照片撐出整頁的橫向寬度 */
+  .slide-strip {
+    --out: var(--spacing-gutter);   /* 往框外糊出去多少：落在內文欄旁邊的 gutter／手機的 rail 裡 */
+    --band: calc(var(--out) + (100% - 2 * var(--out)) * 0.22);   /* 從列的外緣算、糊的那一段多寬：伸出去的＋框寬的 22%（100%＝列寬，用在漸層裡才解析） */
+    position: absolute;
+    inset: 0 calc(-1 * var(--out));
+    overflow: clip;
+    -webkit-mask: linear-gradient(to right, transparent, #000 calc(2 * var(--out)), #000 calc(100% - 2 * var(--out)), transparent);
+            mask: linear-gradient(to right, transparent, #000 calc(2 * var(--out)), #000 calc(100% - 2 * var(--out)), transparent);
   }
   .slide {
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: var(--slide-s); aspect-ratio: 3 / 2; overflow: hidden; background: var(--light-gray);
-    opacity: 0; z-index: 1; padding: 0; border: 0;
-    filter: blur(calc(2 * var(--step)));
-    transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard), opacity var(--dur-fade) var(--ease-standard), filter var(--dur-fade) var(--ease-standard);
+    position: absolute; top: 0; height: 100%; padding: 0; border: 0; background: var(--light-gray);
+    transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard);
   }
-  .slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .slide[data-pos="-2"], .slide[data-pos="-1"] { left: 0; }
-  .slide[data-pos="1"], .slide[data-pos="2"] { left: calc(100% - var(--slide-s)); }
-  .slide[data-pos="-1"], .slide[data-pos="1"] { z-index: 2; opacity: 1; cursor: pointer; filter: blur(var(--step)); }
-  .slide[data-pos="0"] { left: calc((100% - var(--slide-c)) / 2); width: var(--slide-c); z-index: 3; opacity: 1; filter: blur(0px); }
+  .slide img { display: block; width: 100%; height: 100%; object-fit: contain; }   /* 框的寬照圖的比例算好了；contain＝圖還沒載到、比例先猜的時候也不裁 */
+  .slide:not(:disabled) { cursor: pointer; }
   @media (hover: hover) { .slide:not(:disabled):hover { opacity: 0.6; } }
+  .slide-blur { position: absolute; inset: 0; pointer-events: none; }
+  .slide-blur > i {
+    /* 第 i 層（0 最淡）：從列的外緣（框外 --out）到 a 全實、到 b 淡完＝越糊的那層越窄、越外面越糊 */
+    --a: calc(var(--band) * (4 - var(--i)) / 5);
+    --b: calc(var(--band) * (5 - var(--i)) / 5);
+    --m: linear-gradient(to right, #000 var(--a), transparent var(--b), transparent calc(100% - var(--b)), #000 calc(100% - var(--a)));
+    position: absolute;
+    inset: 0;
+    -webkit-mask: var(--m);
+            mask: var(--m);
+    -webkit-backdrop-filter: blur(calc(0.5px * pow(2, var(--i))));
+            backdrop-filter: blur(calc(0.5px * pow(2, var(--i))));
+  }
 
   /* 點導覽＝把該段頂端捲到 h1 那條線（--section-y0＝h1 在頁頂時的位置，section-nav.js 量；段落頂＝<section>）→ 最後一段至少要高到捲得到那條線。
      只有放了段落導覽的頁才撐（.section-nav 是 .page-body 前面的兄弟）：沒導覽的頁（動態、入學、合作企業…）撐了只會在頁尾多一截空白 */
