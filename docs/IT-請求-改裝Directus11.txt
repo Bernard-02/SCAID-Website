@@ -1,0 +1,159 @@
+【IT 協助請求】SCAID 後台：改裝 Directus 11（比照 SCCD 後台）——裝在現有後台旁邊，學程搬完資料再切換
+提出單位：AI設計職人學位學程（SCAID）
+日期：2026-11-23
+
+前言：
+・目前的 SCAID 後台（scaidcms.usc.edu.tw）是 2026-11-10 請求單裝的 Directus 12（12.6.1）。
+  Directus 12 自架、沒有付費序號時，軟體會自動套用免費的 Core 方案並硬性限制：後台帳號 3 個、資料表 25 個、自動化流程 5 個。
+  網站的資料表已經用到 24 個，不夠用，因此改裝與 SCCD 後台相同的 Directus 11（11.17.4，軟體本身沒有這些限制）。
+・做法：在同一台主機、現有後台旁邊另外裝一套 Directus 11（獨立的資料夾、資料庫、port、暫用網域），現有的 12 完全不動。
+  裝好後由學程用腳本把結構、檔案、內容全部搬過去並逐筆比對（已在學程端用 Directus 11.17.4 實測過整個流程）；
+  確認無誤後，再請 IT 把 scaidcms.usc.edu.tw 切到新的這套（步驟七）。切換前網站照常使用現有的 12；
+  切換後若有問題，把網址切回 12 即可（12 先停用、不刪）。
+・以下指令僅供參考，以主機實際環境為準。文中 <…> 為待填值。
+  密碼、金鑰只寫在主機上的 .env，請勿寫進信件或文件。
+
+
+════════════════════════════════════════════════
+步驟〇：Node.js 22 與編譯工具
+════════════════════════════════════════════════
+
+  ・Directus 11.17.4 需要 Node.js 22 以上；SCCD 後台的 Directus 11 跑在 Node 22。
+    主機目前的 Node 26 是為 Directus 12 裝的，建議另外裝 Node 22（LTS）給這套用，例如用 nvm：
+       nvm install 22
+    現有的 12 繼續用 Node 26，兩套互不影響。
+  ・Directus 11 有一個套件（isolated-vm）安裝時要現場編譯，主機需要編譯工具：
+       sudo apt install -y build-essential python3
+    （學程端實測：沒有編譯工具時 npm install 會在 isolated-vm 這一步失敗。）
+
+
+════════════════════════════════════════════════
+步驟一：建一個新的資料庫
+════════════════════════════════════════════════
+
+  CREATE DATABASE scaid_directus11 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER 'scaid_directus11'@'localhost' IDENTIFIED BY '<資料庫密碼>';
+  GRANT ALL PRIVILEGES ON scaid_directus11.* TO 'scaid_directus11'@'localhost';
+  FLUSH PRIVILEGES;
+
+  ・不要沿用現有的 scaid_directus（那是 12 的資料庫，切換前網站還在用，切換後也先留著當備份）。
+
+
+════════════════════════════════════════════════
+步驟二：檔案儲存
+════════════════════════════════════════════════
+
+  ・比照現有 12 的設定。
+  ・若 12 的檔案存在 S3：用同一個 bucket，但新的這套放另一個子資料夾（STORAGE_S3_ROOT=Directus11），
+    IAM 權限多加一條：s3:GetObject、s3:PutObject、s3:DeleteObject → arn:aws:s3:::<bucket 名>/Directus11/*
+    12 的檔案留在原本的子資料夾不動，切換後確認沒問題再清。
+  ・若 12 的檔案存在主機上：新的這套會存在 ~/scaid-directus11/uploads，不用另外設定。
+
+
+════════════════════════════════════════════════
+步驟三：安裝 Directus 11、設定 .env
+════════════════════════════════════════════════
+
+  請用一般使用者（非 root）執行：
+
+  nvm use 22
+  mkdir ~/scaid-directus11 && cd ~/scaid-directus11
+  npm init -y
+  npm install directus@11.17.4
+
+  .env：從現有的 ~/scaid-directus/.env 複製一份到 ~/scaid-directus11/.env，改下面這幾項：
+
+  PORT=8056                            （現有的 12 用 8055）
+  PUBLIC_URL=https://<暫用網域>         （步驟六；切換時再改成 https://scaidcms.usc.edu.tw）
+  KEY=<新的隨機值一>
+  SECRET=<新的隨機值二>
+  DB_DATABASE=scaid_directus11
+  DB_USER=scaid_directus11
+  DB_PASSWORD=<步驟一的密碼>
+  STORAGE_S3_ROOT=Directus11           （用 S3 的話）
+  ADMIN_EMAIL=<學程提供的信箱>
+  ADMIN_PASSWORD=<暫時密碼>
+
+  ・隨機值：node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"（KEY、SECRET 各跑一次）
+  ・其餘設定（CORS、FILES_MAX_UPLOAD_SIZE、FILES_MIME_TYPE_ALLOW_LIST、ASSETS_TRANSFORM_IMAGE_MAX_DIMENSION、IP_TRUST_PROXY、S3 金鑰）照舊。
+  ・chmod 600 .env
+
+
+════════════════════════════════════════════════
+步驟四：初始化並試跑
+════════════════════════════════════════════════
+
+  cd ~/scaid-directus11
+  npx directus bootstrap      （建立系統資料表＋第一個管理員）
+  npx directus start          （看到 Server started at http://127.0.0.1:8056 即成功）
+
+  另開一個終端機：curl http://127.0.0.1:8056/server/ping   → 應回 pong
+  確認後按 Ctrl+C 停止；請刪掉 .env 裡 ADMIN_PASSWORD 那一行。
+
+
+════════════════════════════════════════════════
+步驟五：pm2 常駐
+════════════════════════════════════════════════
+
+  在已經 nvm use 22 的終端機裡：
+
+  cd ~/scaid-directus11
+  pm2 start "npx directus start" --name scaid-directus11
+  pm2 save
+
+  ・pm2 describe scaid-directus11 → 確認跑的是 Node 22。
+  ・現有的 scaid-directus（12）不要停，切換前網站還在用。
+  ・之後改 .env 請用 pm2 restart scaid-directus11 --update-env（不加 --update-env 不會吃到新設定）。
+
+
+════════════════════════════════════════════════
+步驟六：暫用網域（學程搬資料用）
+════════════════════════════════════════════════
+
+  ・新增一個暫用網域（例如 scaidcms11.usc.edu.tw），可沿用現有的 *.usc.edu.tw 萬用憑證。
+  ・反向代理設定照抄現有 scaidcms.usc.edu.tw 那一段（HTTPS、上傳大小上限、WebSocket、逾時都一樣），
+    只改網域，以及轉到 127.0.0.1:8056。
+  ・驗證：curl -I https://<暫用網域>/server/ping → HTTP 200；瀏覽器開 https://<暫用網域>/admin 能登入。
+
+  完成到這裡請先回覆學程：
+    1. 暫用網域
+    2. 管理員帳號（密碼請另以安全方式提供）
+    3. 版本：在 ~/scaid-directus11 執行 npm ls directus 與 node -v
+  學程接著搬資料並比對，好了會通知 IT 做步驟七。
+
+
+════════════════════════════════════════════════
+步驟七：切換（學程通知搬完後再做）
+════════════════════════════════════════════════
+
+  1. ~/scaid-directus11/.env 的 PUBLIC_URL 改成 https://scaidcms.usc.edu.tw
+     → pm2 restart scaid-directus11 --update-env
+  2. scaidcms.usc.edu.tw 的反向代理改成轉到 127.0.0.1:8056，重新載入網頁伺服器設定
+  3. 停掉舊的 12（先不要刪，留著當備份）：
+       pm2 stop scaid-directus
+       pm2 save
+  4. 暫用網域可以拿掉
+  5. 驗證：curl -I https://scaidcms.usc.edu.tw/server/ping → HTTP 200；/admin 用新的管理員帳號登入看得到內容
+
+  前台網站不用改（網址一樣）。
+  若切換後有問題：反向代理改回 127.0.0.1:8055、pm2 start scaid-directus，就回到原本的 12。
+
+
+════════════════════════════════════════════════
+步驟八：備份
+════════════════════════════════════════════════
+
+  ・每天的資料庫備份改成新的資料庫：
+       0 3 * * * mysqldump --single-transaction scaid_directus11 | gzip > ~/backups/scaid-directus11-$(date +\%Y\%m\%d).sql.gz
+  ・舊的 12（~/scaid-directus 資料夾、scaid_directus 資料庫、S3 原本的子資料夾）切換後保留一個月，學程確認沒問題再刪。
+
+
+════════════════════════════════════════════════
+附註：版本與授權（給學程與 IT 參考，不影響安裝步驟）
+════════════════════════════════════════════════
+
+  ・Directus 11 軟體本身不限制帳號、資料表、流程的數量（SCCD 後台也是 11）。
+  ・Directus 11 的授權是 BSL 1.1：條款寫明「總財務（營收、整體預算或經費，取最大者）」超過 500 萬美元的單位正式上線使用，
+    需向 Directus 購買商業授權；軟體不會因此擋用，管理員登入後會出現設定「專案擁有者」的提醒（可以按稍後提醒）。
+    SCCD 後台目前也是相同情況；是否處理由學校決定。
+  ・Directus 11 最後一版是 11.17.4（2026-04-30），之後不會再有更新。主機的作業系統、Node、MySQL 請照常更新。
