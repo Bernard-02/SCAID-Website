@@ -1,7 +1,8 @@
 /* 內頁版型（user 2026-11-03，參考圖＝degree show 站 about）：桌面 col 1 段落導覽、col 2 起內文由上往下、右邊圖片。
    title＝Medium、內文＝Regular（user 2026-11-21；不用粗體），再靠字級＋間距分層；標題不 sticky。
    手機（user 2026-11-13 手機稿）：同一套三塊壓窄——左緣段落導覽＋返回鈕（對齊 menu 鈕）、中間內文由上往下、
-   右緣中線上的右圖縮圖鈕（右緣對齊內容右內距；點了放大蓋滿畫面，chrome.css .figure-btn／.figure-dialog）。內文左右各讓出 --rail-w。
+   右圖收成底列右下角那顆鈕（長得跟 menu 鈕一樣，user 2026-11-23；原本在右緣中線上；點了放大蓋滿畫面，chrome.css .figure-btn／.figure-dialog）。內文左右各讓出 --rail-w。
+   PC 以外的桌面寬（iPad，user 2026-11-23）：右圖同手機收成那顆鈕，內文那 6 欄置中（col 4–9；HTML 的 md:col-start-4，PC 再 pc:col-start-2）。
    段落導覽行為 js/modules/ui/section-nav.js */
 
 @layer components {
@@ -10,8 +11,8 @@
      h1／h2／h3 的字級寫在 typography.css 的元素預設（xl 以上的字級刪掉後兩邊一樣，這裡不重複寫）；
      :where 不加權重 → 個別 text-* utility 還蓋得過。
      grid-row 1 寫死：手機內文滿欄（col-span-full）跟導覽／返回鈕疊同一列，那一列才有整頁高給它們的 sticky 走；
-     手機左右讓出 --rail-w 給導覽與縮圖鈕（桌面＝0，位置走 grid 欄） */
-  .page-body { @apply text-s; grid-row: 1; margin-inline: var(--rail-w); overflow-wrap: anywhere; }   /* anywhere：窄手機上放不下的長英文字折在欄內，不衝到縮圖鈕底下 */
+     手機左右讓出 --rail-w：左給導覽、右對稱留著（原本給右緣的縮圖鈕；桌面＝0，位置走 grid 欄） */
+  .page-body { @apply text-s; grid-row: 1; margin-inline: var(--rail-w); overflow-wrap: anywhere; }   /* anywhere：窄手機上放不下的長英文字折在欄內，不衝出右邊那條 */
   .page-lead { margin-top: var(--spacing-md); }   /* 字級＝內文的 text-s（p 的預設），不另外寫 */
   .page-section { margin-top: var(--spacing-2xl); }
   /* Subsection title 跟下面內文隔 xs，掛在標題上（user 2026-11-21；原本貼著、試過 sm）。
@@ -269,7 +270,7 @@
 
   /* 右邊圖片：外層高 0 的 sticky 錨點、圖片（內層）以錨點為中心。
      2026-11-22 起右圖＝殼上的 object 畫布（chrome.css .object-canvas、object.js）：這一格只負責「佔位置」，看不到（下面 visibility: hidden），
-     畫布每一幀照它的位置大小擺。手機不出（HTML 掛 hidden md:block）：改由右緣那顆鈕把畫布搬進放大 dialog，畫布在裡面吃同一個方形。
+     畫布每一幀照它的位置大小擺。只有 PC 出（HTML 掛 hidden pc:block＝≥768 且有滑鼠；手機、iPad 都不出，user 2026-11-23）：改由右緣那顆鈕把畫布搬進放大 dialog，畫布在裡面吃同一個方形。
      水平位置（user 2026-11-19）＝「內容區右緣～畫面右緣（100vw）」那段空間的正中：wrapper 佔 col 8–12，左邊用負 margin 吃掉一個 gutter
      （＝從 col 7 右緣起）、右邊負 margin 吃掉容器內距（＝到 100vw），圖在 wrapper 裡 margin auto 置中；圖本身仍是 4 欄寬的方形 */
   .page-figure { position: sticky; top: 50%; height: 0; align-self: start; margin-left: calc(-1 * var(--spacing-gutter)); margin-right: calc(-1 * var(--container-padding)); }

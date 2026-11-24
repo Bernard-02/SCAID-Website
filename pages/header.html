@@ -54,7 +54,7 @@
     </nav>
   </div>
 
-  <!-- 底列（全站固定、貼底）：左 menu／intro，中 最新動態＋（畫面正中），右空著（原本 footer 鈕，user 2026-11-21 搬進選單＝聯絡頁；留欄＝動態照樣置中）。
+  <!-- 底列（全站固定、貼底）：左 menu／intro，中 最新動態＋（畫面正中），右 右圖的開關（PC 以外；user 2026-11-23。原本空著＝footer 鈕 2026-11-21 搬進選單＝聯絡頁）。
        矩形鈕 hover／鍵盤聚焦才在旁邊多出名字（跟語言走；平常視覺隱藏但仍是報讀名稱，所以不另掛 aria-label）；menu 鈕打開時矩形中央白圓點。行為 js/modules/ui/chrome.js -->
   <div class="site-bar">
     <div class="bar-left">
@@ -75,14 +75,13 @@
     <a href="news.html" class="bar-news">
       <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span><span class="bar-plus" aria-hidden="true"></span>
     </a>
+    <!-- 右圖 object 的開關（PC 以外；user 2026-11-13 手機稿、2026-11-22 改成 object 可以打開、關閉）：右下角、長得跟 menu 鈕一樣（骨牌；user 2026-11-23，
+         原本是內頁右緣中線上幾根 stroke 圍成的圓）。名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；
+         該頁有右圖那一格才標 .has-figure 現身 -->
+    <button type="button" class="bar-btn figure-btn pc:hidden" aria-haspopup="dialog">
+      <span data-label="common.view-image" class="bar-label" data-zh="看圖片" data-en="View image">看圖片</span><span class="bar-rect"></span>
+    </button>
   </div>
-
-  <!-- 手機：右圖 object 的開關（user 2026-11-13 手機稿；2026-11-22 改成 object 可以打開、關閉、不常駐）。固定在畫面右緣「捲軸那一塊」、
-       上下在畫面中線，右緣對齊內容右內距；點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）。
-       鈕上畫的是幾根 stroke 圍成的圓（chrome.css .figure-thumb）；該頁有右圖那一格才標 .has-figure 現身 -->
-  <button type="button" class="figure-btn md:hidden" aria-haspopup="dialog">
-    <span class="figure-thumb" aria-hidden="true"></span><span data-label="common.view-image" class="sr-only" data-en="View image">看圖片</span>
-  </button>
 
   <!-- intro 影片：原生 <dialog>，Esc／右上鈕關 -->
   <dialog class="intro-dialog" id="intro-dialog" aria-label="intro">

@@ -10,8 +10,6 @@ interface SCAIDHelpersAPI {
   refreshCursorVars(): void;
 
   // 版型判斷（版型看寬度、互動看輸入）
-  LANDSCAPE_GATE: string;
-  isLandscapeGate(): boolean;
   isMobileLayout(): boolean;
   isDesktopLayout(): boolean;
   canHover(): boolean;

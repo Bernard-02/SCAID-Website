@@ -15,7 +15,7 @@
   html.page-leaving #page-content { opacity: 0; filter: blur(var(--blur)); }
   /* 進場（user 2026-11-22）：logo 的進場動畫演完，其他東西才 fade in。各頁 <head> 的 inline script 在畫出來之前就掛上 html.is-intro（不閃），
      logo.js 演完拿掉。data-logo-still＝煙霧測試不演 logo 的那個開關：連這段淡入也不要（斷言一載入就量得到終態） */
-  html.is-intro:not([data-logo-still]) :is(#page-content, .site-bar, .figure-btn, #custom-scrollbar-thumb, .site-chrome > .object-canvas) { opacity: 0; filter: blur(var(--blur)); pointer-events: none; }
+  html.is-intro:not([data-logo-still]) :is(#page-content, .site-bar, #custom-scrollbar-thumb, .site-chrome > .object-canvas) { opacity: 0; filter: blur(var(--blur)); pointer-events: none; }
   /* 選單開著：內容左緣推到選單右緣（＝play 鈕那條線）。內容自己帶左內距 → 推「選單寬 − 內距」，不重複算 padding（user 2026-11-03）。
      開著＋收回去那 --dur-medium（html.menu-closing，chrome.js setMenu）內容鎖住不捲：第一下滾輪／觸控只關選單、內容不動（user 2026-11-18） */
   html.menu-open { --shift: calc(var(--menu-w) - var(--container-padding)); }
@@ -216,7 +216,7 @@
     :is(.nav-link, .footer-body a):not(.site-menu *):hover::after { opacity: 1; filter: none; }
   }
 
-  /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 空著]（原本 footer 鈕，user 2026-11-21 搬進選單＝聯絡頁）；整列貼底 --bar-pad。
+  /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 右圖的開關（PC 以外，user 2026-11-23；原本空著＝footer 鈕 2026-11-21 搬進選單＝聯絡頁）]；整列貼底 --bar-pad。
      兩側等寬（--side-min＝左欄內容寬，chrome.js fitBar 量）＝動態永遠畫面正中；
      中欄最寬 --col-w（＝首頁動態圖片寬），側邊名字出來放不下時才縮中欄 ── */
   .site-bar {
@@ -242,7 +242,8 @@
   }
 
   /* 矩形鈕＝矩形＋名字。名字平常視覺隱藏（仍是無障礙名稱、跟語言走，lang.js），hover／鍵盤聚焦才排進版面；
-     menu 鈕的名字永遠不出（user 2026-11-21：hover、點開選單都不要文字說明；原本 hover 出、選單開著常駐），只剩報讀名稱 */
+     menu 鈕的名字永遠不出（user 2026-11-21：hover、點開選單都不要文字說明；原本 hover 出、選單開著常駐），只剩報讀名稱；
+     play（intro）鈕也是（user 2026-11-23：hover 時拿掉「簡介」這個字）；右下角右圖的鈕也是（同 menu 鈕，user 2026-11-23） */
   .bar-btn { display: inline-flex; align-items: center; gap: 0.5em; flex: none; color: inherit; }
   /* 矩形＝logo 兩端那顆骨牌（website-icons/block.svg）：寬高 45:70，大小＝logo 上那顆（--block-h，user 2026-11-18；原本 1.25em 同 play icon） */
   .bar-rect { --h: var(--block-h); position: relative; display: block; width: calc(var(--h) * 45 / 70); height: var(--h); background: currentColor; }
@@ -255,11 +256,11 @@
     margin-inline: -0.25em; overflow: hidden; white-space: nowrap; opacity: 0; filter: blur(var(--blur));
     transition: var(--transition-fade), grid-template-columns var(--dur-fade) var(--ease-standard), margin var(--dur-fade) var(--ease-standard);
   }
-  /* hover／鍵盤聚焦才出（menu 鈕除外，見上）。觸控不算（user 2026-11-13 手機版）：點完 :hover／:focus-visible 會黏在鈕上
+  /* hover／鍵盤聚焦才出（menu、play 鈕除外，見上）。觸控不算（user 2026-11-13 手機版）：點完 :hover／:focus-visible 會黏在鈕上
      → 名字一直留著，所以 hover 只給滑鼠、聚焦排除 html.input-touch（helpers.js） */
-  html:not(.input-touch) .bar-btn:not(.menu-btn):focus-visible .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
+  html:not(.input-touch) .bar-btn:not(.menu-btn, .play-btn, .figure-btn):focus-visible .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
   @media (hover: hover) {
-    .bar-btn:not(.menu-btn):hover .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
+    .bar-btn:not(.menu-btn, .play-btn, .figure-btn):hover .bar-label { grid-template-columns: minmax(0, 1fr); margin-inline: 0; opacity: 1; filter: none; }
   }
   /* 觸控：矩形鈕本體很小（寬 ≈0.8em）→ ::before 把可點範圍往外撐，畫面不變。左右各撐半個 menu／play 間距＝兩顆的範圍相接不重疊 */
   @media (pointer: coarse) {
@@ -303,19 +304,14 @@
     .bar-blur { width: 100vw; }   /* left 已貼畫面左緣 → right 被忽略、右緣＝畫面右緣 */
   }
 
-  /* ── 內頁右圖的手機版（user 2026-11-13 手機稿）：畫面右緣「捲軸那一塊」的縮圖鈕——右緣對齊內容右內距、上下在畫面中線
-     （＝桌面右圖那條水平線；手機沒有自製捲軸，z 同捲軸），點了開 .figure-dialog 放大（桌面右圖在 main 裡，page.css .page-figure；HTML 掛 md:hidden）。
-     內文右邊讓出 --rail-w（page.css .page-body）→ 不壓字。固定在殼上、不放 #page-content 裡（裡面不能有 fixed）；
-     內容由 chrome.js syncFigure 從當頁 .page-figure 複製，有圖才 .has-figure。
-     進出場走網站 transition：沒圖／選單開（內容右推過來會被它壓到）／換頁淡出，淡完才 hidden ── */
+  /* ── 內頁右圖在 PC 以外（手機、iPad；user 2026-11-13 手機稿、2026-11-23 起 iPad 也是）＝底列右下角那顆鈕（底列第三欄、右緣對齊內距；
+     長得跟 menu 鈕一樣＝骨牌，hover／鍵盤聚焦中央圓點，名字不出；user 2026-11-23，原本是畫面右緣中線上幾根 stroke 圍成的圓）。
+     點了開 .figure-dialog 放大（PC 的右圖在 main 裡，page.css .page-figure；HTML 掛 pc:hidden）；有右圖那一格的頁 chrome.js syncFigure 才標 .has-figure。
+     進出場走網站 transition：沒圖／選單開／換頁淡出，淡完才 hidden ── */
   .figure-btn {
-    position: fixed;
-    z-index: 35;
-    right: var(--container-padding);
-    top: 50%;
-    width: var(--thumb-w);
-    aspect-ratio: 1;
-    transform: translateY(-50%);
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
     opacity: 0;
     visibility: hidden;
     filter: blur(var(--blur));
@@ -323,20 +319,10 @@
   }
   .figure-btn.has-figure { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   html:is(.menu-open, .page-leaving) .figure-btn { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
-  .figure-btn::before { content: ''; position: absolute; inset: calc(var(--spacing-xs) * -1); }   /* 可點範圍往外撐，畫面不變 */
-  /* 鈕上的圖：幾根 stroke 圍成的圓（直條紋＋圓形遮罩）＝「點了會出現一個 stroke 排出來的東西」。純 CSS：object 沒打開時不跑、不載模型 */
-  .figure-thumb {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(90deg, currentColor 0 10%, transparent 10% 22.5%);
-    -webkit-mask: radial-gradient(circle closest-side, #000 96%, transparent 100%);
-            mask: radial-gradient(circle closest-side, #000 96%, transparent 100%);
-  }
 
   /* ── 右圖的 object（user 2026-11-22；object.js）：一張畫布放在殼上，換頁不重來。
-     桌面：fixed，位置大小由 object.js 每一幀照當頁右圖那一格（page.css .page-figure > *）擺——選單開著那一格縮小、移位，它跟著走。
-     該頁沒有右圖（首頁）＝淡掉。手機：平常不出，右緣那顆鈕點了才搬進放大 dialog（下面 .figure-dialog-body 那條），關掉搬回來。
+     PC：fixed，位置大小由 object.js 每一幀照當頁右圖那一格（page.css .page-figure > *）擺——選單開著那一格縮小、移位，它跟著走。
+     該頁沒有右圖（首頁）＝淡掉。PC 以外（手機、iPad）：平常不出，右緣那顆鈕點了才搬進放大 dialog（下面 .figure-dialog-body 那條），關掉搬回來。
      z 在內容上、logo 下；顏色吃 --theme-fg ── */
   .object-canvas {
     position: fixed;

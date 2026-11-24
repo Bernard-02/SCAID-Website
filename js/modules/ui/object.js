@@ -8,8 +8,9 @@
  *   - 換下一個＝stroke 隨機進出場：舊的停在當下轉到的角度一根一根消失，新的同時從正面一根一根出現；
  *     拖到一半的角度只留到換下一個為止。
  *   - 游標在 object 上（觸控：點一下）＝logo 露出它的名字，而且不換下一個；移開後從頭等一輪。
- *   - 放在殼上＝換頁不重來。桌面：疊在當頁右圖那一格（page.css .page-figure > *）上，每一幀照它的位置擺；首頁沒有那一格＝不顯示。
- *     手機：平常不出、也不跑（不載模型），右緣那顆鈕點了才搬進放大 dialog（chrome.js 叫 openObject／closeObject）。
+ *   - 放在殼上＝換頁不重來。PC：疊在當頁右圖那一格（page.css .page-figure > *）上，每一幀照它的位置擺；首頁沒有那一格＝不顯示。
+ *     首頁 → 內頁（user 2026-11-23）：logo 上移的途中（html.logo-moving，router.js）先不出場、只先抓第一個模型，移完跟 logo 變形同時出場。
+ *     PC 以外（手機、iPad；user 2026-11-23）：平常不出、也不跑（不載模型），底列右下角那顆鈕點了才搬進放大 dialog（chrome.js 叫 openObject／closeObject）。
  *   - 名字跟著網站語言（中／英）回報給 logo（logo.js logoObject）：內頁 logo 的 stroke 長度＝名字的長度。
  * 減少動態＝不換，只畫第一個（照樣可以拖著轉）。<html data-logo-still>（煙霧測試其他段落）＝整個不跑。
  */
@@ -31,7 +32,7 @@ const clamp = (/** @type {number} */ v, /** @type {number} */ a, /** @type {numb
 /** @typedef {{ slug: string, zh: string, en: string, nv: number, nt: number, model?: Model, loading?: Promise<void>, failed?: boolean }} Item */
 /** @typedef {{ n: number, r: Uint16Array, x: Float32Array }} Strokes */
 
-const root = document.documentElement, wide = matchMedia('(min-width: 768px)');
+const root = document.documentElement, wide = matchMedia('(min-width: 768px) and (hover: hover)');   // ＝tailwind.config.js screens.pc：只有 PC 出右圖
 /** @type {HTMLCanvasElement | null} */ let canvas = null;
 /** @type {CanvasRenderingContext2D} */ let g;
 /** @type {Element | null} */ let shell = null;
@@ -213,7 +214,7 @@ export function initObject() {
   });
   c.addEventListener('pointerup', e => { if (drag && e.pointerType !== 'mouse' && !drag.moved) { reveal = !reveal; if (!reveal) hold = HOLD; report(); } endDrag(); });
   c.addEventListener('pointercancel', endDrag);
-  window.addEventListener('resize', sync);
+  wide.addEventListener('change', sync);   // 視窗跨過 768：右圖出／收
   new MutationObserver(() => { drawn = ''; report(); }).observe(root, { attributes: true, attributeFilter: ['lang', 'data-theme'] });   // 換語言＝名字換；換深淺色＝墨多的那一面反過來
 }
 

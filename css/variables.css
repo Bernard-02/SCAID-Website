@@ -85,8 +85,7 @@
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
   --logo-w: calc(100vw - 2 * var(--container-padding));   /* 全站 logo 寬（chrome.css .site-logo）：手機扣左右內距吃滿 */
-  --thumb-w: 2rem;              /* 手機內頁右緣的右圖縮圖鈕邊長（chrome.css .figure-btn） */
-  --rail-w: calc(var(--thumb-w) + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝縮圖鈕（page.css .page-body）；桌面走 grid＝0 */
+  --rail-w: calc(2rem + var(--spacing-gutter));   /* 手機內頁內文左右各讓出的寬：左＝段落導覽／返回鈕，右＝對稱留著（原本讓給右緣的右圖縮圖鈕，2026-11-23 鈕搬到底列右下角；page.css .page-body）；桌面走 grid＝0 */
 
   /* ===== Motion tokens（全站單一來源）=====
      duration：GSAP 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS transition 與 GSAP tween 同步

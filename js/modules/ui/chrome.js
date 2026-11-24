@@ -92,8 +92,8 @@ function openIntro(btn) {
   dialog.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); }, { once: true });
 }
 
-// 內頁的右圖＝殼上的 object 畫布（user 2026-11-22；object.js）。桌面：疊在當頁右圖那一格（page.css .page-figure）上；
-// 手機（user 2026-11-13 的縮圖鈕；2026-11-22 改成 object 可以打開、關閉）：畫面右緣中線上的鈕，點了開 dialog、把畫布搬進去，關掉搬回來。
+// 內頁的右圖＝殼上的 object 畫布（user 2026-11-22；object.js）。PC：疊在當頁右圖那一格（page.css .page-figure）上；
+// PC 以外（手機、iPad，user 2026-11-23；user 2026-11-13 的縮圖鈕，2026-11-22 改成 object 可以打開、關閉）：底列右下角的鈕（長得跟 menu 鈕一樣，user 2026-11-23；原本在畫面右緣中線上），點了開 dialog、把畫布搬進去，關掉搬回來。
 // 換頁（main.js initPageModules）、header 片段注入後都要 sync：畫布重找這一頁的那一格；該頁沒有右圖（首頁）＝鈕不現身
 const figureDialog = () => /** @type {HTMLDialogElement | null} */ (document.getElementById('figure-dialog'));
 export function syncFigure() {
@@ -104,7 +104,7 @@ export function syncFigure() {
   dialog.classList.remove('has-nav');
   syncObject();
 }
-/** 手機那顆鈕：開 dialog 看 object @param {MouseEvent} e */
+/** PC 以外那顆鈕：開 dialog 看 object @param {MouseEvent} e */
 function openObjectDialog(e) {
   const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
   if (!dialog || !box) return;

@@ -44,13 +44,10 @@ window.SCAIDHelpers = window.SCAIDHelpers || /** @type {SCAIDHelpersAPI} */ ({})
   setCursorVars();
   Helpers.refreshCursorVars = setCursorVars;
 
-  // 版型判斷唯一來源。gate＝矮橫向手機＋768–1023（iPad），沿用手機排版；CSS 無法共用 media query，改這串要同步 CSS。
+  // 版型判斷：只分手機／桌面，同 CSS 的 768（不分 iPad，user 2026-11-23；SCCD 那條 iPad／矮橫向手機的 gate 沒搬 CSS，拿掉）。
   // MediaQueryList 建一次重複讀（讀 innerWidth 會強制 layout）
-  Helpers.LANDSCAPE_GATE = '(orientation: landscape) and (max-height: 500px), (min-width: 768px) and (max-width: 1023px)';
   var _mqPortrait = window.matchMedia('(max-width: 767px)');
-  var _mqGate = window.matchMedia(Helpers.LANDSCAPE_GATE);
-  Helpers.isLandscapeGate = function () { return _mqGate.matches; };
-  Helpers.isMobileLayout = function () { return _mqPortrait.matches || _mqGate.matches; };
+  Helpers.isMobileLayout = function () { return _mqPortrait.matches; };
   Helpers.isDesktopLayout = function () { return !Helpers.isMobileLayout(); };
 
   // 輸入判斷跟版型分開：iPad 不論接不接鍵盤都回報 hover:none／pointer:coarse → 一律當觸控；觸控筆電主輸入是滑鼠＝桌面

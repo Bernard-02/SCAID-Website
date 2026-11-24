@@ -10,6 +10,9 @@ module.exports = {
   safelist: ['text-xs', 'text-s', 'text-md', 'text-lg'],
   theme: {
     extend: {
+      // pc:＝≥768 且有滑鼠（hover）：只有 PC 出右圖，PC 以外（手機、iPad…觸控）收成右緣那顆鈕（user 2026-11-23；版型照舊只分 md:）。JS 那份在 object.js
+      screens: { 'pc': { raw: '(min-width: 768px) and (hover: hover)' } },
+
       // cursor-* utility 吃自製游標（--cursor-* 由 js/utils/helpers.js setCursorVars 寫入 :root）
       cursor: Object.fromEntries(
         ['default', 'pointer', 'text', 'not-allowed', 'grab', 'grabbing', 'zoom-in', 'zoom-out', 'w-resize', 'e-resize']
