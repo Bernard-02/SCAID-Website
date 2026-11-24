@@ -42,4 +42,5 @@
   .icon-slideshow   { --icon: url('../website-icons/slideshow.svg'); --ar: 45.084 / 70; }   /* 作品頁的排法：放映／總覽 */
   .icon-grid        { --icon: url('../website-icons/grid.svg'); --ar: 45.084 / 70; }
   .icon-ig          { --icon: url('../website-icons/ig.svg'); --ar: 45.08 / 70; }   /* 聯絡頁的 Instagram（user 2026-11-24 給的 SCAID IG＝骨牌挖一個鏡頭） */
+  .icon-yt          { --icon: url('../website-icons/yt.svg'); --ar: 45.08 / 70; }   /* 聯絡頁的 YouTube（user 2026-11-24 給的，同 IG 的框：骨牌框裡一個播放三角），在 IG 右邊 */
 }
