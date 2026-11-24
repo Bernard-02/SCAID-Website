@@ -37,7 +37,7 @@ export async function loadItemListCms() {
     const s = SPEC[col];
     if (!s) continue;
     let rows;
-    try { rows = await fetchCmsJson(`${CMS_API_BASE}/${col}?filter[status][_eq]=published&sort=sort&limit=-1&fields=${s.fields},subtitles`); }
+    try { rows = await fetchCmsJson(`${CMS_API_BASE}/${col}?sort=sort&limit=-1&fields=${s.fields},subtitles`); }
     catch (e) { console.warn(`[${col}] 後台抓不到，維持示意：`, e instanceof Error ? e.message : e); continue; }
     // ponytail: 一筆都沒有＝後台還沒開始填，留示意；之後真的要整頁清空再改
     if (!Array.isArray(rows) || !rows.length || !lists[0].isConnected) continue;

@@ -20,23 +20,27 @@ const GAP = 2;   // 一圈的接縫（em），同底列跑馬燈（chrome.css .b
 const SPEED = 80;   // 每秒幾 px，同 SCCD 桌面（marqueeSpeed）；原本跟底列同速 2.5em/s（user 2026-11-23 嫌「只動一點」）
 /** 每行現在在跑的那一個（一直跑的，或停下來往回滑的） @type {WeakMap<HTMLElement, Animation>} */
 const runs = new WeakMap();
-const STROKE_W = 0.4;   // 直條寬（em，跟著那一行的字級）；高＝字高 1em（user 2026-11-22：以文字的高度為主、不用跟 logo 一樣）——標題折行＝整塊的高（user 2026-11-23）
+const STROKE_W = 0.4;   // 直條寬（em，跟著那一行的字級）；高＝字高 1em（user 2026-11-22：以文字的高度為主、不用跟 logo 一樣）（清單列＝一列一根、比較高那塊的高：edgeBar）
 // 中文字右邊燒在字體裡的字距（em；＝scripts/build-fonts.py TRACKING ÷ 1000，重切字體改了那個數字這裡跟著改）：帶與直條算到字本身的右緣、不含這段
 // （user 2026-11-23：「精確到這個文字 box 的最右緣」「去掉 hover 時最後一個字的字距」）。英數走 JetBrains Mono、沒有加字距
 const TRACK = 0.205;
+/** 量字的筆畫有多低（textLines：「蓋」的帶要蓋住 g、j、y 的腳） */
+const pen = /** @type {CanvasRenderingContext2D} */ (document.createElement('canvas').getContext('2d'));
 // ponytail: 只認 BMP 的中日韓區段＝走中文字體的字（含中文標點）；fallback 到中文字體的其他符號（★…）不扣，真的看到再加區段
 const CJK = /[⺀-鿿豈-﫿︰-﹏＀-￯]/;
 // 蓋黑收直條的列：整列連結、摺疊（清單列的摺疊：動態、課程、常見問題…）、選單的選項（user 2026-11-22：選單的 hover 比照清單；選中的那項 CSS 常駐直條，strike 跳過）、
 // 首頁展開的動態（一則＝li、hover 整則；user 2026-11-23：「hover news title 時也要加上我們設定的 hover 效果」）、
 // 內頁的連結（連結清單＝網站地圖、姊妹系所、入學附件，404 的回首頁，聯絡頁的社群、email；user 2026-11-23，原本圓點）、
 // 首頁底列的動態（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」）
-const ROWS = 'a.item-row, .page-body summary, .site-menu :is(.nav-link, .lang-btn, .theme-btn), .home-news-list li, .page-body :is(.nav-link, .footer-body a), .bar-news';
+const ROWS = 'a.item-row, .page-body summary, .site-menu :is(.nav-link, .lang-btn, .theme-btn), .site-bar .bar-lang, .home-news-list li, .page-body :is(.nav-link, .footer-body a), .bar-news';
 /** 帶／直條插在哪、照誰的框擺：底列的動態＝軌道（展開時跟它一起淡掉；放不下的字在軌道裡面那層切，欄外的直條才看得到，chrome.css），其他＝列本身
  * @param {Element} row */
 const hostOf = (row) => row.querySelector(':scope > .bar-news-track') || row;
-const HOLD = 1000;   // 定位後閃一下（flash）：直條停多久才淡掉（ms）
-/** 有直條的列（hover／聚焦著，或摺疊開著）：插進去的帶（收完就是直條）、正在跑的動畫、收完了沒（收完的字變了要跟著重排）、
- * 跑到一半游標就離開了（leave：照樣跑完、但收到沒有＝不留直條）、收的那段正在跑時改終點（aim：照 leave 對準直條或 0）
+const HOLD = 1000;   // 定位後閃一下（flash）：直條停多久才切掉（ms）
+// 帶收完、游標還在，再等多久才出直條（ms；user 2026-11-24：「其他 list 的 delay 改成 0.2s 即可」，接著選單也是；原本選單 0.5 秒）
+const WAIT = 200;
+/** 有直條的列（hover／聚焦著，或摺疊開著）：插進去的帶與直條、正在跑的動畫、做完了沒（做完的字變了要跟著重排）、
+ * 游標離開了（leave：還在跑＝照樣跑完、做完時不出／切出去）、直條切出去的途中改終點（aim：游標回來／又走，照 leave 切回整根或切到沒有）
  * @typedef {{ bands: HTMLElement[], anims: Animation[], settled: boolean, leave: boolean, aim: (() => void) | null }} Strike
  * @type {Map<Element, Strike>} */
 const striking = new Map();
@@ -67,9 +71,9 @@ export const remeasure = schedule;
 
 /** 列裡的字一行一段，相對列的框：左緣 x、字的上緣 y（字高 1em、對在字的正中）、字高 h、字尾 end、字級 fs；依元素分組（標題／問題、各個副標）。
  * 副標一行不折：跑馬燈的 text-indent 走到哪都只算框裡那段，放不下＝到框的右緣；會折行的內文（首頁動態的摘要、內頁的連結）＝一行一段、直條只在最後一行；
- * 清單列的標題折行＝整塊一段（第一行的上緣到最後一行的下緣、最寬那行的字尾；user 2026-11-23：兩行字不是兩個遮罩）；首頁動態的標題也是。
+ * 標題折行也是一行一段＝一行一條帶（user 2026-11-24：「改成一行一個遮罩好了，不需要一起做一個大的遮罩」；11-23 是整塊一段）。
  * 給報讀的字（.sr-only）不算；沒有字的（選單的深色模式鈕只有圖示）＝那顆圖示當成一行、連圖示都沒有（社群方框）＝整個框
- * @param {Element} row @returns {{ x: number, y: number, h: number, end: number, fs: number }[][]} */
+ * @param {Element} row @returns {{ x: number, y: number, h: number, end: number, fs: number, ink: number, top: number }[][]} */
 function textLines(row) {
   const o = hostOf(row).getBoundingClientRect(), range = document.createRange();
   // 首頁的動態：標題、摘要各一組（有摘要＝p 裡兩個 span.block，cms-pages.js homeNews）、第一組是標題；摘要折行＝一行一段
@@ -78,15 +82,20 @@ function textLines(row) {
     : news ? [...row.querySelectorAll('p')].flatMap(p => p.children.length ? [...p.children] : [p])
     : row.matches('.bar-news') ? [...row.querySelectorAll('.bar-news-copy > .is-current')]   // 底列：只有正在顯示的那則（其他則疊在同一格、藏著）
     : [row];
-  return els.map((el, k) => {
+  return els.map((el) => {
     const line = /** @type {HTMLElement} */ (el), r = line.getBoundingClientRect(), cs = getComputedStyle(line);
     const lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize);
+    // 字的筆畫上下緣（g、j、y 的腳；user 2026-11-24：「hover 時的那個 box，應該要將文字的 g、j、y 這樣的也覆蓋到」；
+    // 中文的頂同一天：「這個遮罩，在中文字體上也會有之前設定的 gyj 類似的問題」——中文字比 1em 的帶高、頂會露出來）：canvas 量每個字往基線上、下伸多少，
+    // 基線＝字框頂＋主字型的 ascent（Range 量到的字框＝主字型 JetBrains Mono 的 ascent＋descent，上 1.02、下 0.3：1em 的帶對在正中只蓋到基線上 0.86、下 0.14em）
+    pen.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const asc = pen.measureText('x').fontBoundingBoxAscent;
     // 字尾不超出框（放不下的那幾行）；用框的寬不用 clientWidth：行內元素（選單的選項）clientWidth 是 0、有框線的（社群方框）會少掉框線。
     // 底列的動態：框＝欄（那則放不下＝比欄寬、在跑馬燈＝同副標放不下：帶到欄的右緣、直條在欄外）
     const box = line.matches('.bar-news-copy > *') ? /** @type {Element} */ (line.parentElement).getBoundingClientRect() : null;
     const left = box ? box.left : r.left + parseFloat(cs.paddingLeft), right = box ? box.right : r.right - parseFloat(cs.paddingRight);
     const clipped = line.classList.contains(box ? 'is-long' : 'is-clipped');
-    /** @type {{ x: number, y: number, h: number, end: number, fs: number }[]} */
+    /** @type {{ x: number, y: number, h: number, end: number, fs: number, ink: number, top: number }[]} */
     const lines = [];
     const texts = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);   // 只量字：插在列裡的帶（span）不算
     for (let n = texts.nextNode(); n; n = texts.nextNode()) {
@@ -100,18 +109,18 @@ function textLines(row) {
         if (!q.width) continue;
         // 第幾行（照行高分）；字高 1em 對在字的正中（行內的選項框只有字那麼高，不能拿框頂加半個行距算）
         const cy = q.top + q.height / 2, i = Math.max(0, Math.floor((cy - r.top) / lh));
-        const b = lines[i] ??= { x: Infinity, y: cy - fs / 2 - o.top, h: fs, end: -Infinity, fs };
+        const b = lines[i] ??= { x: Infinity, y: cy - fs / 2 - o.top, h: fs, end: -Infinity, fs, ink: -Infinity, top: Infinity };
         b.x = Math.min(b.x, q.left);
         b.end = Math.max(b.end, q.right - (CJK.test(s[k]) ? TRACK * fs : 0));
+        const m = pen.measureText(s[k]), base = q.top + asc - o.top;
+        b.ink = Math.max(b.ink, base + m.actualBoundingBoxDescent);   // 這一行字最低的筆畫、最高的筆畫（「蓋」的帶要蓋到這裡，strike）
+        b.top = Math.min(b.top, base - m.actualBoundingBoxAscent);
       }
     }
     // 沒有字：圖示當那一行（選單的深色模式鈕）；連圖示都沒有＝整個框（聯絡頁的社群方框）
     const icon = lines.length ? null : line.querySelector(':scope > .icon') ?? (line === row ? line : null);
-    if (icon) { const q = icon.getBoundingClientRect(); lines.push({ x: q.left, y: q.top - o.top, h: q.height, end: q.right, fs: q.height }); }
-    const out = lines.filter(Boolean).map(b => ({ ...b, x: Math.max(b.x, left) - o.left, end: (clipped ? right : Math.min(b.end, right)) - o.left }));
-    if (out.length < 2 || !(line.matches('.item-row :is(h1, h3)') || (news && !k))) return out;
-    const last = out[out.length - 1];   // 標題折行＝整塊一段
-    return [{ x: Math.min(...out.map(b => b.x)), y: out[0].y, h: last.y + last.h - out[0].y, end: Math.max(...out.map(b => b.end)), fs }];
+    if (icon) { const q = icon.getBoundingClientRect(); lines.push({ x: q.left, y: q.top - o.top, h: q.height, end: q.right, fs: q.height, ink: -Infinity, top: Infinity }); }
+    return lines.filter(Boolean).map(b => ({ ...b, x: Math.max(b.x, left) - o.left, end: (clipped ? right : Math.min(b.end, right)) - o.left }));
   }).filter(ls => ls.length);
 }
 /** 一條帶／直條（插進列裡、相對列的框） @param {{ x: number, y: number, w: number, h: number }} r */
@@ -122,23 +131,56 @@ function band(r) {
   Object.assign(s.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
   return s;
 }
-/** 直條的位置：每組（標題、各個副標；問題）最後一段的字尾後面隔一根直條寬，寬 STROKE_W（em）、高＝那一段的高（字高；折行的標題＝整塊）
+/** 直條貼在列的最右緣的（user 2026-11-24：「stroke 的位置是這個 box 的最右緣」）：清單列、摺疊、首頁展開的動態——
+ * 右邊都讓出了 --row-pad（page.css；首頁動態 home.css），直條落在那一段裡。其他（選單——user 2026-11-24：「stroke 的位置是跟在文字後面」、
+ * 內頁的連結清單——網站地圖、聯絡頁姊妹系所、入學附件，user 同一天：「網站地圖的 stroke 位置，比照 menu 的」、
+ * 底列的動態、聯絡頁的社群／email）照舊在字尾後面 */
+const EDGE = 'a.item-row, .page-body summary, .home-news-list li';
+/** 直條（選單、底列的動態、社群／email）：每組（標題、各個副標）最後一段的字尾後面隔一根直條寬，寬 STROKE_W（em）、高＝那一段的高（字高）
  * @param {{ x: number, y: number, h: number, end: number, fs: number }[]} g */
 const bar = (g) => { const b = g[g.length - 1], sw = b.fs * STROKE_W; return { x: b.end + sw, y: b.y, w: sw, h: b.h }; };
-/** 收完的樣子：每組一根直條 @param {Element} row */
-const strokes = (row) => textLines(row).map(g => band(bar(g)));
+/** 縮圖裡看得到的圖（user 2026-11-24：「stroke 的高度應該是看內容的高度，而不是 box 的高度」）：圖 contain 在固定的框裡（page.css .item-thumb img、
+ * home.css 桌面）＝<img> 撐滿整個框、圖本身比較矮 → 照原比例與 object-position 算圖實際的上下。沒圖（灰底佔位）、還沒載好、cover／國旗＝框本身
+ * @param {Element | null} box @returns {{ top: number, height: number } | null} */
+const picRect = (box) => {
+  if (!box) return null;
+  const img = box.matches('img') ? box : box.querySelector('img');
+  if (!(img instanceof HTMLImageElement) || !img.naturalWidth || getComputedStyle(img).objectFit !== 'contain') return box.getBoundingClientRect();
+  const r = img.getBoundingClientRect(), h = Math.min(r.height, r.width * img.naturalHeight / img.naturalWidth);
+  const v = getComputedStyle(img).objectPosition.split(' ')[1] ?? '50%';
+  return { top: r.top + (r.height - h) * (({ top: 0, center: 0.5, bottom: 1 })[v] ?? parseFloat(v) / 100), height: h };
+};
+/** 清單列（EDGE）的直條：一列一根、貼在列的最右緣（user 2026-11-24：「出現的時候拿 title 的寬度，然後是 box 的高度（看哪個元素比較高，
+ * 如果是文字則根據文字的高度，如果是圖片則是圖片）」）：寬＝標題的直條寬（標題字級 × STROKE_W）；高＝比較高的那一塊——
+ * 文字（標題第一行的上緣到最後一行的下緣，字高）或縮圖裡看得到的圖（picRect），上下也對齊那一塊
+ * @param {Element} row @param {{ x: number, y: number, h: number, end: number, fs: number }[][]} groups */
+const edgeBar = (row, groups) => {
+  const o = hostOf(row).getBoundingClientRect(), all = groups.flat(), sw = groups[0][0].fs * STROKE_W;
+  let y = Math.min(...all.map(b => b.y)), h = Math.max(...all.map(b => b.y + b.h)) - y;
+  const pic = picRect(row.querySelector('.item-thumb, .home-news-box'));
+  if (pic && pic.height > h) { y = pic.top - o.top; h = pic.height; }
+  return { x: o.width - sw, y, w: sw, h };
+};
+/** 收完的樣子：清單列一根（edgeBar）、其他每組一根（bar）；標 phase＝stroke：重排換上的那組也認得出是直條、不是帶 @param {Element} row */
+const strokes = (row) => {
+  const groups = textLines(row);
+  const rs = row.matches(EDGE) && groups.length ? [edgeBar(row, groups)] : groups.map(bar);
+  return rs.map(r => { const s = band(r); s.dataset.phase = 'stroke'; return s; });
+};
 
 /** 蓋黑收直條（user 2026-11-22）：每行字先被一條字高的帶蓋住（左 → 右長出來），長完一起往右收到字尾、沒有了——標題、每個副標；
- * 帶收完、游標還在，直條才在它自己的位置（bar）淡出來（user 2026-11-23：「stroke 應該要等前面的遮罩做完才出現」「改成 fade 出來」）；一行一段的那種折行時，前幾行沒有直條。
- * 清單列的標題折行＝整塊一條帶、直條跟整塊一樣高（user 2026-11-23：「如果是兩行文字，就不是兩個遮罩」；textLines）。
- * 直條留著的時候（hover 著、摺疊開著）不重做；離開又沒開著＝unstrike 直接拿掉。只有 PC（觸控照舊圓點，page.css）；減少動態＝直接出直條。
- * 一 hover 到就整段做完（user 2026-11-22：不管游標有沒有一直停在上面）：跑到一半離開＝帶照樣跑完，但直條不出來、不留
- * （user 2026-11-22：「如果我沒有停在 item 上的話，它這個動畫就不需要有那個 stroke」）；跑完前又回來＝照樣淡出直條、留著
+ * 帶收完、游標還在，再等 WAIT（0.2 秒）、還在才在直條自己的位置從左到右切出來（clip，user 2026-11-24：「stroke 的進場是用 clip 不是 fade」；清單＝列的最右緣一根、標題的寬、比較高那塊的高：edgeBar；選單＝字尾後面：bar）（user 2026-11-24：「回到原本的設計，stroke 出來的 timing 改成 0.5s 之後出現，
+ * 如果 cursor 有繼續留在 item 上的話」；原本 11-23 是帶收完就淡出來，11-24 中間一版是直條跟帶的「蓋」同時切出來）；出場＝從左往右切出去（clipOut；user 2026-11-24：「stroke 離開的時候，改成 clip 的出去，不是用 fade」，同一天先做成淡出）。
+ * 程式叫的（always：首頁定位後閃一下 flash、入學頁 deep link 的 hover）不等那 0.5 秒。選單同這一套、只是直條在字尾後面（bar；user 2026-11-24）。
+ * 折行＝一行一條帶（標題也是，user 2026-11-24）；選單這類每組一根直條的，前幾行沒有直條。
+ * 直條留著的時候（hover 著、摺疊開著）不重做；離開又沒開著＝unstrike 切出去。只有 PC（觸控照舊圓點，page.css）；減少動態＝直接出直條、直接拿掉。
+ * 一 hover 到帶就整段做完（user 2026-11-22：不管游標有沒有一直停在上面）：帶收完或等完時游標已經走了＝不出直條（user 2026-11-22：
+ * 「如果我沒有停在 item 上的話，它這個動畫就不需要有那個 stroke」）；跑到一半離開又回來＝照樣出
  * @param {Element} row @param {string} easing @param {boolean} [always] 觸控也做（定位後閃一下＝flash，不是 hover）
- * @returns {Promise<void> | undefined} 直條出來了（或沒出來、拿掉了）；沒做＝undefined */
+ * @returns {Promise<void> | undefined} 做完了（直條留著或拿掉了）；沒做＝undefined */
 function strike(row, easing, always = false) {
   const cur = striking.get(row);
-  if (cur) { cur.leave = false; cur.aim?.(); return; }   // 跑到一半離開又回來＝照樣淡出直條、留著
+  if (cur) { cur.leave = false; cur.aim?.(); return; }   // 跑到一半離開又回來＝做完時直條留著
   if ((!always && !window.SCAIDHelpers.canHover()) || row.matches('.active')) return;   // 選單選中的那項：CSS 已經有直條（chrome.css）
   const groups = textLines(row);
   if (!groups.length) return;
@@ -150,45 +192,59 @@ function strike(row, easing, always = false) {
   // 直條是另一條、左緣就在直條那一格——帶不跨過字尾後面的間隔（user 2026-11-23：「嚴格來說全部都是到文字 box 的右邊緣，
   // 如果是判斷有懸浮的話，應該是在原本應該出現的 stroke 位置 clip 出現」；原本是帶露出來的那段一路滑到直條那一格）
   const OPEN = 'inset(0px 0px 0px 0px)';
-  const covers = groups.flat().map(b => ({ s: band({ x: b.x, y: b.y, w: b.end - b.x, h: b.h }), w: b.end - b.x }));
+  // 往上、往下蓋到最高、最低的筆畫（中文字的頂、g、j、y 的腳；textLines top／ink），再多一個實體像素＝筆畫邊上反鋸齒的那一圈也蓋到
+  // （user 2026-11-24 截圖：中文字頂只超出字高 0.2px，放大看是一排細細的邊露在帶的上緣）
+  const px = 1 / devicePixelRatio;
+  const covers = groups.flat().map(b => { const y = Math.min(b.y, b.top - px); return { s: band({ x: b.x, y, w: b.end - b.x, h: Math.max(b.y + b.h, b.ink + px) - y }), w: b.end - b.x }; });
   run.bands = covers.map(c => c.s);
   hostOf(row).prepend(...run.bands);   // 放最前面：.item-row:has(> .item-thumb) > :last-child 那條要的還是文字那欄
-  const dur = DUR.fast * 1000, t = { duration: dur, easing }, finished = () => Promise.all(run.anims.map(a => a.finished));
-  const alive = () => striking.get(row) === run;
+  const dur = DUR.fast * 1000, t = { duration: dur, easing }, alive = () => striking.get(row) === run;
   run.anims = covers.map(c => c.s.animate({ clipPath: [`inset(0px ${c.w}px 0px 0px)`, OPEN] }, { ...t, fill: 'forwards' }));   // 蓋
-  return finished().then(() => {
+  /** 直條：在自己那一格從左到右切出來（clip，同帶的「蓋」：同一段時間、同一條曲線；user 2026-11-24：「stroke 的進場是用 clip 不是 fade」），
+   * 照現在的字擺；游標已經走了＝不出；切的途中走了＝切完再切出去（clipOut） */
+  const appear = () => {
+    if (!alive()) return;
+    if (run.leave) { drop(row); return; }
+    run.bands = strokes(row);
+    hostOf(row).prepend(...run.bands);
+    run.anims = run.bands.map(s => s.animate({ clipPath: [`inset(0px ${parseFloat(s.style.width)}px 0px 0px)`, OPEN] }, { ...t, fill: 'forwards' }));
+    return Promise.all(run.anims.map(a => a.finished)).then(() => {
+      if (!alive()) return;
+      relay(row);   // 換成乾淨的直條
+      if (run.leave) return clipOut(row, run);
+    });
+  };
+  return Promise.all(run.anims.map(a => a.finished)).then(() => {
     if (!alive()) return;
     // 收：帶收到字尾、沒有了（游標在不在都一樣）
     const cover = run.anims;
     run.anims = covers.map(c => { c.s.dataset.phase = 'out'; return c.s.animate({ clipPath: [OPEN, `inset(0px 0px 0px ${c.w}px)`] }, { ...t, fill: 'forwards' }); });
     cover.forEach(a => a.cancel());   // 蓋的那段停在終點（fill）是為了接得上；收的接手了就收掉
-    return finished();
+    return Promise.all(run.anims.map(a => a.finished));
   }).then(() => {
     if (!alive()) return;
-    if (run.leave) { drop(row); return; }   // 游標已經走了：不出直條，拿掉
-    // 直條：帶收完、游標還在才在自己那一格淡出來（user 2026-11-23：「hover 的 stroke 改成 fade 出來」；原本從左往右長出來）。
-    // 收完的帶先拿掉：clip 切到寬 0 在 WebKit 會留一條細線
+    // 收完的帶拿掉（clip 切到寬 0 在 WebKit 會留一條細線）；游標還在＝再等一下（WAIT）才出直條（程式叫的不等）
     run.anims.forEach(a => a.cancel());
     run.bands.forEach(s => s.remove());
-    run.bands = groups.map(g => band(bar(g)));
-    run.bands.forEach(s => { s.dataset.phase = 'stroke'; });
-    hostOf(row).prepend(...run.bands);
-    return fadeStroke(row, run, 0);
+    run.anims = []; run.bands = [];
+    if (run.leave) { drop(row); return; }
+    return always ? appear() : new Promise(r => setTimeout(r, WAIT)).then(appear);
   }).catch(() => {});   // 換頁把帶拿掉、動畫被取消
 }
-/** 直條淡到 run.leave 決定的那一端（leave＝沒有、不然＝有），淡完拿掉、或換成乾淨的直條（同一個位置、同一個大小）：
- * 只有透明度、不帶模糊（user 2026-11-23：「不要有 blur 的效果」＝網站「每個 fade 都帶模糊」的例外），時長、曲線同 --transition-fade。
- * 淡到一半改主意（游標走了／回來）＝aim：從現在的樣子、用剩下的時間淡到新的終點（同一個 Animation，finished 照常等得到）
- * @param {Element} row @param {Strike} run @param {number} from 起點的透明度 */
-function fadeStroke(row, run, from) {
-  const fade = DUR.fade * 1000, easing = getComputedStyle(document.documentElement).getPropertyValue('--ease-standard').trim() || 'ease';
-  const end = () => ({ opacity: run.leave ? 0 : 1 });
+/** 直條出場：從左往右切掉（clip，同帶的「收」：DUR.fast、wipe 曲線、不淡；user 2026-11-24：「stroke 離開的時候，改成 clip 的出去，不是用 fade」；
+ * 原本淡出）。直條的出場都走這裡（離開 unstrike、切進來的途中游標就走了 strike、flash 停完）；切完拿掉。
+ * 切到一半游標回來＝aim：從現在的樣子、用剩下的時間切回整根、留著（同一個 Animation，finished 照常等得到），切回來後換成乾淨的直條
+ * @param {Element} row @param {Strike} run */
+function clipOut(row, run) {
+  const dur = DUR.fast * 1000;
+  /** @param {HTMLElement} s */
+  const end = (s) => ({ clipPath: run.leave ? `inset(0px 0px 0px ${parseFloat(s.style.width)}px)` : 'inset(0px 0px 0px 0px)' });
   run.settled = false;
-  run.anims = run.bands.map(s => s.animate([{ opacity: from }, end()], { duration: fade, easing, fill: 'forwards' }));
+  run.anims = run.bands.map(s => s.animate([{ clipPath: 'inset(0px 0px 0px 0px)' }, end(s)], { duration: dur, easing: wipe, fill: 'forwards' }));
   run.aim = () => run.anims.forEach((a, k) => {
-    const e = /** @type {KeyframeEffect} */ (a.effect);
-    e.setKeyframes([{ opacity: getComputedStyle(run.bands[k]).opacity }, end()]);
-    e.updateTiming({ duration: Math.max(1, fade - (Number(a.currentTime) || 0)) });
+    const e = /** @type {KeyframeEffect} */ (a.effect), s = run.bands[k];
+    e.setKeyframes([{ clipPath: getComputedStyle(s).clipPath }, end(s)]);
+    e.updateTiming({ duration: Math.max(1, dur - (Number(a.currentTime) || 0)) });
     a.currentTime = 0;
   });
   return Promise.all(run.anims.map(a => a.finished)).then(() => {
@@ -207,12 +263,14 @@ function relay(row) {
   run.settled = true;
   hostOf(row).prepend(...run.bands);
 }
-/** 離開那一列（又沒開著）：直條直接拿掉（不淡，user 2026-11-22）；還在跑＝照樣跑完、但收到沒有（strike） @param {Element} row */
+/** 離開那一列（又沒開著）：直條切出去（clipOut；user 2026-11-24，原本淡出、更早直接拿掉）；
+ * 還在跑＝照樣跑完、做完時不出／切出去（strike）；正在切出去又回來又走＝改切到沒有（aim）。減少動態＝直接拿掉 @param {Element} row */
 function unstrike(row) {
   const run = striking.get(row);
   if (!run) return;
-  if (!run.settled) { run.leave = true; run.aim?.(); return; }
-  drop(row);
+  run.leave = true;
+  if (!run.settled) { run.aim?.(); return; }
+  if (prefersReducedMotion()) drop(row); else clipOut(row, run);
 }
 /** 帶／直條整組拿掉 @param {Element} row */
 function drop(row) {
@@ -222,7 +280,7 @@ function drop(row) {
   run.anims.forEach(a => a.cancel());
   run.bands.forEach(s => s.remove());
 }
-/** 定位後閃一下（首頁點底列的動態、展開定位到那則；chrome.js openNewsAt）＝同 hover 的蓋黑收直條，直條停一下（HOLD）就淡掉
+/** 定位後閃一下（首頁點底列的動態、展開定位到那則；chrome.js openNewsAt）＝同 hover 的蓋黑收直條，直條停一下（HOLD）就切掉
  * （user 2026-11-23：「highlight 是指我 hover 的效果，不是新的」「title 也會有 stroke，但就是停留一下就 fade out」）。
  * 觸控也閃（不是 hover）；中間游標移上去＝照 hover 的規矩（直條留著、離開直接拿掉） @param {Element} row */
 export function flash(row) {
@@ -231,8 +289,29 @@ export function flash(row) {
   done?.then(() => new Promise(r => setTimeout(r, HOLD))).then(() => {
     if (!run || striking.get(row) !== run || !run.settled || row.matches(':hover')) return;
     run.leave = true;
-    if (prefersReducedMotion()) drop(row); else fadeStroke(row, run, 1);
+    if (prefersReducedMotion()) drop(row); else clipOut(row, run);
   });
+}
+
+/** 程式叫的 hover：不管游標在不在都跑完整段（蓋 → 收 → 直條），回傳做完的 Promise；做完直條留著。
+ * 入學頁的 deep link 先做完這個才打開那一則（cms-pages.js newsList；user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」）
+ * @param {Element} row */
+export function hover(row) { return strike(/** @type {HTMLElement} */ (row), wipe, true) || Promise.resolve(); }
+
+/** 觸控（沒有 hover）打開摺疊：不做 hover 的蓋黑收，直條直接切出來（同 appear 的 clip）、開著就留著——
+ * 當成「這一則打開了」的標記（user 2026-11-24：「在手機上打開 accordion，不需要做 hover 的效果，但需要有 list active 的效果」）；
+ * 收起來同桌機：縮的途中切出去（page.css .is-closing）、拿掉 open 那一刻拿掉 @param {Element} row */
+function activate(row) {
+  if (striking.has(row)) return;
+  const bands = strokes(row);
+  if (!bands.length) return;
+  /** @type {Strike} */
+  const run = { bands, anims: [], settled: false, leave: false, aim: null };
+  striking.set(row, run);
+  hostOf(row).prepend(...bands);
+  if (prefersReducedMotion()) { run.settled = true; return; }
+  run.anims = bands.map(s => s.animate({ clipPath: [`inset(0px ${parseFloat(s.style.width)}px 0px 0px)`, 'inset(0px 0px 0px 0px)'] }, { duration: DUR.fast * 1000, easing: wipe, fill: 'forwards' }));
+  Promise.all(run.anims.map(a => a.finished)).then(() => { if (striking.get(row) === run) relay(row); }).catch(() => {});
 }
 
 /** 開始跑（停到一半又進來＝從現在的位置接著跑） @param {HTMLElement} line */
@@ -295,12 +374,19 @@ export function initItemMarquee() {
     if (hit && !hit.matches(':hover') && !openFold(hit)) unstrike(hit);
   });
   // 摺疊打開＝直條留著（user 2026-11-22：手風琴打開時 stroke 要留在畫面上）；收起來（開別則時被一起收也是）又沒 hover／聚焦著＝拿掉。
-  // toggle 不冒泡 → capture；accordion.js 縮完才拿掉 open（toggle 那時才來），縮的途中先由 CSS 藏（page.css .is-closing）
+  // toggle 不冒泡 → capture；accordion.js 縮完才拿掉 open（toggle 那時才來），縮的途中 CSS 先把直條切掉（page.css .is-closing；user 2026-11-24）
   main.addEventListener('toggle', (e) => {
     const d = e.target, s = d instanceof HTMLDetailsElement ? d.querySelector(':scope > summary') : null;
-    if (!(d instanceof HTMLDetailsElement) || !s?.matches(ROWS)) return;
-    if (d.open) strike(s, wipe); else if (!s.matches(':hover') && !s.matches(':focus-visible')) unstrike(s);
+    if (!(d instanceof HTMLDetailsElement && d.open && s?.matches(ROWS))) return;
+    if (window.SCAIDHelpers.canHover()) strike(s, wipe); else activate(s);   // 觸控：不做 hover，直條直接切出來
   }, true);
+  // 收起來＝拿掉 open 的那一刻就拿掉（縮的途中已經切完了，page.css .is-closing）。用 MutationObserver＝同一幀、畫之前：
+  // 等 toggle（下一個 task）的話，accordion.js 拿掉 open 時一起拿掉 .is-closing＝直條會先閃回來一幀。
+  // 觸控：點完 :hover／:focus-visible 會黏在那一列上，不看它們（不然收起來直條還在）
+  new MutationObserver(recs => recs.forEach(r => {
+    const d = r.target, s = d instanceof HTMLDetailsElement && !d.open ? d.querySelector(':scope > summary') : null;
+    if (s?.matches(ROWS) && (!window.SCAIDHelpers.canHover() || (!s.matches(':hover') && !s.matches(':focus-visible')))) drop(s);
+  })).observe(main, { attributes: true, attributeFilter: ['open'], subtree: true });
   // 自己插／拿的帶不算：不然重排直條又觸發重量，停不下來（圖片上的中空板畫布也是插在列裡，thumb-board.js）。
   // 看整個 body：選單（殼）換語言時選項的字也會變，hover 著的直條要跟著搬
   const ours = (/** @type {MutationRecord} */ r) => r.type === 'childList' && [...r.addedNodes, ...r.removedNodes].every(n => n instanceof Element && n.matches('.item-cover, .thumb-board'));

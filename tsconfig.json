@@ -10,7 +10,7 @@
     "noImplicitAny": false,
     "strictNullChecks": false,
     "resolveJsonModule": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"]
+    "lib": ["ES2020", "ES2021.Intl", "DOM", "DOM.Iterable"]
   },
   "include": [
     "js/**/*.js",

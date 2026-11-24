@@ -46,14 +46,26 @@
   @media (min-width: 768px) {
     .home-news-list > ul { width: var(--col-w); margin: 0 auto; }
   }
-  .home-news-box {
+  .home-news-box {   /* 手機：圖在上、標題在下（user 2026-11-24；原本標題在上）。不加框（user 2026-11-24） */
     aspect-ratio: 3 / 1;
-    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
     background: var(--light-gray);
-    border: 1px solid currentColor;
     overflow: hidden;
   }
   .home-news-box img { display: block; width: 100%; height: 100%; object-fit: cover; }   /* 後台那則的圖（cms-pages.js）；沒圖＝灰底 */
+  /* 字＝同清單列的標題（page.css .item-row h3）：Medium。只有標題（user 2026-11-24 後台拿掉了說明＝摘要） */
+  .home-news-list p { font-weight: var(--font-weight-medium); }
+  .home-news-list p { padding-right: calc((var(--spacing-gutter) + 0.5rem) / 2); }   /* 右邊讓出 hover 直條的位置（直條在一則的最右緣，item-marquee.js EDGE；同 page.css --row-pad） */
+  /* PC＝同內頁的清單列（user 2026-11-24：「首頁的 news 應該跟其他頁面的 list 長得一樣」）：左縮圖＝內頁清單的縮圖一樣大（--item-thumb-w；
+     user 2026-11-24：「圖片應該是 list 的那個大小，但要縮短文字的 box 寬度」＝清單總寬照舊 --col-w、文字那欄跟著窄），
+     隔一個 gutter 右文字、文字上下對在圖的正中；圖照原比例 contain 在方框的正中（同 page.css .item-thumb img：user 2026-11-24「讓裏面的圖片 center 這個 box」，原本貼左；框不跟著圖變大小）。
+     後台沒有圖＝不放圖框（cms-pages.js homeNews；user 2026-11-24）＝那則只有字、不排兩欄。li 裡有連結＝排的是那個 a */
+  @media (min-width: 768px) {
+    .home-news-list > ul { gap: var(--spacing-xl); }   /* 列與列之間同 .item-list */
+    .home-news-list :is(li:has(> .home-news-box), li > a:has(> .home-news-box)) { display: grid; grid-template-columns: var(--item-thumb-w) minmax(0, 1fr); gap: var(--spacing-gutter); align-items: center; }
+    .home-news-box { aspect-ratio: 1; margin-bottom: 0; background: none; }
+    .home-news-box img { object-fit: contain; object-position: center; }
+  }
 }
 
 /* 首頁動態清單進場：從畫面底緣升到定位（清單定位後的上緣＝--top-h）、同時淡入；退場反過來滑到畫面底緣以下、同時淡出 */
