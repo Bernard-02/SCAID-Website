@@ -35,9 +35,10 @@ const lastEnBottom = (/** @type {any} */ pg, /** @type {string} */ file) => pg.e
 /** 這一頁在英文版時的 --logo-vb-h（只換 <html lang>、馬上換回來） @param {any} pg */
 const enVbH = (pg) => pg.evaluate(() => { const h = document.documentElement, l = h.lang; h.lang = 'en'; const v = parseFloat(getComputedStyle(h).getPropertyValue('--logo-vb-h')); h.lang = l; return v; });
 const STROKE_VB_H = 70;   // stroke 的高（variables.css --logo-stroke-vb-h）；2026-11-22 起 stroke 是 logo.js 排的直條（.logo-bars）、不是一張圖
-const PAGES = ['contact', 'about', 'partners', 'faculty', 'curriculum', 'works', 'news', 'records', 'press', 'admission', 'qa', 'donate', 'regulations', 'sitemap'];
+const PAGES = ['contact', 'about', 'partners', 'faculty', 'curriculum', 'works', 'activities', 'records', 'press', 'admission', 'qa', 'donate', 'regulations', 'sitemap'];
 const fails = [], errors = [];
-const assert = (c, msg) => { if (!c) fails.push(msg); };
+// 進度寫到 stderr（SMOKE_PROGRESS=1）：卡住時看得出停在哪一條（page.evaluate 裡的 Promise 沒有逾時，等不到就一直等）
+const assert = (c, msg) => { if (!c) fails.push(msg); if (process.env.SMOKE_PROGRESS) process.stderr.write(`${c ? 'ok' : 'FAIL'} ${String(msg).slice(0, 80)}\n`); };
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 const BG_JS = /modules\/ui\/bg\.js/;
 // 背景與清單圖片 hover 的中空板先關掉（user 2026-11-23）：照 main.js 的 DECOR 決定測不測；關著＝只守「真的沒有」
@@ -75,7 +76,7 @@ const watch = async (page, { logo = false } = {}) => {
   // 假 Directus footer 單例（後台網域還是 placeholder，不接會 DNS 失敗）
   return stub.then(() => page.route(/\/items\/footer/, r => r.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, json: { data: {
     email: 'cms@example.com', tel: '02 1111 1111', fax: null, address_zh: '後台地址（示意）', address_en: null,
-    social: [{ label: 'Instagram', url: 'https://example.com/ig' }, { label: 'Bad', url: 'javascript:alert(1)' }],
+    instagram: 'https://example.com/ig', youtube: 'https://example.com/yt',
     links: [{ label_zh: '後台系所（示意）', label_en: 'CMS Department', url: 'https://example.com/sccd' }, { label_zh: '只有中文（示意）', label_en: null, url: 'https://example.com/zh' }, { label: 'SCCD', url: 'https://example.com/old' }], badge: null,
   } } }))).then(() => page.route(/\/items\/faculty/, r => r.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, json: { data: [
     // 假 Directus faculty：副標兩行／只有一筆空的／沒有；沒有業界導師（那段要收掉）
@@ -97,11 +98,12 @@ const rect = (page, sel) => page.$eval(sel, el => { const r = el.getBoundingClie
 const tx = (page, sel) => page.$eval(sel, el => new DOMMatrix(getComputedStyle(el).transform).m41);
 const has = (page, cls) => page.evaluate(c => document.documentElement.classList.contains(c), cls);
 // 選單下半部（user 2026-11-21）：次選單兩區之間、聯絡 → 語言鈕、語言鈕 → menu 鈕骨牌，三段距離都＝nav 的 gap
-// 次選單兩區之間、次選單 → 深色模式＋EN 那組、那組 → 底列 menu 鈕：同一個分區間距；組裡深色模式 → EN＝選項間距（user 2026-11-21）
+// 次選單兩區之間、次選單 → 深色模式＋EN 那組、那組 → 底列 menu 鈕：同一個分區間距；組裡深色模式 → EN＝選項間距（user 2026-11-21）；
+// 深色模式鈕的 icon＝menu 鈕骨牌的高（user 2026-11-24；原本鈕跟 EN 同高＝一行字）
 const menuGaps = (page) => page.evaluate(() => { const r = (el) => el.getBoundingClientRect(), subs = document.querySelectorAll('.menu-sub'), tools = document.querySelector('.menu-tools');
   return { gap: parseFloat(getComputedStyle(document.querySelector('.site-menu-nav')).rowGap), subs: r(subs[1]).top - r(subs[0]).bottom, lang: r(tools).top - r(subs[1]).bottom, bar: r(document.querySelector('.menu-btn .bar-rect')).top - r(tools).bottom,
     item: parseFloat(getComputedStyle(subs[0]).rowGap), tool: r(document.querySelector('.lang-btn')).top - r(document.querySelector('.theme-btn')).bottom,
-    toolH: [r(document.querySelector('.theme-btn')).height, r(document.querySelector('.lang-btn')).height] }; });
+    toolH: [r(document.querySelector('.theme-btn .icon')).height, r(document.querySelector('.menu-btn .bar-rect')).height] }; });
 const menuGapsOk = (g) => [g.subs, g.lang, g.bar].every(x => Math.abs(x - g.gap) < 1) && Math.abs(g.tool - g.item) < 1 && Math.abs(g.toolH[0] - g.toolH[1]) < 1;
 // 切深色模式／語言＝整個畫面交叉淡化（View Transition，user 2026-11-21）：DOM 是下一幀才改 → 點完等它換好。
 // 回傳那一下畫面上正在跑的交叉淡化各多久（ms；新舊兩張）——沒有＝沒在淡
@@ -138,11 +140,12 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(Math.abs(w[0] - 100.5) < 0.2 && Math.abs(w[1] - 100.5) < 0.2 && Math.abs(w[2] - 60) < 0.2, `中文字距：每字 1.005em、英數 0.6em（${w.map(x => x.toFixed(2))}）`);
   }
   assert(await m.$('link[rel="icon"][href*="favicon.svg"]') !== null, 'favicon link');
-  assert(await css(m, '#page-content', 'paddingTop') === '96px' && await css(m, '#page-content', 'paddingBottom') === '64px', 'mobile main 頂距 top-h／底距 bar-h');
+  { const pt = parseFloat(await css(m, '#page-content', 'paddingTop')), bh = (await rect(m, '.menu-btn .bar-rect')).height;   // 骨牌高＝logo 一行（stroke 版）的高
+    assert(Math.abs(pt - 2 * bh) < 0.5 && await css(m, '#page-content', 'paddingBottom') === '64px', `mobile main 頂距 top-h＝logo 高的兩倍（user 2026-11-24，原本 6rem；${pt} vs 骨牌 ${bh}）／底距 bar-h`); }
   // 首頁未展開：logo 置中、放大、名字藏
   let lr = await rect(m, '.site-logo');
   assert(Math.abs(lr.cy - 422) < 3 && Math.abs(lr.left + lr.width / 2 - 195) < 2, `index logo 畫面正中（cx ${lr.left + lr.width / 2} cy ${lr.cy}）`);
-  assert(Math.abs(lr.width - 262) < 1 && lr.height > 30, `首頁 logo＝鎖定版（沒有長條）、寬＝內頁內文欄（390 扣內距、扣兩邊的 rail；user 2026-11-23 原本吃滿太寬）（${lr.width}×${lr.height}）`);
+  assert(Math.abs(lr.width - 280.5) < 1 && lr.height > 30, `首頁 logo＝鎖定版（沒有長條）、寬＝扣內距後第 1 欄正中 → 第 4 欄正中（390：(358＋16)×3/4；user 2026-11-24）（${lr.width}×${lr.height}）`);
   // logo SVG 走 mask：網址要抓得到（檔名有空白）
   assert(await css(m, '.logo-text', 'opacity') === '1' && await css(m, '.logo-bars i', 'opacity') === '0' && Math.abs(lr.height - lr.width * LOGO_M_VB_H / LOGO_M_VB_W) < 0.5, `首頁 logo＝有名字那版（手機那張，${lr.width}×${lr.height}）`);
   for (const sel of ['.logo-text'])
@@ -157,7 +160,8 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(Math.abs(nr.left + nr.width / 2 - 195) < 2, `動態在畫面正中（cx ${nr.left + nr.width / 2}）`);
   const br = await rect(m, '.menu-btn .bar-rect');
   assert(Math.abs(844 - (br.top + br.height) - 32) < 4, `底列貼底 bar-pad 32（rect bottom ${844 - br.top - br.height}）`);
-  assert(await m.$('.site-bar .play-btn .icon-play') !== null, 'intro 鈕是 play icon');
+  assert(await m.$('.site-bar .play-btn .icon-play') !== null && Math.abs((await rect(m, '.play-btn .icon')).height - br.height) < 0.5,
+    'intro 鈕是 play icon、跟 menu 鈕的骨牌一樣高（user 2026-11-24：icon 的高度都跟 menu 的那個一樣）');
   assert(await css(m, '.menu-btn .bar-label', 'width') === '0px' && await css(m, '.menu-btn .bar-label', 'opacity') === '0' && Math.abs((await rect(m, '.menu-btn')).width - br.width) < 0.5, 'label 視覺隱藏（寬 0、不佔位）');
   // 進出場＝fade（user 2026-11-21）：選單收著是透明的、menu 鈕的圓點與名字現／隱都有 opacity 過場
   assert(await css(m, '.site-menu', 'opacity') === '0' && /opacity/.test(await css(m, '.site-menu', 'transitionProperty')) && /opacity/.test(await css(m, '.menu-btn .bar-rect', 'transitionProperty', '::after'))
@@ -185,7 +189,6 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   }
 
   // 選單：透明、內容右推、語言切換。打開時 play 是「移動」過去不是跳過去：逐幀記位置，中途要有落在起點與終點之間的幀
-  assert(await css(m, '.bar-blur > i', 'visibility') === 'hidden' && await css(m, '.bar-blur > i', 'opacity') === '0', '選單沒開：選單鈕背後沒有毛玻璃');
   const play0 = (await rect(m, '.play-btn')).left;
   const playTrack = await m.evaluate(() => new Promise(res => {
     const play = document.querySelector('.play-btn'), out = [];
@@ -201,16 +204,29 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await m.waitForTimeout(700);
   assert(await css(m, '.site-menu', 'transform') === 'none', 'menu open');
   assert(await css(m, '.site-menu', 'backgroundColor') === 'rgba(0, 0, 0, 0)', 'menu 無底色');
-  // 選單鈕背後的毛玻璃（同 logo 那塊，user 2026-11-21）：選單開著才出現；範圍＝鈕往上外擴，左、下、右到畫面邊（手機選單全螢幕）；6 層漸進模糊＋半透明底色
+  // 深色模式＋語言鈕不跟著捲、只有選項捲（user 2026-11-24）；選項框的底到鈕隔一段分區的 gap（user：「模糊到下面 sticky 的內容應該要有個 gap」）。
+  // 框的兩端：有東西捲過去的那一邊才淡出＋糊（選項自己糊，不碰後面的內容、選單裡沒有毛玻璃；user：「應該是要上下都 blur」「底部還多一個 blur」）＝
+  // 不捲的時候第一項、捲到底時最後一項是清楚的。畫面要矮到選單捲得動
   {
-    const bl = await rect(m, '.bar-blur'), btn = await rect(m, '.menu-btn');
-    assert(await css(m, '.bar-blur > i', 'visibility') === 'visible' && await css(m, '.bar-blur > i', 'opacity') === '1' && bl.left === 0 && Math.abs(bl.top + bl.height - 844) < 1 && bl.top < btn.top - 1 && Math.abs(bl.left + bl.width - 390) < 1
-      && await m.$$eval('.bar-blur > i', is => { const s = getComputedStyle(is[5]); return is.length === 6 && /blur\(8px\)/.test(s.backdropFilter || s.webkitBackdropFilter); })
-      && await m.$eval('.bar-blur', e => getComputedStyle(e, '::after').opacity) === '0.6',
-      `選單鈕毛玻璃：選單開著出現、蓋住鈕到畫面左下右、6 層模糊＋底色（${JSON.stringify(bl)} 鈕 ${JSON.stringify(btn)}）`);
+    await m.setViewportSize({ width: 390, height: 560 }); await m.waitForTimeout(300);
+    const tools0 = (await rect(m, '.menu-tools')).top, lg = parseFloat(await css(m, '.site-menu-nav', 'rowGap'));
+    const rest = await m.evaluate(() => { const n = document.querySelector('.site-menu-nav'), f = getComputedStyle(document.querySelector('.menu-main li')).filter;
+      return { st: getComputedStyle(n).getPropertyValue('--st').trim(), blur: f === 'none' || /blur\(0px\)/.test(f), bottom: n.getBoundingClientRect().bottom }; });
+    await m.$eval('.site-menu-nav', n => { n.scrollTop = n.scrollHeight; }); await m.waitForTimeout(100);
+    const end = await m.evaluate(() => { const blur = (el) => parseFloat(getComputedStyle(el).filter.match(/blur\(([\d.]+)px\)/)?.[1] ?? '0'), n = document.querySelector('.site-menu-nav'), s = document.querySelectorAll('.menu-sub');
+      return { scrolled: n.scrollTop > 0, last: s[1].getBoundingClientRect().bottom, tools: document.querySelector('.menu-tools').getBoundingClientRect().top,
+        lastBlur: blur(s[1].lastElementChild), firstBlur: blur(document.querySelector('.menu-main li')), sb: getComputedStyle(n).getPropertyValue('--sb').trim(), sd: CSS.supports('animation-timeline', 'view()') }; });
+    await m.$eval('.site-menu-nav', n => { n.scrollTop = 0; });
+    await m.setViewportSize({ width: 390, height: 844 }); await m.waitForTimeout(300);
+    assert(end.scrolled && Math.abs(end.tools - tools0) < 0.5 && Math.abs(end.tools - end.last - lg) < 1 && Math.abs(tools0 - rest.bottom - lg) < 1
+      && (!end.sd || (rest.st === '0' && rest.blur && end.sb === '0' && end.lastBlur === 0 && end.firstBlur > 3.9)) && await m.$$eval('.menu-blur', e => e.length) === 0,
+      `選單：只有選項捲、深色模式＋語言鈕固定，選項框底 → 鈕＝分區間距；不捲／捲到底那一端不淡不糊、捲出去的選項自己糊掉（鈕 ${tools0}→${end.tools}、${JSON.stringify(rest)}、${JSON.stringify(end)}）`);
   }
   { const g = await menuGaps(m); assert(menuGapsOk(g), `手機選單：次選單分區、網站地圖 → 深色模式、EN → menu 鈕同一個間距，深色模式 → EN＝選項間距（${JSON.stringify(g)}）`); }
   assert(await css(m, '.site-menu', 'width') === '390px', '手機選單全螢幕（user 2026-11-22）');
+  { const th = parseFloat(await css(m, '#page-content', 'paddingTop')), bh = (await rect(m, '.menu-btn .bar-rect')).height, first = (await rect(m, '.site-menu .nav-link')).top, nav = await rect(m, '.site-menu-nav');
+    assert(Math.abs(first - th) < 1.5 && Math.abs(nav.top - th) < 0.5 && await css(m, '.site-menu-nav', 'overflowY') === 'auto' && /gradient/.test(await css(m, '.site-menu-nav', 'webkitMaskImage') || await css(m, '.site-menu-nav', 'maskImage')),
+      `選單上緣：選項的捲動框從內容起始線開始、線以上什麼都看不到、看不見的那截在框外＝點不到（user 2026-11-24：「那個 box 就只到起始位置那裏」；第一項 ${first}、起始線 ${th}、logo 底 ${bh}、選項框頂 ${nav.top}）`); }
   // 深色模式（user 2026-11-21）：EN 上面一顆 icon 鈕；切了黑底白字、記住（reload 還是深色、CSS 前就套上）、再按切回
   {
     const theme = () => m.evaluate(() => ({ t: document.documentElement.dataset.theme || '', bg: getComputedStyle(document.body).backgroundColor, fg: getComputedStyle(document.body).color, p: document.querySelector('.theme-btn')?.getAttribute('aria-pressed') }));
@@ -239,12 +255,17 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 首頁選單開著：動態當內容處理（user 2026-11-21）——跑馬燈留著，整塊模糊＋疊 60% 白、位置不動（先試過跟內容一起右推，user：不用動）；點它＝只收選單、不展開
   assert(await css(m, '.bar-news-track', 'opacity') === '1' && await css(m, '.bar-news', 'filter') === 'blur(4px)' && await css(m, '.bar-news', 'opacity') === '0.4' && Math.abs(await tx(m, '.bar-news')) < 1,
     `選單開：動態模糊、位置不動（位移 ${await tx(m, '.bar-news')}）`);
+  // 手機首頁正中的 logo、play 鈕也是首頁的內容（user 2026-11-24：原本清楚地疊在選項上）：同動態模糊＋疊白；play 不吃指標（按下去＝只收選單）
+  assert(await css(m, '.site-logo', 'filter') === 'blur(4px)' && await css(m, '.site-logo', 'opacity') === '0.4' && await css(m, '.play-btn', 'filter') === 'blur(4px)'
+    && await css(m, '.play-btn', 'opacity') === '0.4' && await css(m, '.play-btn', 'pointerEvents') === 'none', '手機首頁選單開：正中的 logo、play 鈕模糊＋疊白、play 不吃指標');
   // 深色模式／語言切換時動態自己一組、不放靜止的舊截圖（user 2026-11-21：跑馬燈在交叉淡化時會停一下）
   assert(await css(m, '.bar-news', 'viewTransitionName') === 'bar-news', '動態有自己的 view-transition-name');
   await m.evaluate(() => /** @type {HTMLElement} */ (document.querySelector('.bar-news')).click());
   assert(!(await has(m, 'menu-open')) && !(await has(m, 'news-open')), '選單開著點動態：只收選單、不展開');
   await m.waitForTimeout(700);
   assert(await css(m, '.bar-news', 'filter') === 'none' && await css(m, '.bar-news', 'opacity') === '1' && Math.abs(await tx(m, '.bar-news')) < 1, '選單收了：動態回原位、不糊');
+  assert(await css(m, '.site-logo', 'filter') === 'none' && await css(m, '.site-logo', 'opacity') === '1' && await css(m, '.play-btn', 'opacity') === '1',
+    '選單收了：logo、play 也回清楚');
   // 選單開著動態不吃指標（user 2026-11-21，同其他頁的內容）：指上去那一點最上面是底列本身＝不 hover；真的按下去＝只收選單、不展開
   await openMenu(m);
   {
@@ -274,19 +295,16 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert((await m.textContent('.menu-main a[href="about.html"]')) === '關於' && await m.evaluate(() => document.documentElement.lang) === 'zh-Hant', '切回 zh');
   assert((await m.textContent('main h1')) === '實踐大學AI設計職人學位學程' && (await m.textContent('.bar-news-copy > span')) === await m.getAttribute('.bar-news-copy > span', 'data-zh'), '切回 zh：內容標題、動態');
   assert((await m.textContent('.play-btn .bar-label')) === '簡介', '切回 zh：底列名字');
-  // 關選單：play 一樣不動（逐幀；手機選單全螢幕，user 2026-11-22）。順便記選單鈕背後那塊毛玻璃的 opacity
-  const [playBack, blurBack] = await m.evaluate(() => new Promise(res => {
-    const play = document.querySelector('.play-btn'), glass = document.querySelector('.bar-blur > i'), out = [], fade = [];
+  // 關選單：play 一樣不動（逐幀；手機選單全螢幕，user 2026-11-22）
+  const playBack = await m.evaluate(() => new Promise(res => {
+    const play = document.querySelector('.play-btn'), out = [];
     /** @type {HTMLElement} */ (document.querySelector('.menu-btn')).click();
     const t0 = performance.now();
-    const tick = () => { out.push(play.getBoundingClientRect().left); fade.push(+getComputedStyle(glass).opacity); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res([out, fade]); };
+    const tick = () => { out.push(play.getBoundingClientRect().left); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out); };
     requestAnimationFrame(tick);
   }));
   const backEnd = playBack[playBack.length - 1];
   assert(playBack.every(x => Math.abs(x - play0) < 0.5), `手機選單關：play 不動（終 ${backEnd}）`);
-  // 那塊毛玻璃是淡掉的、不是直接消失（user 2026-11-22：底下有筆跡時，直接消失＝左下角的模糊閃一下）
-  assert(blurBack.some(o => o > 0.05 && o < 0.95) && blurBack[blurBack.length - 1] === 0 && await css(m, '.bar-blur > i', 'visibility') === 'hidden',
-    `選單關：選單鈕背後的毛玻璃跟著淡出、淡完才藏（${blurBack.filter((_, i) => i % 6 === 0).map(o => o.toFixed(2)).join(' ')}）`);
   await m.waitForFunction(() => !document.documentElement.classList.contains('menu-open'));
   assert(await css(m, '.bar-news-track', 'opacity') === '1' && Math.abs(await tx(m, '#page-content')) < 1, '選單關：標題回來、內容回原位');
 
@@ -306,7 +324,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert(await m.$eval('.site-menu .nav-link.active', (a) => { const s = getComputedStyle(a, '::after'), fs = parseFloat(getComputedStyle(a).fontSize);
     return s.opacity === '1' && s.borderRadius === '0px' && Math.abs(parseFloat(s.width) - fs * 0.4) < 0.2 && Math.abs(parseFloat(s.height) - fs) < 0.2 && Math.abs(parseFloat(s.marginLeft) - fs * (0.4 - 0.205)) < 0.2 && getComputedStyle(a).textDecorationLine === 'none'; }), '選中選項：字尾後面一根直條（中文扣掉最後一個字的字距，同 hover 的直條）、沒底線');
   assert(await m.$$eval('.site-menu .nav-link:not(.active)', as => as.length === 13 && as.every(a => getComputedStyle(a, '::after').opacity === '0')), '沒選中的選項沒有直條');
-  // 選單的選項 hover＝跟清單一樣蓋黑收直條（user 2026-11-22）：收完一根直條在字尾、不出圓點；離開拿掉；hover 一下就走＝動畫照樣做完才拿掉
+  // 選單的選項 hover＝跟清單一樣蓋黑收直條（user 2026-11-22）：收完一根直條在字尾、不出圓點；離開切出去（user 2026-11-24）；hover 一下就走＝動畫照樣做完、直條再淡掉
   {
     await openMenu(m);
     await m.waitForTimeout(700);
@@ -314,12 +332,13 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     const st = () => m.$eval('.site-menu .nav-link:not(.active)', a => { const o = a.getBoundingClientRect(), fs = parseFloat(getComputedStyle(a).fontSize);
       return { fs, w: o.width, tr: /[⺀-鿿豈-﫿︰-﹏＀-￯]$/.test((a.textContent || '').trim()) ? 0.205 * fs : 0, dot: getComputedStyle(a, '::after').opacity, covers: [...a.querySelectorAll('.item-cover')].map(c => { const r = c.getBoundingClientRect(); return [r.left - o.left, r.width, r.height]; }) }; });
     await m.hover('.site-menu .nav-link:not(.active) >> nth=0');
-    await m.waitForTimeout(1300);   // 蓋、收各 DUR.fast，直條再淡出來 DUR.fade（user 2026-11-23：直條等帶收完才出來、改成 fade）
+    await m.waitForTimeout(1700);   // 蓋、收各 DUR.fast，收完再等 0.2 秒、直條切出來（user 2026-11-24）
     const s0 = await st(), sw = s0.fs * 0.4;
     assert(s0.covers.length === 1 && s0.tr > 0 && Math.abs(s0.covers[0][0] - (s0.w - s0.tr + sw)) < 1 && Math.abs(s0.covers[0][1] - sw) < 0.2 && Math.abs(s0.covers[0][2] - s0.fs) < 0.2 && s0.dot === '0',
       `選單選項 hover：收成字尾的一根直條、不出圓點（${JSON.stringify(s0)}）`);
     await m.mouse.move(380, 400);
-    assert((await st()).covers.length === 0, '選單選項：游標離開＝直條拿掉');
+    await m.waitForTimeout(600);   // 離開＝直條切出去（user 2026-11-24）
+    assert((await st()).covers.length === 0, '選單選項：游標離開＝直條切出去、切完拿掉');
     await m.hover('.site-menu .nav-link:not(.active) >> nth=0');
     await m.waitForTimeout(60);
     await m.mouse.move(380, 400);
@@ -328,7 +347,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     const endsAt = await m.$eval('.site-menu .nav-link:not(.active)', a => { const c = a.querySelector('.item-cover'), k = c?.getAnimations()[0]?.effect.getKeyframes(), f = k?.[k.length - 1], n = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number);
       return !c || !f ? null : f.width ? parseFloat(String(f.width)) : n.length === 4 ? Math.round((c.getBoundingClientRect().width - n[1] - n[3]) * 10) / 10 : null; });   // 收的終點露出多寬（帶＝clip-path、直條＝寬；0＝收到沒有）
     await m.waitForTimeout(900);
-    assert(left >= 1 && endsAt === 0 && (await st()).covers.length === 0, `選單選項：hover 一下就走＝動畫照樣做完、但直條不切出來、不留（剛走 ${left} 條、收的終點 ${endsAt}、做完 ${(await st()).covers.length} 條）`);
+    assert(left >= 1 && endsAt === 0 && (await st()).covers.length === 0, `選單選項：hover 一下就走＝帶照樣收完、不出直條（剛走 ${left} 條、收的終點 ${endsAt}、做完 ${(await st()).covers.length} 條）`);
     await m.click('.menu-btn');
     await m.waitForFunction(() => !document.documentElement.classList.contains('menu-open'));
   }
@@ -349,14 +368,17 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await openMenu(m);
   await swap(m, '.lang-btn');
   assert((await m.textContent('main h1')).trim() === 'Regulations & Policies', '切 en：當頁標題');
-  // 內頁選單開（手機全螢幕，user 2026-11-22）：內容不右推——導覽矩形照舊對齊 menu 鈕、內文在它右邊一個 rail（48）
+  // 內頁選單開（手機全螢幕，user 2026-11-22）：內容不右推——導覽矩形照舊對齊 menu 鈕、內文在它右邊一個 rail（半欄＝38.75）
   await m.waitForTimeout(700);
   {
     const n = await rect(m, '.section-nav'), h = await rect(m, 'main h1');
-    assert(Math.abs(n.left - 16) < 2 && Math.abs(n.left - (await rect(m, '.menu-btn')).left) < 2 && Math.abs(h.left - n.left - 48) < 2,
+    assert(Math.abs(n.left - 16) < 2 && Math.abs(n.left - (await rect(m, '.menu-btn')).left) < 2 && Math.abs(h.left - n.left - 38.75) < 2,
       `手機內頁選單開：內容不右推、導覽矩形＝menu 鈕、內文再讓一個 rail（nav ${n.left} h1 ${h.left}）`);
     // 選單開著（user 2026-11-21）：段落導覽淡出收起來、右邊內容不能 hover／點
     assert(await css(m, '.section-nav', 'visibility') === 'hidden' && await css(m, '.section-nav', 'opacity') === '0' && await css(m, '#page-content', 'pointerEvents') === 'none', '選單開：段落導覽收起來、內容不吃指標');
+    // logo 在頂：選項的捲動框從 logo 底開始、不重疊，logo 照常清楚（user 2026-11-24）
+    { const lg = await rect(m, '.site-logo'), nav = await rect(m, '.site-menu-nav');
+      assert(await css(m, '.site-logo', 'filter') === 'none' && nav.top >= lg.top + lg.height - 0.5, `內頁選單開：logo 照常清楚、選項在 logo 下面（logo 底 ${lg.top + lg.height}、選項框頂 ${nav.top}）`); }
   }
   await m.click('.site-menu a[href="about.html"]');
   await m.waitForFunction(() => document.body.dataset.page === 'about');
@@ -382,7 +404,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 底列中間的動態只在首頁（user 2026-11-10）：內頁藏起來、點不到
   assert(await css(m, '.bar-news', 'visibility') === 'hidden' && await css(m, '.bar-news', 'opacity') === '0' && await css(m, '.bar-news', 'filter') === 'blur(4px)', '內頁：底列沒有動態（藏著的那一態＝透明＋糊）');
 
-  // 手機內頁版型（user 2026-11-13 手機稿）：左緣段落導覽（矩形對齊 menu 鈕、從 h1 那條線往下排）、內文左右各讓一個 rail（48）、
+  // 手機內頁版型（user 2026-11-13 手機稿）：左緣段落導覽（矩形對齊 menu 鈕、從 h1 那條線往下排）、內文左右各讓一個 rail（半欄＝38.75）、
   // 右圖的鈕在底列右下角、長得跟 menu 鈕一樣（user 2026-11-23；原本在右緣中線上）；點了 dialog 放大蓋滿畫面，再點任何地方／Esc 淡出後關；選單開著縮圖退場
   await m.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).opacity === '1'
     && new DOMMatrix(getComputedStyle(document.getElementById('page-content')).transform).m41 === 0);
@@ -399,7 +421,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(await m.$$eval('.section-nav-dot', x => x.length) === 4 && Math.abs(n.left - mr.left) < 1 && Math.abs(tp.cy - h1c) < 1 && Math.abs(tp.w - 0.45 * nfs) < 0.1 && Math.abs(tp.h - 1.6 * nfs) < 0.1 && tp.round === '0px'
       && Math.abs(r0 - 1.6 * nfs) < 0.1 && Math.abs(d0 - (tp.cy + tp.h / 2 + 0.5 * nfs)) < 1,
       `手機段落導覽：頁標題那一格＋4 格（2026-11-23 加了沿革）、矩形左緣對齊 menu 鈕、頁標題那格跟段落同高且中心＝h1 第一行中線、段落的長矩形在下面（left ${n.left} vs ${mr.left}、${JSON.stringify(tp)} vs ${h1c}、段落第一格 top ${d0}）`);
-    assert(Math.abs(b.left - 64) < 1 && Math.abs(b.left + b.width - 326) < 1, `手機內文左右各讓 48（${b.left}～${b.left + b.width}）`);
+    assert(Math.abs(b.left - 54.75) < 1 && Math.abs(b.left + b.width - 335.25) < 1, `手機內文左右各讓半欄（第 1 欄正中 → 第 4 欄正中）（${b.left}～${b.left + b.width}）`);
     assert(Math.abs(th.left + th.width - 374) < 1 && Math.abs(th.cy - mr.cy) < 1 && Math.abs(th.width - mr.width) < 0.5 && Math.abs(th.height - mr.height) < 0.5,
       `右圖的鈕：底列右下角、右緣對齊內距、跟 menu 鈕同高同大小（right ${th.left + th.width}、cy ${th.cy} vs ${mr.cy}、${th.width}×${th.height} vs ${mr.width}×${mr.height}）`);
     assert(await m.$eval('#figure-dialog', d => d.open) === false && await css(m, '#figure-dialog', 'display') === 'none', '放大 dialog 預設關');
@@ -412,23 +434,29 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     await m.evaluate(() => scrollTo({ top: 300, behavior: 'instant' }));
     await m.click('.figure-btn');
     await m.waitForFunction(() => getComputedStyle(document.querySelector('#figure-dialog')).opacity === '1' && getComputedStyle(document.querySelector('.site-bar')).opacity === '0');
-    const dr = await rect(m, '#figure-dialog'), ir = await rect(m, '.figure-dialog-body > *'), cl = await rect(m, '.figure-close .bar-rect'), nav = await rect(m, '.figure-nav');
+    const dr = await rect(m, '#figure-dialog'), ir = await rect(m, '.figure-dialog-body > *'), ob = await rect(m, '.figure-obj-close .bar-rect');
     assert(await css(m, '#figure-dialog', 'backgroundColor') === 'rgba(0, 0, 0, 0)' && await css(m, '#page-content', 'filter') === 'blur(4px)' && await css(m, '#page-content', 'opacity') === '0.4' && await css(m, '.site-logo', 'filter') === 'none' && await m.$eval('.top-blur', t => getComputedStyle(t, '::after').opacity) === '0',
       '放大 dialog：背後的內容模糊＋疊白（同選單開著）、底列收起來（控制列在底列那條線的正中）、logo 照常清楚');
     assert(await m.$eval('#figure-dialog', d => d.open) && dr.top === 0 && dr.left === 0 && dr.width === 390 && dr.height === 844, `點縮圖：dialog 蓋滿畫面（${JSON.stringify(dr)}）`);
-    // 內容的頂對齊各頁 title 那條線（--top-h，手機 96）、下面留一樣多（user 2026-11-23；原本在 logo 區與底列區之間置中）
-    assert(Math.abs(ir.width - 358) < 1 && Math.abs(ir.height - 358) < 1 && Math.abs(ir.left - 16) < 1 && Math.abs(ir.top - 96) < 1 && await m.$eval('.figure-dialog-body', b => b.children.length === 1 && b.firstElementChild.classList.contains('object-canvas')),
-      `點右緣的鈕：object 的畫布搬進 dialog、內容寬、方形、頂對齊 title 那條線（${ir.width}×${ir.height} left ${ir.left} top ${ir.top}）`);
-    // 控制列（user 2026-11-23）：底列那條線的正中；關閉＝menu 鈕那顆骨牌、在它的位置（左下角）、平常不出圓點（hover 才出，見 intro 那段）；只有一張＝沒有上下一個、不是影片＝沒有播放那幾顆
-    assert(Math.abs(nav.left + nav.width / 2 - 195) < 1 && Math.abs(cl.left - mr.left) < 1 && Math.abs(cl.cy - mr.cy) < 1 && Math.abs(cl.width - mr.width) < 0.5 && Math.abs(cl.height - mr.height) < 0.5
-      && await m.$eval('.figure-close .bar-rect', b => getComputedStyle(b, '::after').opacity) === '0'
-      && await css(m, '.figure-prev', 'display') === 'none' && await css(m, '.media-play', 'display') === 'none',
-      `控制列：底列那條線的正中；關閉＝menu 鈕那顆、不出圓點；只有一張不出上下一個、不是影片不出播放鈕（nav cx ${nav.left + nav.width / 2}、${JSON.stringify(cl)} vs menu ${JSON.stringify(mr)}）`);
+    // 手機的右圖 object（user 2026-11-24：「這個也要在畫面中間」）：內容寬、方形、上下置中＝畫面正中
+    assert(Math.abs(ir.width - 358) < 1 && Math.abs(ir.height - 358) < 1 && Math.abs(ir.left - 16) < 1 && Math.abs(ir.top + ir.height / 2 - 422) < 1 && await m.$eval('.figure-dialog-body', b => b.children.length === 1 && b.firstElementChild.classList.contains('object-canvas')),
+      `點右緣的鈕：object 的畫布搬進 dialog、內容寬、方形、在畫面正中（${ir.width}×${ir.height} left ${ir.left} top ${ir.top}）`);
+    // 沒有 ‹ X ›（整組控制列不出）；關閉＝打開它的那顆骨牌、留在右下角原位、中央圓點常駐＝同 menu 鈕開著
+    // （user 2026-11-24：「下面沒有 X，是打開的那個 btn，保持在右下角，跟 menu 一樣的邏輯」；chrome.css .figure-obj-close）
+    assert(await m.$$eval('.figure-ctrl', cs => cs.every(c => getComputedStyle(c).display === 'none'))
+      && Math.abs(ob.left - th.left) < 0.5 && Math.abs(ob.top - th.top) < 0.5 && Math.abs(ob.width - th.width) < 0.5 && Math.abs(ob.height - th.height) < 0.5
+      && await m.$eval('.figure-obj-close .bar-rect', r => getComputedStyle(r, '::after').opacity) === '1',
+      `手機 object：沒有 ‹ X ›；關閉＝右下角那顆骨牌、跟底列的鈕同一個位置、圓點亮著（${JSON.stringify(ob)} vs ${JSON.stringify(th)}）`);
   }
   await m.mouse.click(195, 400);   // 點在 object 上：不關（那是露出名字／拖著轉，object.js）
   assert(await m.$eval('#figure-dialog', d => d.open && !d.classList.contains('is-closing')), '點 object 本身：dialog 不關');
-  await m.mouse.click(195, 600);   // 點旁邊（object 在 96～454，頂對齊 title 那條線）
+  await m.mouse.click(195, 700);   // 點旁邊（object 在畫面正中 243～601）
   assert(await m.$eval('#figure-dialog', d => d.open && d.classList.contains('is-closing')), '點 object 旁邊：先淡出');
+  await m.waitForFunction(() => !(/** @type {HTMLDialogElement} */ (document.querySelector('#figure-dialog')).open));
+  await m.click('.figure-btn');   // 右下角那顆骨牌再點一次＝關（同 menu 鈕）
+  await m.waitForFunction(() => getComputedStyle(/** @type {Element} */ (document.querySelector('#figure-dialog'))).opacity === '1');
+  await m.click('.figure-obj-close');
+  assert(await m.$eval('#figure-dialog', d => d.classList.contains('is-closing')), '手機 object：點右下角那顆骨牌＝關');
   await m.waitForFunction(() => !(/** @type {HTMLDialogElement} */ (document.querySelector('#figure-dialog')).open));
   await m.click('.figure-btn');
   await m.keyboard.press('Escape');
@@ -448,7 +476,11 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   assert((await m.textContent('main h1')).trim() === '聯絡' && (await m.textContent('main')).includes('電子郵件'), '聯絡頁：標題＋內容');
   assert(await m.$eval('[data-cms="email"] a', a => a.textContent === 'cms@example.com' && a.getAttribute('href') === 'mailto:cms@example.com'), '聯絡頁後台：email');
   assert(await css(m, '[data-cms="fax"]', 'display') === 'none' && await css(m, '.footer-badge', 'display') === 'none' && (await m.textContent('[data-cms="tel"] dd')) === '02 1111 1111', '聯絡頁後台：空欄位收掉');
-  assert(JSON.stringify(await m.$$eval('.footer-social-box', a => a.map(x => x.getAttribute('href')))) === '["https://example.com/ig","#"]', '聯絡頁後台：社群連結、javascript: 擋掉');
+  assert(await m.$$eval('.footer-social a', a => a.length === 2 && a.map(x => [x.getAttribute('aria-label'), x.getAttribute('href'), x.target].join('|')).join(',') === 'Instagram|https://example.com/ig|_blank,YouTube|https://example.com/yt|_blank')
+    && (await rect(m, '.footer-social .icon-yt')).left > (await rect(m, '.footer-social .icon-ig')).left
+    && Math.abs((await rect(m, '.footer-social .icon-ig')).height - (await rect(m, '.menu-btn .bar-rect')).height) < 0.5
+    && Math.abs((await rect(m, '.footer-social .icon-yt')).height - (await rect(m, '.menu-btn .bar-rect')).height) < 0.5,
+    '聯絡頁後台：社群＝IG、YouTube 兩個 icon、YT 在 IG 右邊（高同 menu 鈕那顆骨牌），各自連到後台的網址（user 2026-11-24）');
   assert(await m.$eval('[data-cms="address"] dd', d => d.dataset.en === '後台地址（示意）') && await m.$('.footer-copyright') === null, '聯絡頁後台：英文空退中文；沒有版權那一行（user 2026-11-21）');
   // 姊妹系所（user 2026-11-21）：全名、一列一筆的連結清單；英文空退中文、舊資料（只有 label）照它顯示
   assert(JSON.stringify(await m.$$eval('.footer-links.link-list a.nav-link', a => a.map(x => [x.textContent, x.dataset.en, x.getAttribute('target')])))
@@ -481,15 +513,21 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   const yt = await m.evaluate(() => {
     const d = /** @type {HTMLDialogElement} */ (document.getElementById('figure-dialog')), f = d.querySelector('.figure-dialog-body > iframe'), r = f?.getBoundingClientRect();
     const on = (/** @type {string} */ s) => getComputedStyle(/** @type {Element} */ (d.querySelector(s))).display !== 'none';
-    return f && r ? { src: f.getAttribute('src'), allow: f.getAttribute('allow'), ratio: r.width / r.height, cx: r.left + r.width / 2, top: r.top, w: r.width, label: d.getAttribute('aria-label'),
+    return f && r ? { src: f.getAttribute('src'), allow: f.getAttribute('allow'), ratio: r.width / r.height, cx: r.left + r.width / 2, mid: r.top + r.height / 2 - innerHeight / 2, w: r.width, label: d.getAttribute('aria-label'),
       focus: !(document.activeElement instanceof HTMLIFrameElement), btns: ['.media-play', '.media-mute', '.media-vol', '.figure-prev', '.figure-next'].filter(on).join() } : null;
   });
   assert(yt?.src === 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&playsinline=1&rel=0&controls=0&enablejsapi=1' && /autoplay/.test(yt.allow || '') && yt.focus && yt.label === '影片'
-    && Math.abs(yt.ratio - 16 / 9) < 0.01 && Math.abs(yt.cx - 195) < 1 && Math.abs(yt.top - 96) < 1 && Math.abs(yt.w - 358) < 1 && yt.btns === '.media-play,.media-mute,.media-vol',
-    `intro：YouTube 連結＝放大 dialog 裡的 iframe（收掉它的控制列）、16:9、頂對齊 title 那條線；自己的控制列、沒有上下一個；關燈、logo 到頂；焦點不在 iframe 裡（${JSON.stringify(yt)}）`);
-  // 關閉鈕 hover＝出圓點（同 menu 鈕）、不變淡（user 2026-11-23）
+    && Math.abs(yt.ratio - 16 / 9) < 0.01 && Math.abs(yt.cx - 195) < 1 && Math.abs(yt.mid) < 1 && Math.abs(yt.w - 358) < 1 && yt.btns === '.media-play,.media-mute,.media-vol',
+    `intro：YouTube 連結＝放大 dialog 裡的 iframe（收掉它的控制列）、16:9、上下置中＝畫面正中（user 2026-11-24）；自己的控制列、沒有上下一個；關燈、logo 到頂；焦點不在 iframe 裡（${JSON.stringify(yt)}）`);
+  // 控制列（user 2026-11-24）：關閉＝X 在正中那排（只有一支影片＝沒有上下一個＝X 就在畫面正中），跟 menu 骨牌一樣高、同一條線；
+  // 音量、全螢幕在右邊那組、右緣對齊影片的右緣（user：「vol 跟全螢幕應該對齊影片的右邊」）；X 跟其他鈕一樣 hover 變淡
   await m.hover('.figure-close'); await m.waitForTimeout(600);
-  assert(await m.$eval('.figure-close', b => getComputedStyle(/** @type {Element} */ (b.querySelector('.bar-rect')), '::after').opacity === '1' && getComputedStyle(b).opacity === '1'), 'intro：關閉鈕 hover＝出圓點、不變淡');
+  { const x = await m.evaluate(() => { const q = (/** @type {string} */ s) => /** @type {Element} */ (document.querySelector(s)).getBoundingClientRect(), i = q('.figure-close .icon'), mn = q('.menu-btn .bar-rect'), md = q('.figure-media'), v = q('.figure-dialog-body > *');
+      return { cx: i.left + i.width / 2, h: Math.abs(i.height - mn.height) < 0.5, line: Math.abs(i.top + i.height / 2 - (mn.top + mn.height / 2)) < 1, right: Math.abs(md.right - v.right) < 1,
+        mline: Math.abs(md.top + md.height / 2 - (mn.top + mn.height / 2)) < 1, order: [...document.querySelectorAll('.figure-media > button, .figure-media > div')].map(b => b.className.split(' ').pop()).join(),
+        o: getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-close'))).opacity }; });
+    assert(Math.abs(x.cx - 195) < 1 && x.h && x.line && x.right && x.mline && x.order === 'media-vol-wrap,media-fs' && x.o === '0.6',
+      `intro（影片）：X 在畫面正中、跟骨牌同高同一條線；音量、全螢幕在右邊、右緣對齊影片；X hover 變淡（同其他鈕）（${JSON.stringify(x)}）`); }
   // YouTube 不會馬上回報 → 按了先照按的換圖示（之後照它的 onStateChange）
   await m.click('.media-play');
   assert(await m.$eval('#figure-dialog', d => d.classList.contains('is-paused') && d.querySelector('.media-play')?.getAttribute('aria-pressed') === 'false'), 'intro：按暫停＝圖示換成播放');
@@ -511,47 +549,52 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await m.click('.play-btn');
   await m.waitForFunction(() => /** @type {HTMLDialogElement} */ (document.getElementById('figure-dialog')).open);
   assert(await m.$('.figure-dialog-body > video:not([controls])') !== null && await m.$('.figure-dialog-body > iframe') === null, 'intro：直連的檔＝原生 video、不出它自己的控制列（/live/… 不會被當成 YouTube）');
-  // 音量拉桿平常收著（寬 0），游標移到音量那一組才長出來（user 2026-11-23：「hover btn 時才會出現」）
+  // 音量拉桿平常收著（寬 0），游標移到音量那一組才長出來（user 2026-11-23：「hover btn 時才會出現」）；
+  // 長出來＝20 格（user 2026-11-24：直條照 ai 的 volume、長度照一般播放器＝一根 5%）：一格 10.223 個 ai 單位，icon 的框高 70＝控制列 icon 的高
   const vw = () => m.$eval('.media-vol', r => r.getBoundingClientRect().width);
   const w0 = await vw();
+  const want = await m.$eval('.media-fs .icon', i => i.getBoundingClientRect().height * 20 * 10.223 / 70);
   await m.click('.media-mute');
-  const grown = await m.waitForFunction(() => /** @type {Element} */ (document.querySelector('.media-vol')).getBoundingClientRect().width > 40, null, { timeout: 3000 }).then(() => true, () => false);
-  assert(w0 === 0 && grown, `intro：音量拉桿平常收著、游標移到音量鈕才長出來（${w0} → ${await vw()}）`);
+  const grown = await m.waitForFunction(w => Math.abs(/** @type {Element} */ (document.querySelector('.media-vol')).getBoundingClientRect().width - w) < 0.5, want, { timeout: 3000 }).then(() => true, () => false);
+  assert(w0 === 0 && grown, `intro：音量拉桿平常收著、游標移到音量鈕才長出來、寬＝20 格（${w0} → ${await vw()}／${want}）`);
   assert(await m.$eval('.figure-dialog-body > video', v => /** @type {HTMLVideoElement} */ (v).muted) && await m.$eval('#figure-dialog', d => d.classList.contains('is-muted')), 'intro：音量鈕＝靜音、圖示跟著換');
-  // 音量拉桿（user 2026-11-23：「音量要可以調整大小」）：拉到 0.3＝音量 0.3、取消靜音；拉到 0＝靜音；在 0 按音量鈕＝回到全音量。拉桿點了不關 dialog
+  // 音量拉桿（user 2026-11-23：「音量要可以調整大小」；11-24 起＝20 根直條、亮幾根＝音量）：拉到 3 根＝音量 3/20、取消靜音、鈕是 half；
+  // 拉到 0＝靜音（silence）；在 0 按音量鈕＝回到全音量（20 根、loud）。拉桿點了不關 dialog
   const vol = (/** @type {number} */ v) => m.$eval('.media-vol', (r, v) => { /** @type {HTMLInputElement} */ (r).value = String(v); r.dispatchEvent(new Event('input', { bubbles: true })); }, v);
   const vs = () => m.evaluate(() => { const v = /** @type {HTMLVideoElement} */ (document.querySelector('.figure-dialog-body > video')), r = /** @type {HTMLInputElement} */ (document.querySelector('.media-vol'));
-    return [Math.round(v.volume * 100) / 100, v.muted, r.value, r.style.getPropertyValue('--vol')].join(); });
+    const icon = [...document.querySelectorAll('.media-mute .icon')].find(i => getComputedStyle(i).visibility !== 'hidden')?.classList[1];   // 三張疊在同一格，藏的是 visibility
+    return [Math.round(v.volume * 100) / 100, v.muted, r.value, r.parentElement?.style.getPropertyValue('--level'), icon].join(); });
   // volumechange 是排進下一個 task 才到（拉桿、圖示在那時候換）→ 各等一下
-  await vol(0.3); await m.waitForTimeout(150); const v1 = await vs();
+  await vol(3); await m.waitForTimeout(150); const v1 = await vs();
   await vol(0); await m.waitForTimeout(150); const v2 = await vs();
   await m.click('.media-mute'); await m.waitForTimeout(150); const v3 = await vs();
   await m.click('.media-vol');
-  assert(v1 === '0.3,false,0.3,30%' && v2 === '0,true,0,0%' && v3 === '1,false,1,100%' && await m.$eval('#figure-dialog', d => d.open && !d.classList.contains('is-closing')),
-    `intro：音量拉桿調大小、拉到 0＝靜音、在 0 取消靜音＝全音量；點拉桿不關（${v1}｜${v2}｜${v3}）`);
+  assert(v1 === '0.15,false,3,3,icon-half' && v2 === '0,true,0,0,icon-silence' && v3 === '1,false,20,20,icon-loud' && await m.$eval('#figure-dialog', d => d.open && !d.classList.contains('is-closing')),
+    `intro：音量拉桿調大小、拉到 0＝靜音、在 0 取消靜音＝全音量、鈕的圖示照音量換；點拉桿不關（${v1}｜${v2}｜${v3}）`);
   // 全螢幕＝放大 dialog 那一塊（內容＋自己的控制列；不是讓 <video> 本身全螢幕＝不出瀏覽器原生的控制列，SCCD 是那樣）：
   // 一進去控制列跟游標先藏，游標動了才淡出來（user 2026-11-23；停 3 秒又藏＝chrome.js IDLE）；再按一次離開
   await m.click('.media-fs'); await m.waitForTimeout(800);   // 一進去控制列跟毛玻璃先淡掉（消失也要 fade）→ 等它淡完
   const fs0 = await m.evaluate(() => { const s = /** @type {Element} */ (document.querySelector('.figure-stage'));
-    const b = /** @type {Element} */ (document.querySelector('.fs-blur'));
+    const b = /** @type {Element} */ (document.querySelector('.figure-media > .fs-blur'));
     return [document.fullscreenElement === s, s.classList.contains('is-idle'), /** @type {HTMLVideoElement} */ (document.querySelector('.figure-dialog-body > video')).controls, getComputedStyle(b).display, getComputedStyle(/** @type {Element} */ (b.querySelector('i'))).opacity].join(); });
   await m.mouse.move(100, 300); await m.mouse.move(120, 320); await m.waitForTimeout(700);
-  const fs1 = await m.evaluate(() => [/** @type {Element} */ (document.querySelector('.figure-stage')).classList.contains('is-idle'), getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-nav'))).opacity,
-    getComputedStyle(/** @type {Element} */ (document.querySelector('.fs-blur > i'))).opacity, getComputedStyle(/** @type {Element} */ (document.querySelector('.fs-blur')), '::after').opacity,
+  const fs1 = await m.evaluate(() => [/** @type {Element} */ (document.querySelector('.figure-stage')).classList.contains('is-idle'), getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-close'))).opacity,
+    getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-media > .fs-blur > i'))).opacity, getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-media > .fs-blur')), '::after').opacity,
     (() => { const n = /** @type {Element} */ (document.querySelector('.figure-nav')).getBoundingClientRect(), g = /** @type {Element} */ (document.querySelector('.figure-nav > .fs-blur')).getBoundingClientRect();
       return g.left < n.left && g.right > n.right && g.top < n.top && g.bottom > n.bottom && g.width < innerWidth / 2; })()].join());
   await m.click('.media-fs'); await m.waitForTimeout(300);
   const fs2 = await m.evaluate(() => [!!document.fullscreenElement, /** @type {Element} */ (document.querySelector('.figure-stage')).classList.contains('is-idle')].join());
-  assert(fs0 === 'true,true,false,block,0' && fs1 === 'false,1,1,0.6,true' && fs2 === 'false,false' && await css(m, '.fs-blur', 'display') === 'none',
+  assert(fs0 === 'true,true,false,block,0' && fs1 === 'false,1,1,0.6,true' && fs2 === 'false,false' && await css(m, '.figure-media > .fs-blur', 'display') === 'none',
     `intro：全螢幕＝那一塊、沒有原生控制列；一進去先藏、游標動了才出來，後面墊毛玻璃（同 logo 那塊：貼著每一組、不是整條；跟著一起淡；user 2026-11-23）、不是全螢幕不出；再按離開（${fs0}｜${fs1}｜${fs2}）`);
   await m.click('.figure-close');
-  assert(await closedEmpty(), 'intro：關閉鈕（menu 鈕那顆）關＝影片拿掉、開燈');
+  assert(await closedEmpty(), 'intro：關閉鈕（正中的 X）關＝影片拿掉、開燈');
   await m.waitForFunction(() => { const r = /** @type {Element} */ (document.querySelector('.site-logo')).getBoundingClientRect(); return Math.abs(r.top + r.height / 2 - innerHeight / 2) < 1; });   // logo 回正中（下面量展開）
   await m.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).visibility === 'hidden');   // 首頁沒有右圖 → 縮圖鈕退場
   // 點底列的動態＝展開、定位到點下去時看到的那則、閃一下（user 2026-11-23；原本點的是底列右端的＋）。
   // 清單出現＝從畫面底下往上滑進來、不是直接跳出來（user 2026-11-19）：點下去逐幀記清單的上緣（還沒出來＝null）；先捲到那則了也一樣從畫面底緣升上來。
   // 順序（user 2026-11-21）：底列的動態先淡出，淡完 logo 與清單才一起往上 → 一起記動態的透明度、logo 的上緣。
   // 點的那一刻要有一則正亮著（換的空檔＝沒有）→ 在頁面裡等到有、同一幀就點
+  await m.mouse.move(5, 5);   // 游標先移開：程式點的不會移游標，前面留在畫面中間的話，閃的那則會剛好在游標底下（＝照 hover 的規矩留著、不切掉）
   const rise = await m.evaluate(() => new Promise(res => {
     const el = document.querySelector('.home-news-list'), track = document.querySelector('.bar-news-track'), logo = document.querySelector('.site-logo'), out = [];
     const go = () => {
@@ -559,7 +602,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
       if (k < 0) { requestAnimationFrame(go); return; }
       /** @type {HTMLElement} */ (document.querySelector('.bar-news')).click();
       const t0 = performance.now();
-      const tick = () => { const cs = getComputedStyle(el); out.push(cs.display === 'none' ? null : [Math.round(el.getBoundingClientRect().top), Number(cs.opacity), Number(getComputedStyle(track).opacity), Math.round(logo.getBoundingClientRect().top)]); if (performance.now() - t0 < 1300) requestAnimationFrame(tick); else res({ k, out }); };
+      const tick = () => { const cs = getComputedStyle(el); out.push(cs.display === 'none' ? null : [Math.round(el.getBoundingClientRect().top), Number(cs.opacity), Number(getComputedStyle(track).opacity), Math.round(logo.getBoundingClientRect().top), Math.round(performance.now() - t0)]); if (performance.now() - t0 < 1300) requestAnimationFrame(tick); else res({ k, out }); };
       requestAnimationFrame(tick);
     };
     go();
@@ -574,8 +617,8 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(os[0] < 0.2 && os.at(-1) === 1 && os.filter(o => o > 0.05 && o < 0.95).length >= 5 && os.every((o, j) => j === 0 || o >= os[j - 1] - 0.001),
       `清單邊升邊淡入（opacity ${os[0]} → ${os.at(-1)}，中途 ${os.filter(o => o > 0.05 && o < 0.95).length} 幀）`);
     const go = fr.findIndex(f => f[0] < ys[0] - 2), goLogo = fr.findIndex(f => f[3] < fr[0][3] - 2);   // 清單／logo 開始動的那一幀
-    assert(fr[0][2] > 0.5 && go >= 5 && fr[go][2] < 0.1 && fr.slice(0, go).filter(f => f[2] > 0.05 && f[2] < 0.95).length >= 5 && Math.abs(goLogo - go) <= 2,
-      `展開的順序：動態先淡出、淡完清單與 logo 才一起往上（第 ${go} 幀清單動、第 ${goLogo} 幀 logo 動，那時動態 ${fr[go]?.[2]}，一開始 ${fr[0][2]}）`);
+    assert(fr[0][2] > 0.5 && go >= 5 && fr[go][2] < 0.1 && fr.slice(0, go).filter(f => f[2] > 0.05 && f[2] < 0.95).length >= 5 && goLogo >= 0 && Math.abs(fr[goLogo][4] - fr[go][4]) <= 50,   // 比毫秒、不比格數：logo 動 top（主執行緒），清單的位移交給合成器＝固定晚一格起跑，整輪跑時格速一慢就差到 3 格
+      `展開的順序：動態先淡出、淡完清單與 logo 才一起往上（第 ${go} 幀 ${fr[go]?.[4]}ms 清單動、第 ${goLogo} 幀 ${fr[goLogo]?.[4]}ms logo 動，那時動態 ${fr[go]?.[2]}，一開始 ${fr[0][2]}）`);
   }
   // 定位：點下去時看到的那則（第 k 則）中線對到畫面正中（422）；捲不到（太上面／太下面）＝捲到頭為止。
   // 升好了閃一下＝hover 的蓋黑收直條（觸控也閃）、直條停一下就淡掉（user 2026-11-23：「highlight 是指我 hover 的效果」「停留一下就 fade out」）
@@ -586,18 +629,21 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(rise.k >= 0 && (pos.sy < 0.5 ? pos.mid <= 422.5 : pos.sy > pos.max - 0.5 ? pos.mid >= 421.5 : Math.abs(pos.mid - 422) < 1),
       `展開：定位到點下去時看到的那則（第 ${rise.k} 則中線 ${pos.mid}、畫面中線 422、捲 ${pos.sy}／${pos.max}）`);
     assert(pos.flash, `展開：定位好那則閃一下＝蓋黑收直條（第 ${rise.k} 則）`);
-    // 逐幀記帶／直條的透明度，拿掉了＝null：最後一個 1＝直條停完，之後淡掉
+    // 逐幀記直條露出幾成（clip-path；還在帶＝-1），拿掉了＝null：最後一個 1＝直條停完，之後從左往右切掉（user 2026-11-24：「stroke 離開的時候，改成 clip 的出去，不是用 fade」）
     const fo = await m.evaluate((k) => new Promise(res => { const li = document.querySelectorAll('.home-news-list li')[k], out = /** @type {(number | null)[]} */ ([]), t0 = performance.now();
-      const tick = () => { const s = li.querySelector('.item-cover'); out.push(s ? Number(getComputedStyle(s).opacity) : null); if (s && performance.now() - t0 < 4000) requestAnimationFrame(tick); else res(out); };
+      const tick = () => { const any = li.querySelector('.item-cover'), s = li.querySelector('.item-cover[data-phase="stroke"]');
+        let v = -1; if (s) { const n = (getComputedStyle(s).clipPath.match(/-?[\d.]+/g) || []).map(Number), w = s.getBoundingClientRect().width; v = n.length === 4 ? (w - n[1] - n[3]) / w : 1; }
+        out.push(any ? v : null); if (any && performance.now() - t0 < 4000) requestAnimationFrame(tick); else res(out); };
       requestAnimationFrame(tick); }), rise.k);
     const held = fo.lastIndexOf(1), mid = fo.slice(held + 1).filter(o => o !== null && o > 0.05 && o < 0.95).length;
-    assert(fo.at(-1) === null && held > 0 && mid >= 3, `閃一下：直條停一下就淡掉（停到第 ${held} 幀、淡的途中 ${mid} 幀、共 ${fo.length} 幀）`);
+    assert(fo.at(-1) === null && held > 0 && mid >= 3, `閃一下：直條停一下就從左往右切掉（停到第 ${held} 幀、切的途中 ${mid} 幀、共 ${fo.length} 幀）`);
   }
   assert(await css(m, '.bar-news-track', 'opacity') === '0', '展開：底列的動態退掉');
   lr = await rect(m, '.site-logo');
   assert(Math.abs(lr.top) < 1, `展開後 logo 到頂（top ${lr.top}）`);
-  { const box = await rect(m, '.home-news-box');   // 手機：動態＝內頁內文的寬＝內距 16＋rail 48（user 2026-11-23：「比照其他頁面的內容寬度，不一定要跟 logo 等寬」；原本＝logo 寬、滿版）
-    assert(Math.abs(box.left - 64) < 0.5 && Math.abs(box.width - (390 - 128)) < 0.5, `手機動態＝內頁內文的寬、左右各讓內距＋rail（圖 ${box.left}～${box.left + box.width}、應為 64～326）`); }
+  { const box = await rect(m, '.home-news-list > ul');   // 手機：動態＝內頁內文的寬＝內距 16＋rail（半欄 38.75）（user 2026-11-23：「比照其他頁面的內容寬度，不一定要跟 logo 等寬」；原本＝logo 寬、滿版）；量清單本身
+    assert(Math.abs(box.left - 54.75) < 0.5 && Math.abs(box.width - 280.5) < 0.5,
+      `手機動態＝內頁內文的寬、左右各讓內距＋rail（清單 ${box.left}～${box.left + box.width}、應為 54.75～335.25）`); }
   assert(await m.evaluate(() => document.documentElement.scrollHeight > innerHeight), '展開後可捲');
   await m.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
   assert(await m.evaluate(() => scrollY >= Math.min(400, document.documentElement.scrollHeight - innerHeight) - 1 && scrollY > 0), '捲得下去');
@@ -627,9 +673,10 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     // 收回來直接是下一則（展開時在底下換好）、回來才開始計時（user 2026-11-23：「回到外面時是直接下一個 news，它不需要回來又 fade 成下一個」）
     const shown = () => m.evaluate(() => [...document.querySelectorAll('.bar-news-copy > span')].findIndex(x => x.classList.contains('is-current')));
     const n = await m.evaluate(() => document.querySelectorAll('.bar-news-copy > span').length), back = await shown();
-    await m.waitForTimeout(1500);
+    // 0.3 秒＝比任何一則的淡入（--dur-fade）都短：放不下的那則淡入完就開始捲、捲到尾馬上換，1.5 秒可能已經在換了（看點到哪一則）
+    await m.waitForTimeout(300);
     const later = await shown();
-    assert(back === (rise.k + 1) % n && later === back, `收回來直接是下一則、回來才開始計時（點的是第 ${rise.k} 則，回來 ${back}、1.5 秒後 ${later}）`);
+    assert(back === (rise.k + 1) % n && later === back, `收回來直接是下一則、回來才開始計時（點的是第 ${rise.k} 則，回來 ${back}、0.3 秒後 ${later}）`);
   }
 
   // 首頁 → 內頁（user 2026-11-21）：logo 先上移到頂、移完內容才淡入（logo 還在路上時內容一直藏著）。逐幀記 logo 上緣、main 的 opacity、當前頁
@@ -669,7 +716,9 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 未知路徑 → 404；直開內頁
   await m.evaluate(() => { history.pushState(null, '', '/foo'); dispatchEvent(new PopStateEvent('popstate')); });
   await m.waitForFunction(() => document.body.dataset.page === '404');
-  assert((await m.textContent('main h1')).trim() === '404', '404 page');
+  // 404＝簡單版（user 2026-11-24）：只有 stroke 的 logo＋一個字（介面文字 error.unknown：未知／unknown）；左下角是語言鈕、沒有 menu 鈕
+  assert((await m.textContent('main h1')).trim() === '未知' && await m.$('main .page-figure') === null && await css(m, '.menu-btn', 'display') === 'none'
+    && await css(m, '.bar-lang', 'display') === 'flex' && (await m.textContent('.bar-lang')).trim() === 'EN', '404 page：未知、沒有右圖、左下角語言鈕取代 menu 鈕');
   await m.goto(base + '/pages/about.html');
   await m.waitForSelector('#site-header .site-bar');
   assert(await m.$eval('.site-menu a[href="about.html"]', a => a.classList.contains('active')), 'direct open about active');
@@ -848,7 +897,9 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   let h1r = await rect(d, '.section-nav');
   lr = await rect(d, '.site-logo');
   assert(Math.abs(h1r.left - 288) < 2 && Math.abs(await dotL() - 288) < 1, `desktop 選單開：內容左緣＝選單右緣 288、段落導覽跟著右推（nav ${h1r.left}）`);
-  assert(await css(d, '.site-menu', 'width') === '288px' && Math.abs((await rect(d, '.play-btn')).left - 288) < 1.5, 'desktop 選單固定寬 18rem、play 移到右緣');
+  { const mb = await rect(d, '.menu-btn'), mr = await rect(d, '.menu-btn .bar-rect'), nav = await rect(d, '.site-menu-nav');
+    assert(await css(d, '.site-menu', 'width') === '288px' && Math.abs(mb.width - mr.width) < 0.5 && nav.left === 0 && Math.abs(nav.width - 288) < 0.5,
+      `desktop 選單固定寬 18rem；menu 鈕不撐＝play 留在原位（user 2026-11-24，原本滑到選單右緣）、選項的捲動框吃滿選單那一欄（鈕 ${mb.width}、選項框 ${nav.left}～${nav.left + nav.width}）`); }
   // 窄桌面 logo 左緣跑進選單字裡 → 至少讓開選單文字一個內距
   await d.setViewportSize({ width: 800, height: 800 });
   await d.waitForTimeout(600);
@@ -939,12 +990,12 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     const nb = await rect(d, '.bar-news');
     await d.mouse.move(nb.left + nb.width / 2, nb.top + nb.height / 2);
     const band = await d.evaluate(() => document.querySelector('.bar-news-track > .item-cover')?.getBoundingClientRect().width || 0);
-    await d.waitForTimeout(1200);
+    await d.waitForTimeout(1700);   // 蓋、收各 DUR.fast，收完再等 0.2 秒、直條切出來（user 2026-11-24）
     const st = await d.evaluate(() => { const cur = /** @type {Element} */ (document.querySelector('.bar-news-copy > .is-current')), rg = document.createRange(); rg.selectNodeContents(cur);
       return { end: Math.min(rg.getBoundingClientRect().right, /** @type {Element} */ (document.querySelector('.bar-news-copy')).getBoundingClientRect().right),
         s: [...document.querySelectorAll('.bar-news-track > .item-cover')].map(s => { const r = s.getBoundingClientRect(); return [r.left, r.width, getComputedStyle(s).opacity]; }),
         same: getComputedStyle(/** @type {Element} */ (document.querySelector('.bar-news'))).color === getComputedStyle(/** @type {Element} */ (document.querySelector('.site-bar'))).color }; });
-    await d.mouse.move(640, 300);
+    await d.mouse.move(640, 300); await d.waitForTimeout(600);   // 離開＝直條切出去（user 2026-11-24）
     const gone = await d.evaluate(() => !document.querySelector('.bar-news .item-cover'));
     assert(band > 50 && st.s.length === 1 && st.s[0][1] < 15 && st.s[0][2] === '1' && Math.abs(st.s[0][0] - st.end - 5) < 12 && st.same && gone,
       `底列的動態 hover＝蓋黑收直條、字色不變（帶 ${band}、${JSON.stringify(st)}、離開拿掉 ${gone}）`);
@@ -954,12 +1005,17 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   await d.waitForFunction(() => document.documentElement.classList.contains('news-open'));
   // 捲軸出現＝淡入（user 2026-11-21）：一出現的那一幀還沒全實
   const thumbO = await d.evaluate(() => new Promise(res => { const t = document.getElementById('custom-scrollbar-thumb');
-    const tick = () => { if (getComputedStyle(t).display === 'block') res(Number(getComputedStyle(t).opacity)); else requestAnimationFrame(tick); }; tick(); }));
-  assert(parseFloat(await css(d, '#custom-scrollbar-thumb', 'height')) > 40 && thumbO < 1 && await css(d, '#custom-scrollbar-thumb', 'animationName') === 'fade-in', `展開後自製捲軸 thumb 出現、淡入（剛出現 opacity ${thumbO}）`);
+    const t0 = performance.now(), tick = () => { if (getComputedStyle(t).display === 'block') res(Number(getComputedStyle(t).opacity)); else if (performance.now() - t0 > 3000) res(-1); else requestAnimationFrame(tick); }; tick(); }));   // 等不到（清單太短沒捲軸）＝-1、斷言失敗，不要整輪卡住
+  assert(parseFloat(await css(d, '#custom-scrollbar-thumb', 'height')) > 40 && thumbO >= 0 && thumbO < 1 && await css(d, '#custom-scrollbar-thumb', 'animationName') === 'fade-in', `展開後自製捲軸 thumb 出現、淡入（剛出現 opacity ${thumbO}）`);
   const ur = await rect(d, '.home-news-list > ul');
   assert(Math.abs(ur.left + ur.width / 2 - 640) < 2 && Math.abs(ur.width - 512) < 2, `desktop 清單畫面中間 32rem（cx ${ur.left + ur.width / 2} w ${ur.width}）`);
-  { const box = await rect(d, '.home-news-box'), lt = await rect(d, '.logo-text');   // 動態圖片跟 logo 左右對齊（user 2026-11-21）
-    assert(Math.abs(box.left - lt.left) < 0.5 && Math.abs(box.width - lt.width) < 0.5, `desktop 動態圖片＝logo 寬、左右對齊（圖 ${box.left}～${box.left + box.width}、logo ${lt.left}～${lt.left + lt.width}）`); }
+  // 首頁動態 PC＝同內頁的清單列（user 2026-11-24；原本圖＝logo 寬、圖在上）：縮圖＝內頁清單的縮圖一樣大（--item-thumb-w，1280 寬＝124）、方框、文字隔一個 gutter、沒有框線；
+  // 後台沒有圖＝不放圖框（user 2026-11-24）由接後台那段驗
+  {     const box = await rect(d, '.home-news-box'), txt = await rect(d, '.home-news-list li p'), W = ((1280 - 120 - 24) / 2 - 5 * 24) / 6 * 1.5 + 12;
+    assert(Math.abs(box.left - ur.left) < 0.5 && Math.abs(box.width - W) < 0.5 && Math.abs(box.height - W) < 0.5
+      && Math.abs(txt.left - (box.left + W + 24)) < 0.5 && await css(d, '.home-news-box', 'borderTopWidth') === '0px',
+      `desktop 動態＝清單列：縮圖同清單（${W}）貼左、文字隔一個 gutter、沒有框（圖 ${box.left}～${box.left + box.width}×${box.height}、字 ${txt.left}）`);
+  }
   await d.waitForTimeout(1100);   // 跑馬燈先淡出（0.4s）logo 才上移（0.6s）
   lr = await rect(d, '.site-logo');
   assert(Math.abs(lr.left + lr.width / 2 - 640) < 2 && lr.top < 1, 'desktop 展開後 logo 頂到頂置中');
@@ -974,9 +1030,9 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
       const r = li.getBoundingClientRect(); li.dataset.t = '1'; return { x: r.left + r.width / 2, y: (Math.max(r.top, lo) + Math.min(r.bottom, hi)) / 2 }; });
     await d.mouse.move(at.x, at.y);
     const band = await d.evaluate(() => document.querySelector('[data-t] .item-cover')?.getBoundingClientRect().width || 0);
-    await d.waitForTimeout(1200);
+    await d.waitForTimeout(1700);   // 蓋、收各 DUR.fast，收完再等 0.2 秒、直條切出來（user 2026-11-24）
     const st = await d.evaluate(() => [...document.querySelectorAll('[data-t] .item-cover')].map(s => [Math.round(s.getBoundingClientRect().width), getComputedStyle(s).opacity]));
-    await d.mouse.move(20, 400);
+    await d.mouse.move(20, 400); await d.waitForTimeout(600);   // 離開＝直條切出去（user 2026-11-24）
     const gone = await d.evaluate(() => !document.querySelector('[data-t] .item-cover'));
     await d.evaluate(() => document.querySelector('[data-t]')?.removeAttribute('data-t'));
     assert(band > 100 && st.length >= 1 && st.every(([w, o]) => w < 15 && o === '1') && gone, `首頁展開：hover 一則＝蓋黑收直條（帶 ${band}、直條 ${JSON.stringify(st)}、離開拿掉 ${gone}）`);
@@ -1062,17 +1118,36 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 姊妹系所（user 2026-11-21）＝連結清單：一行一個、整列可點，同網站地圖那種；hover＝蓋黑收直條、不出圓點（user 2026-11-23）
   await d.waitForFunction(() => document.querySelectorAll('.footer-links a').length === 3);   // 等後台（假資料）換進來
   await d.hover('.footer-links a >> nth=0');
-  await d.waitForTimeout(1300);   // 蓋、收各 DUR.fast，直條再淡出來 DUR.fade
+  await d.waitForTimeout(1700);   // 蓋、收各 DUR.fast，收完再等 0.2 秒、直條切出來（user 2026-11-24）
   assert(await d.$$eval('.footer-links a', as => { const r = as.map(a => a.getBoundingClientRect()), body = as[0].closest('.page-body').getBoundingClientRect();
-    const range = document.createRange(); range.selectNodeContents(as[0]); const t = range.getBoundingClientRect(), c = as[0].querySelectorAll('.item-cover');
-    return getComputedStyle(as[0], '::after').opacity === '0' && c.length === 1 && c[0].getBoundingClientRect().left > t.left && c[0].getBoundingClientRect().right < body.right
+    // 只量字（最後一段文字節點）：直條是插在連結裡的 span，量整個連結會把直條也算進去
+    const range = document.createRange(), txt = [...as[0].childNodes].filter(n => n.nodeType === 3 && (n.textContent || '').trim()).pop();
+    range.selectNodeContents(txt || as[0]); const t = range.getBoundingClientRect(), c = as[0].querySelectorAll('.item-cover');
+    // 直條在字尾後面隔一根直條寬（寬 0.4em），同選單（user 2026-11-24：「網站地圖的 stroke 位置，比照 menu 的」；同一天先做過貼在這一列的最右緣）；中文字尾扣掉燒在字體裡的 0.205em 字距
+    const fs = parseFloat(getComputedStyle(as[0]).fontSize), tr = /[⺀-鿿豈-﫿︰-﹏＀-￯]$/.test((as[0].textContent || '').trim()) ? 0.205 * fs : 0;
+    return getComputedStyle(as[0], '::after').opacity === '0' && c.length === 1 && Math.abs(c[0].getBoundingClientRect().left - (t.right - tr + 0.4 * fs)) < 1
       && as[1].querySelectorAll('.item-cover').length === 0 && r.every(x => Math.abs(x.right - body.right) < 1 && Math.abs(x.left - body.left) < 1)
       && r.every((x, i) => i === 0 || x.top >= r[i - 1].bottom); }), '聯絡頁姊妹系所：一行一個、hover 收成字尾一根直條、不出圓點');
-  // 社群方框（沒有字）＝整個框當那一行：hover 收完一根直條在框右邊
-  await d.hover('.footer-social-box >> nth=0');
-  await d.waitForTimeout(1300);
-  assert(await d.$eval('.footer-social-box', a => { const c = a.querySelector('.item-cover'), o = a.getBoundingClientRect(), q = c?.getBoundingClientRect();
-    return !!q && q.left > o.right && Math.abs(q.height - o.height) < 0.5; }), '聯絡頁社群方框：hover 收成框右邊一根直條');
+  // 社群的 IG icon（沒有字）＝icon 當那一行：hover 收完一根直條在 icon 右邊、跟 icon 一樣高
+  await d.hover('.footer-social a');
+  await d.waitForTimeout(1700);
+  assert(await d.$eval('.footer-social a', a => { const c = a.querySelector('.item-cover'), o = a.getBoundingClientRect(), q = c?.getBoundingClientRect();
+    return !!q && q.left > o.right && Math.abs(q.height - o.height) < 0.5; }), '聯絡頁社群 IG icon：hover 收成 icon 右邊一根直條');
+
+  // ── 網頁 icon ← 後台（site_icons，user 2026-11-24；js/modules/ui/site-assets.js）：後台有那個 key 的檔＝CSS 裡用到 website-icons/<key>.svg 的地方換成後台那張，
+  // 沒有的照本地。play＝.icon-play 的 --icon；volume＝音量拉桿的 mask（不在 --icon 上，一樣換）；沒放檔的 key 不算
+  {
+    const s = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await watch(s);
+    await s.route(/scaidcms\.usc\.edu\.tw\/items\/site_icons/, r => r.fulfill({ headers: CORS, json: { data: [{ key: 'play', file: 'p1' }, { key: 'volume', file: 'v1' }, { key: 'next', file: null }] } }));
+    await s.goto(base + '/pages/about.html');
+    await s.waitForSelector('#site-icons', { state: 'attached' });
+    assert(await s.evaluate(() => {
+      const v = (sel) => getComputedStyle(document.querySelector(sel)).getPropertyValue('--icon'), bars = getComputedStyle(document.querySelector('.media-vol-bars'), '::before');
+      return v('.play-btn .icon').includes('/assets/p1') && v('.icon-next').includes('website-icons/next.svg') && /assets\/v1/.test(bars.maskImage || bars.webkitMaskImage);
+    }), '網頁 icon：後台有的換成後台那張（play 的 --icon、音量拉桿的 mask），沒有的照本地（user 2026-11-24）');
+    await s.close();
+  }
 
   // 課程（user 2026-11-21 改）：排法同入學——一門課一個摺疊，外面＝課名＋必修／選修（在課名下面），點開＝課程說明；沒有詳細頁。
   // 年級照樣是 Section title（有段落導覽）、text-md（全站 Section title 都是 md，剛好同課名）；同年級必修在前、選修在後
@@ -1118,11 +1193,12 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 列表縮圖＝正方形、寬 1.5 欄（1.5 個欄寬＋半個 gutter，user 2026-11-18），文字接在一個 gutter 之後
   const thumbW = 1.5 * (1280 - 120 - 11 * 24) / 12 + 12;
   const itemTh = await rect(d, '.item-thumb'), itemTxt = await rect(d, '.item-row > :last-child');
-  assert(Math.abs(itemTh.width - thumbW) < 1 && Math.abs(itemTh.height - itemTh.width) < 1 && Math.abs(itemTxt.left - (itemTh.left + itemTh.width + 24)) < 1,
-    `列表縮圖 1.5 欄、文字隔一個 gutter（縮圖 ${itemTh.width}×${itemTh.height} vs ${thumbW}、文字 ${itemTxt.left}）`);
+  assert(Math.abs(itemTh.width - thumbW) < 1 && itemTh.height <= itemTh.width + 1 && Math.abs(itemTxt.left - (itemTh.left + itemTh.width + 24)) < 1,
+    `列表縮圖框 1.5 欄（圖照原比例、高不超過框寬；user 2026-11-24）、文字隔一個 gutter（縮圖 ${itemTh.width}×${itemTh.height} vs ${thumbW}、文字 ${itemTxt.left}）`);
   // 師資列表（user 2026-11-18）：段落順序專任 → 兼任 → 業界導師（HTML 寫死；後台接上後的順序見上）；名字＝標題 text-md（21.6px）、副標 text-s（18.4px；user 2026-11-21）；
   // 清單列 hover（user 2026-11-22，PC；取代圓點）：標題、副標每行字先被一條字高的帶蓋住（左 → 右長出來），再一起往右收到字尾，
-  // 收完才在字尾後面隔一根直條寬淡出一根直條（user 2026-11-23 改成 fade；寬 0.4em、高＝字高；以文字的高度為主、不用跟 logo 一樣；user 2026-11-23：帶不跨過去、直條等帶收完）；hover 著才在、離開直接拿掉（不淡）、再 hover 重做；整列不變淡
+  // 帶收完、游標還在，再等 0.2 秒、還在才切出直條（進出場都是 clip），直條貼在列的最右緣（user 2026-11-24；寬 0.4em、高＝字高；帶不跨過去）；
+  // hover 著才留、離開＝淡出（user 2026-11-24：「出場是 fade out」）、再 hover 重做；整列不變淡
   assert(/專任教師[\s\S]*兼任教師[\s\S]*業界導師/.test(fs.readFileSync(path.join(ROOT, 'pages/faculty.html'), 'utf8')), '師資段落順序（HTML）：專任 → 兼任 → 業界導師');
   assert(await css(d, '.item-row h3', 'fontSize') === '21.6px' && await css(d, '.item-row p', 'fontSize') === '18.4px', '師資：名字 21.6px、副標 18.4px');
   {
@@ -1132,11 +1208,19 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
       // 字尾＝最後一個字本身的右緣：中文字扣掉右邊燒在字體裡的字距（0.205em，user 2026-11-23）
       const lines = [...el.querySelectorAll('h3, p')].map(l => { range.selectNodeContents(l); const t = range.getBoundingClientRect(), r = l.getBoundingClientRect(), fs = parseFloat(getComputedStyle(l).fontSize);
         const tr = /[⺀-鿿豈-﫿︰-﹏＀-￯]$/.test((l.textContent || '').trim()) ? 0.205 * fs : 0;
-        return { end: Math.min(r.left + t.width - tr, r.left + l.clientWidth) - o.left, cy: r.top + r.height / 2 - o.top, fs }; });
+        // 筆畫的上下緣（canvas 量每個字離基線多遠；基線＝字框頂＋主字型的 ascent）：帶要蓋到這裡（中文字的頂、g、j、y 的腳）
+        const cs = getComputedStyle(l), pen = /** @type {CanvasRenderingContext2D} */ (document.createElement('canvas').getContext('2d'));
+        pen.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const base = t.top + pen.measureText('x').fontBoundingBoxAscent - o.top, ms = [...(l.textContent || '').replace(/\s/g, '')].map(ch => pen.measureText(ch));
+        return { end: Math.min(r.left + t.width - tr, r.left + l.clientWidth) - o.left, cy: r.top + r.height / 2 - o.top, fs,
+          inkTop: Math.min(...ms.map(m => base - m.actualBoundingBoxAscent)) - 1 / devicePixelRatio, inkBot: Math.max(...ms.map(m => base + m.actualBoundingBoxDescent)) + 1 / devicePixelRatio }; });   // 多一個實體像素＝反鋸齒的邊
       // 帶看得到的那段＝clip-path 切出來的（inset 上右下左）：l＝左邊切掉多少、v＝露出多寬
       const covers = [...el.querySelectorAll('.item-cover')].map(c => { const r = c.getBoundingClientRect(), n = (getComputedStyle(c).clipPath.match(/-?[\d.]+/g) || []).map(Number);
-        return { x: r.left - o.left, w: r.width, h: r.height, cy: r.top + r.height / 2 - o.top, l: n.length === 4 ? n[3] : 0, v: n.length === 4 ? r.width - n[1] - n[3] : r.width }; });
-      return { lines, covers, dot: getComputedStyle(el, '::after').display, rowO: getComputedStyle(el).opacity };
+        return { x: r.left - o.left, w: r.width, h: r.height, cy: r.top + r.height / 2 - o.top, l: n.length === 4 ? n[3] : 0, v: n.length === 4 ? r.width - n[1] - n[3] : r.width, ph: c.dataset.phase || '', op: Number(getComputedStyle(c).opacity) }; });
+      // 縮圖裡看得到的圖（user 2026-11-24：「stroke 的高度應該是看內容的高度，而不是 box 的高度」）：桌面的圖 contain 在框的正中＝照原比例縮、上下置中
+      const t = el.querySelector('.item-thumb'), q = t?.getBoundingClientRect(), im = t?.querySelector('img'), ih = q && (im?.naturalWidth ? Math.min(q.height, q.width * im.naturalHeight / im.naturalWidth) : q.height);
+      const th = q ? { top: q.top + (q.height - ih) / 2 - o.top, h: ih } : null;
+      return { lines, covers, th, W: o.width, dot: getComputedStyle(el, '::after').display, rowO: getComputedStyle(el).opacity };
     });
     await d.mouse.move(640, 5);
     let r0 = await row(0);
@@ -1145,65 +1229,90 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     await d.hover('a.item-row >> nth=0 >> .item-thumb');
     await d.waitForTimeout(150);
     assert((await row(0)).covers.length > 0, '列表列：游標在縮圖上也蓋黑收直條（hover 整列）');
-    await d.mouse.move(640, 5); await d.waitForTimeout(900);   // 走掉＝帶照樣跑完、不出直條，跑完拿掉
-    assert((await row(0)).covers.length === 0, '列表列：縮圖上 hover 一下就走＝跑完拿掉、不留直條');
+    await d.mouse.move(640, 5); await d.waitForTimeout(1300);   // 走掉＝帶照樣跑完、不出直條
+    assert((await row(0)).covers.length === 0, '列表列：縮圖上 hover 一下就走＝帶跑完、不出直條');
+    const t0 = Date.now();
     await d.hover('a.item-row >> nth=0');
     await d.waitForTimeout(100);
     r0 = await row(0);
-    assert(r0.covers.length === r0.lines.length && r0.covers.every((c, k) => c.l === 0 && c.v > 0.5 && c.v < r0.lines[k].end - c.x - 0.5 && Math.abs(c.h - r0.lines[k].fs) < 0.2 && Math.abs(c.cy - r0.lines[k].cy) < 1),
-      `列表列 hover：每行字一條字高的帶、對在那一行的正中、從左邊長出來、還沒蓋到字尾（途中 ${JSON.stringify(r0.covers)}）`);
-    // 收（user 2026-11-23：「嚴格來說全部都是到文字 box 的右邊緣，有 hover 的話應該是在原本應該出現的 stroke 位置 clip 出現」「stroke 應該要等前面的遮罩做完才出現」）：
-    // 帶的框＝剛好那一行字、往右收到沒有（不跨過字尾後面的間隔），這段還沒有直條；收完、游標還在，直條才在自己那一格（字尾隔一根直條寬）淡出來（只有透明度、不糊，user 2026-11-23）
-    const phase = (p) => d.waitForFunction((p) => {
+    // 帶＝字高、頂對在字高的頂；有 g、j、y 的行往下多蓋到字腳（user 2026-11-24：「g、j、y 這樣的也覆蓋到，現在他們的腳會露出來」）＝高 1～1.3 個字高
+    // 中文字的頂比字高高的也往上蓋（同一天：「這個遮罩，在中文字體上也會有之前設定的 gyj 類似的問題」）＝帶的上下緣＝字高與筆畫取外側
+    assert(r0.covers.length === r0.lines.length && r0.covers.every((c, k) => { const L = r0.lines[k];
+      return c.ph !== 'stroke' && c.l === 0 && c.v > 0.5 && c.v < L.end - c.x - 0.5 && c.h < L.fs * 1.5
+        && Math.abs(c.cy - c.h / 2 - Math.min(L.cy - L.fs / 2, L.inkTop)) < 1 && Math.abs(c.cy + c.h / 2 - Math.max(L.cy + L.fs / 2, L.inkBot)) < 1; }),
+      `列表列 hover：每行字一條字高的帶、往上往下蓋到筆畫（中文字的頂、字腳）、從左邊長出來、還沒蓋到字尾；直條還沒出來（途中 ${JSON.stringify(r0.covers)}、字 ${JSON.stringify(r0.lines)}）`);
+    // 收（user 2026-11-23：「嚴格來說全部都是到文字 box 的右邊緣」）：帶的框＝剛好那一行字、往右收到沒有（不跨過字尾後面的間隔）
+    const out = await d.waitForFunction(() => {
       const el = /** @type {Element} */ (document.querySelector('a.item-row')), o = el.getBoundingClientRect(), cs = [...el.querySelectorAll('.item-cover')];
-      return cs.length > 0 && cs.every(c => c.dataset.phase === p) && cs.map(c => { const r = c.getBoundingClientRect(), k = c.getAnimations()[0]?.effect?.getKeyframes(), f = k?.[k.length - 1], n = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number);
-        // endV＝帶這一段的終點露出多寬（clip-path）；直條動的是透明度：o0／o1＝起點／終點的透明度、b0＝有沒有動到模糊（不要糊，user 2026-11-23）
-        return { x: r.left - o.left, w: r.width, cy: r.top + r.height / 2 - o.top, endV: n.length === 4 ? r.width - n[1] - n[3] : null,
-          o0: Number(k?.[0]?.opacity), o1: Number(f?.opacity), b0: /blur/.test(String(k?.[0]?.filter) + String(f?.filter)) }; });
-    }, p, { polling: 'raf', timeout: 3000 }).then(h => h.jsonValue()).catch(() => []);
-    const out = await phase('out'), stroke = await phase('stroke');
-    assert(out.length === r0.lines.length && r0.lines.every(l => out.some(c => Math.abs(c.x + c.w - l.end) < 1 && Math.abs(c.endV) < 0.5 && Math.abs(c.cy - l.cy) < 1))
-      && stroke.length === r0.lines.length && r0.lines.every(l => { const sw = l.fs * 0.4; return stroke.some(c => Math.abs(c.x - (l.end + sw)) < 1 && Math.abs(c.w - sw) < 0.2 && c.o0 === 0 && c.o1 === 1 && !c.b0 && Math.abs(c.cy - l.cy) < 1); }),
-      `列表列收：帶只走到字尾、收到沒有，這段還沒有直條；收完直條才在自己那一格淡出來（只有透明度、不糊）（收 ${JSON.stringify(out)}；直條 ${JSON.stringify(stroke)}）`);
-    await d.waitForTimeout(700);
+      if (!cs.length || !cs.every(c => c.dataset.phase === 'out')) return null;
+      return cs.map(c => { const r = c.getBoundingClientRect(), k = c.getAnimations()[0]?.effect?.getKeyframes() || [], n = (String(k[k.length - 1]?.clipPath).match(/-?[\d.]+/g) || []).map(Number);
+        return { x: r.left - o.left, w: r.width, cy: r.top + r.height / 2 - o.top, endV: n.length === 4 ? r.width - n[1] - n[3] : null }; });
+    }, null, { polling: 'raf', timeout: 3000 }).then(h => h.jsonValue()).catch(() => []);
+    assert(out.length === r0.lines.length && r0.lines.every(l => out.some(c => Math.abs(c.x + c.w - l.end) < 1 && Math.abs(c.endV) < 0.5 && Math.abs(c.cy - l.cy) < 1)),
+      `列表列收：帶只走到字尾、收到沒有（${JSON.stringify(out)}）`);
+    // 帶收完：先空著等 0.2 秒（沒有直條），游標還在才在自己那一格從左到右切出直條——clip、不淡（user 2026-11-24：「stroke 的進場是用 clip 不是 fade」）
+    const gap = await d.waitForFunction(() => /** @type {Element} */ (document.querySelector('a.item-row')).querySelectorAll('.item-cover').length === 0, null, { polling: 'raf', timeout: 2000 }).then(() => true, () => false);
+    const fi = await d.waitForFunction(() => { const cs = [.../** @type {Element} */ (document.querySelector('a.item-row')).querySelectorAll('.item-cover[data-phase="stroke"]')];
+      // 起點露出多寬／終點露出多寬（clip-path inset 上右下左）、有沒有動到透明度
+      return cs.length ? cs.map(c => { const k = c.getAnimations()[0]?.effect?.getKeyframes(), w = c.getBoundingClientRect().width, v = (/** @type {any} */ f) => { const n = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number); if (!n.length) return null; const [t, r = t, b = t, l = r] = n; return Math.round((w - r - l) * 10) / 10; };   // inset() 簡寫（WebKit：inset(0px)）補成上右下左
+        return k ? [v(k[0]), v(k[k.length - 1]), Math.round(w * 10) / 10, k.some(f => 'opacity' in f)] : null; }) : null; },
+      null, { polling: 'raf', timeout: 3000 }).then(h => h.jsonValue()).catch(() => []);
+    const waited = Date.now() - t0;
+    assert(gap && waited >= 750 && fi.length === 1 && fi.every(f => f && f[0] === 0 && Math.abs(f[1] - f[2]) < 0.2 && !f[3]),
+      `列表列：帶收完、游標還在＝空著等 0.2 秒才從左到右切出直條（user 2026-11-24：選單也是；hover 後 ${waited}ms 出現、應 ≥ 800；中間空著 ${gap}；[起點露出, 終點露出, 寬, 有沒有淡] ${JSON.stringify(fi)}）`);
+    await d.waitForTimeout(600);
     r0 = await row(0);
-    assert(r0.rowO === '1' && r0.covers.length === r0.lines.length && r0.covers.every((c, k) => { const l = r0.lines[k], sw = l.fs * 0.4; return Math.abs(c.w - sw) < 0.2 && Math.abs(c.h - l.fs) < 0.2 && Math.abs(c.x - (l.end + sw)) < 1 && Math.abs(c.cy - l.cy) < 1; }),
-      `列表列 hover：標題、副標都收成一根直條（字高、寬 0.4em）、停在字尾隔一根直條寬（${JSON.stringify(r0)}）`);
-    // 游標不動＝直條一直在；離開＝直接拿掉（不淡，user 2026-11-22）；再 hover＝重新蓋黑收直條；收到一半離開也是直接拿掉
+    // 一列一根（user 2026-11-24：「出現的時候拿 title 的寬度，然後是 box 的高度（看哪個元素比較高…）」）：寬＝標題字級 × 0.4、貼在列的最右緣；
+    // 高＝文字塊（標題第一行上緣～最後一行下緣，字高）和縮圖裡看得到的圖比較高的那一塊，上下也對齊那一塊
+    { const tt = Math.min(...r0.lines.map(l => l.cy - l.fs / 2)), tb = Math.max(...r0.lines.map(l => l.cy + l.fs / 2)), c = r0.covers[0], sw = r0.lines[0].fs * 0.4;
+      const want = r0.th && r0.th.h > tb - tt ? r0.th : { top: tt, h: tb - tt };
+      assert(r0.rowO === '1' && r0.covers.length === 1 && Math.abs(c.w - sw) < 0.2 && Math.abs(c.x + c.w - r0.W) < 1 && c.x > Math.max(...r0.lines.map(l => l.end))
+        && Math.abs(c.h - want.h) < 1 && Math.abs(c.cy - c.h / 2 - want.top) < 1,
+        `列表列 hover：一列一根直條、標題的寬、比較高那塊（${r0.th && r0.th.h > tb - tt ? '縮圖' : '文字'}）的高、貼在列的最右緣、不壓到字（${JSON.stringify(r0)}）`); }
+    // 游標不動＝直條一直在；離開＝從左往右切出去（user 2026-11-24：「stroke 離開的時候，改成 clip 的出去，不是用 fade」）、不淡，切完才拿掉；再 hover＝重新蓋黑收直條
     await d.waitForTimeout(300);
-    assert((await row(0)).covers.length === r0.lines.length, '列表列：游標不動＝直條一直在');
+    assert((await row(0)).covers.length === 1, '列表列：游標不動＝直條一直在');
     await d.mouse.move(640, 5);
-    assert((await row(0)).covers.length === 0, '列表列：游標離開＝直條直接拿掉（不淡）');
+    // [起點整根露出, 終點左邊切掉多少, 直條寬, 有沒有動到透明度]
+    const fo = await d.$eval('a.item-row', el => [...el.querySelectorAll('.item-cover')].map(c => { const k = c.getAnimations()[0]?.effect?.getKeyframes(), n = (/** @type {any} */ f) => { const q = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number), [t = 0, r = t, b = t, l = r] = q; return [t, r, b, l]; };   // inset() 簡寫補成上右下左
+      if (!k) return null; const a = n(k[0]), z = n(k[k.length - 1]); return [a.every(x => x === 0), Math.round((z[3] ?? 0) * 10) / 10, Math.round(c.getBoundingClientRect().width * 10) / 10, k.some(f => 'opacity' in f)]; }));
+    assert(fo.length === 1 && fo.every(f => f && f[0] && Math.abs(f[1] - f[2]) < 0.2 && !f[3]), `列表列：游標離開＝直條從左往右切出去（clip、不淡；${JSON.stringify(fo)}）`);
+    await d.waitForTimeout(600);
+    assert((await row(0)).covers.length === 0, '列表列：切完才拿掉');
     await d.hover('a.item-row >> nth=0'); await d.waitForTimeout(100);
-    assert((await row(0)).covers.length === r0.lines.length, '列表列：再 hover＝重新蓋黑收直條');
-    // 一 hover 到就整段做完（user 2026-11-22）：跑到一半離開＝照樣跑完，但直條不切出來、不留（沒停在上面就不要直條）
+    assert((await row(0)).covers.filter(c => c.ph !== 'stroke').length === r0.lines.length, '列表列：再 hover＝重新蓋黑收直條');
+    // 一 hover 到帶就整段做完（user 2026-11-22）：跑到一半離開＝帶照樣收完，但不出直條（user 2026-11-22：「如果我沒有停在 item 上的話，它這個動畫就不需要有那個 stroke」）
     await d.mouse.move(640, 5);
-    // 收的終點露出多寬（帶＝clip-path、直條＝寬；0＝收到沒有、不留直條）
-    const ends = () => d.$eval('a.item-row', el => [...el.querySelectorAll('.item-cover')].map(c => { const k = c.getAnimations()[0]?.effect.getKeyframes(), f = k?.[k.length - 1], n = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number);
-      return f?.width ? parseFloat(String(f.width)) : n.length === 4 ? Math.round((c.getBoundingClientRect().width - n[1] - n[3]) * 10) / 10 : 'still'; }));
-    assert((await row(0)).covers.length >= r0.lines.length, '列表列：跑到一半離開＝照樣跑完（帶還在）');
-    await d.waitForFunction(() => [...document.querySelector('a.item-row').querySelectorAll('.item-cover')].every(c => c.dataset.phase === 'out'), null, { timeout: 3000 }).catch(() => {});
+    // 帶收的終點露出多寬（clip-path；0＝收到沒有）
+    const ends = () => d.$eval('a.item-row', el => [...el.querySelectorAll('.item-cover:not([data-phase="stroke"])')].map(c => { const k = c.getAnimations()[0]?.effect.getKeyframes(), f = k?.[k.length - 1], n = (String(f?.clipPath).match(/-?[\d.]+/g) || []).map(Number);
+      return n.length === 4 ? Math.round((c.getBoundingClientRect().width - n[1] - n[3]) * 10) / 10 : 'still'; }));
+    assert((await row(0)).covers.length === r0.lines.length, '列表列：跑到一半離開＝帶照樣跑完');
+    await d.waitForFunction(() => [...document.querySelector('a.item-row').querySelectorAll('.item-cover:not([data-phase="stroke"])')].every(c => c.dataset.phase === 'out'), null, { timeout: 3000 }).catch(() => {});
     const e = await ends();
-    assert(e.length >= r0.lines.length && e.every(x => x === 0), `列表列：游標已經走了＝帶收到沒有、直條不切出來（收的終點露出 ${JSON.stringify(e)} px）`);
-    await d.waitForTimeout(700);
-    assert((await row(0)).covers.length === 0 && (await row(1)).covers.length === 0, '列表列：跑完就拿掉、沒碰過的列沒有');
+    assert(e.length >= r0.lines.length && e.every(x => x === 0), `列表列：游標已經走了＝帶照樣收到沒有（收的終點露出 ${JSON.stringify(e)} px）`);
+    await d.waitForTimeout(1300);   // 收完（DUR.fast）＋本來要等的 0.2 秒＋淡入的時間，都不該冒出直條
+    assert((await row(0)).covers.length === 0 && (await row(1)).covers.length === 0, '列表列：跑到一半離開＝帶收完就沒了、不出直條；沒碰過的列沒有');
   }
-  // 標題放不下＝折行、不跑馬燈（user 2026-11-23）；hover＝整塊一條帶（兩行不是兩條）、直條跟整塊一樣高、在最寬那行的字尾隔一根直條寬
+  // 標題放不下＝折行、不跑馬燈（user 2026-11-23）；hover＝一行一條帶（user 2026-11-24）；直條一列一根、貼在列的最右緣、高＝文字塊和縮圖框比較高的那一塊（user 2026-11-24）
   {
     const was = await d.$eval('a.item-row >> nth=1 >> h3', h => { const t = h.textContent; h.textContent = '很長的標題'.repeat(12); return t; });
     await d.hover('a.item-row >> nth=1');
-    await d.waitForTimeout(1500);   // 蓋 → 收 → 直條長完
+    await d.waitForTimeout(1700);   // 蓋 → 收 → 等 0.2 秒 → 直條淡完（user 2026-11-24）
     const t = await d.$eval('a.item-row >> nth=1', el => {
       const h = /** @type {Element} */ (el.querySelector('h3')), o = el.getBoundingClientRect(), range = document.createRange(), fs = parseFloat(getComputedStyle(h).fontSize);
       range.selectNodeContents(h);
       const rs = [...range.getClientRects()].filter(q => q.width), a = rs[0], z = rs[rs.length - 1];
-      return { lines: rs.length, ws: getComputedStyle(h).whiteSpace, subs: [...el.querySelectorAll('p:not(.sr-only)')].filter(p => p.textContent?.trim()).length, fs,
+      return { lines: rs.length, ws: getComputedStyle(h).whiteSpace, subs: [...el.querySelectorAll('p:not(.sr-only)')].filter(p => p.textContent?.trim()).length, fs, W: o.width,
         top: a.top + a.height / 2 - fs / 2 - o.top, h: z.top + z.height / 2 - a.top - a.height / 2 + fs, end: Math.max(...rs.map(q => q.right)) - 0.205 * fs - o.left,   // 每行都是中文字結尾：扣掉最後一個字右邊的字距
-        bars: [...el.querySelectorAll('.item-cover')].map(c => { const r = c.getBoundingClientRect(); return { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height }; }) };
+        bars: [...el.querySelectorAll('.item-cover')].map(c => { const r = c.getBoundingClientRect(); return { x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height }; }),
+        // 文字塊的下緣＝最後一個副標那一行的字（字高對在行的正中）；縮圖框
+        bot: (() => { const ps = [...el.querySelectorAll('p:not(.sr-only)')].filter(p => p.textContent?.trim()), p = ps[ps.length - 1]; if (!p) return null; const r = p.getBoundingClientRect(); return r.top + r.height / 2 + parseFloat(getComputedStyle(p).fontSize) / 2 - o.top; })(),
+        th: (() => { const t = el.querySelector('.item-thumb'), q = t?.getBoundingClientRect(), im = t?.querySelector('img'); if (!q) return null;   // 看得到的圖（同上 row()）
+          const h = im?.naturalWidth ? Math.min(q.height, q.width * im.naturalHeight / im.naturalWidth) : q.height; return { top: q.top + (q.height - h) / 2 - o.top, h }; })() };
     });
-    const tb = t.bars.find(b => Math.abs(b.y - t.top) < 1);
-    assert(t.lines >= 2 && t.ws !== 'nowrap' && t.bars.length === 1 + t.subs && !!tb && Math.abs(tb.h - t.h) < 1 && Math.abs(tb.w - t.fs * 0.4) < 0.2 && Math.abs(tb.x - (t.end + t.fs * 0.4)) < 1,
-      `標題太長＝折行、不跑馬燈；hover 整塊一條帶、直條跟整塊一樣高（${JSON.stringify(t)}）`);
+    const tb = t.bars[0], text = { top: t.top, h: (t.bot ?? t.top + t.h) - t.top }, want = t.th && t.th.h > text.h ? t.th : text;
+    assert(t.lines >= 2 && t.ws !== 'nowrap' && t.bars.length === 1 && !!tb && Math.abs(tb.h - want.h) < 1 && Math.abs(tb.y - want.top) < 1 && Math.abs(tb.w - t.fs * 0.4) < 0.2 && Math.abs(tb.x + tb.w - t.W) < 1 && tb.x > t.end,
+      `標題太長＝折行、不跑馬燈；直條一列一根、比較高那塊的高、貼在列的最右緣（${JSON.stringify(t)}）`);
     await d.mouse.move(640, 5);
     await d.$eval('a.item-row >> nth=1 >> h3', (h, t) => { h.textContent = t; }, was);
   }
@@ -1246,28 +1355,28 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     'qa：分類標題 21.6px（Section title md）、問題＝清單列標題 21.6px、答案 18.4px（同課程）');
   let f = await fold(0);
   assert(await css(d, 'summary', 'display') === 'block' && f.dot === 'none', `qa：沒有原生箭頭、PC 不出圓點（${JSON.stringify(f)}）`);
-  // 手風琴也蓋黑收直條（user 2026-11-22）：問題（清單列的標題）折成好幾行（窄欄）＝整塊一條帶、直條跟整塊一樣高（user 2026-11-23），
+  // 手風琴也蓋黑收直條（user 2026-11-22）：問題（清單列的標題）折成好幾行（窄欄）＝一行一條帶（user 2026-11-24）、直條一根跟整塊一樣高，
   // 停在最寬那行的字尾後面隔一根直條寬；離開直接拿掉
   {
     await d.$eval('details', el => { el.style.width = '7em'; });
     const q = await rect(d, 'summary');
     await d.mouse.move(q.left + 10, q.top + 10);
     await d.waitForTimeout(100);
-    const n = await d.$eval('summary', el => el.querySelectorAll('.item-cover').length);
-    await d.waitForTimeout(1200);   // 蓋、收各 DUR.fast，直條再淡出來 DUR.fade
+    const n = await d.$eval('summary', el => el.querySelectorAll('.item-cover:not([data-phase="stroke"])').length);   // 帶
+    await d.waitForTimeout(1600);   // 蓋、收各 DUR.fast，收完再等 0.2 秒、直條切出來（user 2026-11-24）
     const st = await d.$eval('summary', el => {
       const o = el.getBoundingClientRect(), h = /** @type {Element} */ (el.querySelector('h3')), cs = getComputedStyle(h), lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize), range = document.createRange();
       range.selectNodeContents(h);
       const rs = [...range.getClientRects()].filter(r => r.width > 0), hr = h.getBoundingClientRect();
       const tr = /[⺀-鿿豈-﫿︰-﹏＀-￯]$/.test((h.textContent || '').trim()) ? 0.205 * fs : 0;   // 中文字結尾：扣掉右邊的字距（user 2026-11-23）
       const vis = [...el.querySelectorAll('.item-cover')].map(c => c.getBoundingClientRect()).filter(r => r.width > 0.5).map(r => ({ x: r.left - o.left, w: r.width, h: r.height }));
-      return { lines: Math.round(hr.height / lh), vis, end: Math.max(...rs.map(r => r.right)) - tr - o.left, fs, lh };
+      return { lines: Math.round(hr.height / lh), vis, end: Math.max(...rs.map(r => r.right)) - tr - o.left, fs, lh, W: o.width };
     });
     const v = st.vis[0], sw = st.fs * 0.4;
-    assert(st.lines >= 2 && n === 1 && st.vis.length === 1 && Math.abs(v.w - sw) < 0.2 && v.h > st.lh && Math.abs(v.x - (st.end + sw)) < 1,
-      `qa：問題折行＝整塊一條帶、直條跟整塊一樣高、停在最寬那行的字尾後面（帶 ${n} 條；${JSON.stringify(st)}）`);
-    await d.mouse.move(640, 5);
-    assert(await d.$eval('summary', el => el.querySelectorAll('.item-cover').length) === 0, 'qa：游標離開＝直條直接拿掉');
+    assert(st.lines >= 2 && n === st.lines && st.vis.length === 1 && Math.abs(v.w - sw) < 0.2 && v.h > st.lh && Math.abs(v.x + v.w - st.W) < 1 && v.x > st.end,
+      `qa：問題折行＝一行一條帶（user 2026-11-24：「改成一行一個遮罩」）、直條一根跟整塊一樣高、貼在這一列的最右緣（帶 ${n} 條；${JSON.stringify(st)}）`);
+    await d.mouse.move(640, 5); await d.waitForTimeout(600);
+    assert(await d.$eval('summary', el => el.querySelectorAll('.item-cover').length) === 0, 'qa：游標離開＝直條切出去、切完拿掉（user 2026-11-24）');
     await d.$eval('details', el => { el.style.width = ''; });
   }
   f = await fold(0);
@@ -1302,14 +1411,14 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   // 一次只開一個（user 2026-11-21）：開第二題 → 第一題跟著收（一起補間）、點的那一列留在原地；
   // 直條（user 2026-11-22：手風琴打開時 stroke 要留在畫面上）：開著的那題游標移開還在，被一起收的那題拿掉
   await d.click('summary >> nth=0');
-  await d.waitForTimeout(700);
+  await d.waitForTimeout(1300);   // 蓋、收，再等 0.5 秒才出直條（user 2026-11-24）
   {
     const strokes = () => d.$$eval('summary', ss => ss.slice(0, 2).map(x => x.querySelectorAll('.item-cover').length).join());
     await d.mouse.move(640, 5);
     assert(await strokes() === '1,0', `qa：打開的那題游標移開，直條還在（${await strokes()}）`);
     const y0 = (await rect(d, 'summary >> nth=1')).top;
     await d.click('summary >> nth=1');
-    await d.waitForTimeout(700);
+    await d.waitForTimeout(1300);
     const st = await d.$$eval('details', ds => ds.slice(0, 2).map(x => x.open)), y1 = (await rect(d, 'summary >> nth=1')).top, sy = await d.evaluate(() => scrollY);
     assert(st.join() === 'false,true' && await d.$$eval('details[open]', x => x.length) === 1 && (sy === 0 || Math.abs(y1 - y0) < 1.5), `qa：一次只開一個（${st}、點的那列 ${y0} → ${y1}、scrollY ${sy}）`);
     await d.mouse.move(640, 5);
@@ -1331,7 +1440,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
 
   // 動態（user 2026-11-18）：每則是摺疊，收著＝縮圖＋標題＋分類（同師資那一列，md）、外面不寫時間；
   // 展開＝時間／地點＋相簿（對齊文字那一欄）；點相簿的圖 → 放大 dialog 放那一張，再點一下關掉
-  await d.goto(base + '/pages/news.html');
+  await d.goto(base + '/pages/activities.html');
   await d.waitForSelector('#site-header .site-bar');
   {
     const th = await rect(d, 'summary .item-thumb');
@@ -1343,10 +1452,13 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     // 動態（摺疊的清單列）PC 也不出圓點、改直條（user 2026-11-22）：hover 時收成直條、離開就拿掉；打開的那則直條留著
     const struck = (i) => d.$eval(`summary.item-row >> nth=${i}`, el => el.querySelectorAll('.item-cover').length > 0);
     assert(await css(d, 'details', 'display', '::after') === 'none' && !(await struck(0)), '動態：PC 不出圓點、平常沒有直條');
-    await d.hover('summary.item-row >> nth=0'); await d.waitForTimeout(800);
+    await d.hover('summary.item-row >> nth=0'); await d.waitForTimeout(1700);   // 蓋、收，再等 0.5 秒才出直條（user 2026-11-24）
     assert(await struck(0), '動態：hover 收成直條');
     await d.click('summary >> nth=1');   // 第二則：有地點、6 張相簿
-    await d.waitForTimeout(700);
+    // 展開補間時只切上下（accordion.js）：左右跟展開完一樣（user 2026-11-24：相簿當時伸出欄外的那段補間完才冒出來＝「另外渲染一個比較寬的 box」）
+    const ov = await d.$eval('details >> nth=1', el => { const s = getComputedStyle(el); return `${s.overflowX},${s.overflowY}`; });
+    assert(ov === 'visible,clip', `動態：展開補間中只切上下（${ov}）`);
+    await d.waitForTimeout(1300);   // 這則：蓋、收，再等 0.5 秒才出直條（user 2026-11-24）
     assert(!(await struck(0)) && await struck(1), '動態：游標移到下一則＝上一則的直條拿掉、這則收成直條');
     f = await fold(1);
     const meta = await d.textContent('details[open] .fold-meta');
@@ -1381,20 +1493,29 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     }
     const fb = await rect(d, 'details[open] .fold-body'), txt = await rect(d, 'details[open] summary .item-thumb');   // 展開內容從縮圖左緣排起（user 2026-11-21）
     const shots = await d.$$eval('details[open] .album-strip button', bs => bs.map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), Math.round(r.top)]; }));
-    // 相簿一排（user 2026-11-18）：同高 9rem＝144（user 2026-11-19 從 12rem 縮）、照 3:2 原比例、全部同一列；放不下 → 左右 chevron（左邊到頭半透明）
+    // 相簿一排（user 2026-11-18）：同高 9rem＝144（user 2026-11-19 從 12rem 縮）、照 3:2 原比例、全部同一列；
+    // 放不下＝還捲得過去的那一邊糊（user 2026-11-24：框的前後 blur、第一張／最後一張不糊、去掉 chevron）：一開始＝右邊糊、左邊（第一張）不糊
     assert(Math.abs(fb.left - txt.left) < 1 && shots.every(([w, h, top]) => Math.abs(h - 144) < 1 && Math.abs(w / h - 1.5) < 0.02 && top === shots[0][2])
-      && await d.$eval('details[open] .album', a => a.classList.contains('has-chev') && a.querySelector('.album-prev').classList.contains('is-end') && !a.querySelector('.album-next').classList.contains('is-end')),
-      `動態：展開內容從縮圖左緣排起、相簿一排同高 144 照比例、溢出有 chevron（${JSON.stringify(shots)}）`);
+      && await d.$eval('details[open] .album', a => a.classList.contains('more-end') && !a.classList.contains('more-start') && !a.querySelector('.album-chev')),
+      `動態：展開內容從縮圖左緣排起、相簿一排同高 144 照比例、放不下＝右邊糊、第一張不糊、沒有 chevron（${JSON.stringify(shots)}）`);
     // 相簿圖都寫原圖寬高（user 2026-11-19）：載入前就有寬 → 打開當下就排好、chevron 當下決定（沒寫＝寬 0、載完才跳出 chevron）
     assert(await d.$$eval('.album img', is => is.length > 0 && is.every(i => +i.getAttribute('width') > 0 && +i.getAttribute('height') > 0)), '動態：相簿圖都有 width／height');
-    // chevron 在圖列外面兩邊、不壓圖（user 2026-11-19）、用 play icon（prev 轉 180°）
-    const [cp, cs, cn] = await Promise.all(['.album-prev', '.album-strip', '.album-next'].map(sel => rect(d, `details[open] ${sel}`)));
-    assert(cp.left + cp.width <= cs.left && cs.left + cs.width <= cn.left && Math.abs(cp.left - fb.left) < 1
-      && await d.$eval('details[open] .album', a => a.querySelector('.album-prev .icon').matches('.icon-play.rotate-180') && a.querySelector('.album-next .icon').matches('.icon-play:not(.rotate-180)')),
-      `動態：相簿 chevron 在圖列外面兩邊、play icon（${JSON.stringify([cp, cs, cn].map(r => [Math.round(r.left), Math.round(r.width)]))}）`);
-    const sl0 = await d.$eval('details[open] .album-strip', s => s.scrollLeft);
-    await d.click('details[open] .album-next'); await d.waitForTimeout(700);
-    assert(await d.$eval('details[open] .album-strip', s => s.scrollLeft) > sl0 + 100, '動態：點右 chevron → 相簿往右捲');
+    // 糊法同關於的輪播、但框不伸出內文欄（user 2026-11-24：「左右還是比較大了點…要 blur 的那個邊緣看起來還是有對到寬度」）：相簿＝展開內容的寬（.fold-body 扣掉內距＝右邊讓給直條的那段，同上面的時間、地點）、
+    // 圖列吃滿相簿（沒有 chevron 夾著）、第一張對齊欄的左緣；前後各一塊 5 層的漸進模糊，在框裡、上下不伸、寬＝欄寬 22%＋淡掉那段（一個 gutter）的一半
+    // （Windows 的 WebKit 不畫 backdrop-filter → 只看結構和開關）
+    const [ab, cs, f0, bl] = await Promise.all(['.album', '.album-strip', '.album-strip > button', '.album-blur-end'].map(sel => rect(d, `details[open] ${sel}`)));
+    const fc = await d.$eval('details[open] .fold-body', el => { const s = getComputedStyle(el), r = el.getBoundingClientRect(); return { left: r.left + parseFloat(s.paddingLeft), width: r.width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) }; });
+    assert(Math.abs(ab.left - fc.left) < 1 && Math.abs(ab.width - fc.width) < 1 && Math.abs(cs.left - ab.left) < 1 && Math.abs(cs.width - ab.width) < 1
+      && Math.abs(f0.left - fc.left) < 1 && Math.abs(bl.top - ab.top) < 1 && Math.abs(bl.height - ab.height) < 1
+      && Math.abs(bl.left + bl.width - (ab.left + ab.width)) < 1 && Math.abs(bl.width - (12 + ab.width * 0.22)) < 1
+      && await d.$eval('details[open] .album', a => [...a.querySelectorAll(':scope > .album-blur')].map(b => b.querySelectorAll(':scope > i').length).join() === '5,5'),
+      `動態：相簿＝展開內容的寬、第一張對齊欄、前後各一塊 5 層漸進模糊在框裡（相簿 ${Math.round(ab.left)}+${Math.round(ab.width)} vs 內容 ${Math.round(fc.left)}+${Math.round(fc.width)}、第一張 ${Math.round(f0.left)}、模糊 ${Math.round(bl.width)}×${Math.round(bl.height)}）`);
+    // 捲到底＝最後一張不糊、左邊（還捲得回去）糊；馬上糊、馬上收、不補間（user 2026-11-24：「blur 的添加可以再及時一點」）＝捲完沒多久模糊層就全實、右邊的全收
+    await d.$eval('details[open] .album-strip', s => s.scrollTo({ left: s.scrollWidth, behavior: 'instant' })); await d.waitForTimeout(80);
+    const edge = await d.$eval('details[open] .album', a => `${a.classList.contains('more-start')},${a.classList.contains('more-end')},`
+      + ['start', 'end'].map(k => getComputedStyle(/** @type {Element} */ (a.querySelector(`.album-blur-${k} > i`))).opacity).join());
+    assert(edge === 'true,false,1,0', `動態：相簿捲到底＝左邊馬上糊、最後一張馬上不糊（more-start、more-end、兩邊模糊層：${edge}）`);
+    await d.$eval('details[open] .album-strip', s => s.scrollTo({ left: 0, behavior: 'instant' })); await d.waitForTimeout(300);
     assert(await css(d, 'details[open] .album-strip > button', 'cursor') === 'pointer', '動態：相簿的圖 hover＝手指（user 2026-11-23；原本放大鏡）');
     await d.click('details[open] .album-strip button >> nth=2');
     await d.waitForFunction(() => /** @type {HTMLDialogElement} */ (document.getElementById('figure-dialog')).open);
@@ -1448,15 +1569,15 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
 
   // 清單列＝積木（user 2026-11-21）：師資、合作企業、動態、榮譽、報導、入學、規章全是 .item-row，標題 h3 一律 text-md（21.6）、副標 p 一律 text-s（18.4），同入學；
   // 每一頁都有列、右邊都讓出圓點的位置
-  for (const pg of ['faculty', 'partners', 'news', 'records', 'press', 'admission', 'regulations']) {
+  for (const pg of ['faculty', 'partners', 'activities', 'records', 'press', 'admission', 'regulations']) {
     await d.goto(base + `/pages/${pg}.html`);
     await d.waitForSelector('#site-header .site-bar');
     const st = await d.$$eval('.item-row', rows => rows.map(r => {
       const h = r.querySelector('h3'), ps = [...r.querySelectorAll('p')], cs = (/** @type {Element} */ e) => getComputedStyle(e);
       const textCol = r.querySelector(':scope > .item-thumb') ? /** @type {Element} */ (r.lastElementChild) : r;
-      return [h && cs(h).fontSize, ps.every(p => cs(p).fontSize === '18.4px'), parseFloat(cs(textCol).paddingRight) > 20].join('|');
+      return [h && cs(h).fontSize, ps.every(p => cs(p).fontSize === '18.4px'), Math.abs(parseFloat(cs(textCol).paddingRight) - 16) < 0.5].join('|');   // --row-pad 桌面 16px（(gutter＋0.5rem)÷2，user 2026-11-24）
     }));
-    assert(st.length >= 3 && st.every(s => s === '21.6px|true|true'), `${pg}：清單列標題 21.6、副標 18.4、右邊讓出圓點（${[...new Set(st)].join(' / ')}）`);
+    assert(st.length >= 3 && st.every(s => s === '21.6px|true|true'), `${pg}：清單列標題 21.6、副標 18.4、右邊讓出直條的位置 16px（${[...new Set(st)].join(' / ')}）`);
   }
   // 榮譽的圖＝國旗：4:3、寬 2em（text-s 的 2em＝36.8）、彩色不加框、上下對在文字的正中；打開那則點國旗＝照常收合（不是封面、不放大）
   await d.goto(base + '/pages/records.html');
@@ -1604,8 +1725,8 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(await lg(p, 'obj', 'stroke') && await p.$eval('.object-canvas', c => !!c.closest('#figure-dialog')), '手機：點右緣的鈕，object 搬進 dialog、logo 換成它的名字長度');
     await p.tap('.object-canvas');
     assert(await lg(p, 'obj', 'text') && await p.$eval('#figure-dialog', d => d.open), '手機：點 object 露出名字，dialog 不關');
-    await p.tap('.figure-close');
-    assert(await lg(p, 'dept', 'stroke') && await p.$eval('.object-canvas', c => c.parentElement.classList.contains('site-chrome')), '手機：關掉後畫布搬回殼上、logo 回系名');
+    await p.tap('.figure-obj-close');   // object 沒有 ‹ X ›，關閉＝右下角那顆骨牌（user 2026-11-24）
+    assert(await lg(p, 'dept', 'stroke') && await p.$eval('.object-canvas', c => c.parentElement.classList.contains('site-chrome')), '手機：點右下角的骨牌關掉後畫布搬回殼上、logo 回系名');
     await p.close();
   }
 
@@ -1743,20 +1864,24 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
   }
 
   // ── 作品（user 2026-11-23；js/modules/pages/works.js、css/components/works.css）：自己開一頁、給假的後台與 YouTube ──
-  // 從亮色的頁走選單進來＝整頁深色、深色模式鈕停用，離開回亮色；沒有右圖、內容置中；「作品」資料夾的圖＋播放清單拆出來的影片混在一起、打亂；
+  // 從亮色的頁走選單進來＝整頁深色、深色模式鈕停用，離開回亮色；沒有右圖、內容置中；圖片欄位的圖＋播放清單拆出來的影片混在一起、打亂；
   // 放映：正中最大、兩邊縮小貼著舞台兩邊從後面露出來，方向鍵／點兩邊換，只有正中出 play、正中的影片點了就地播（可以全螢幕）、圖片不放大；
-  // 總覽：照比例排三欄、照閱讀順序（同放映），點一個＝就地開 lightbox（user 2026-11-23）；最後看本機的測試資料 data/works.json
+  // 總覽：照比例排三欄、照閱讀順序（同放映），點一個＝就地開 lightbox（user 2026-11-23）
   {
     const w = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await watch(w);
     await w.addInitScript(() => { Math.random = () => 0; });   // 打亂固定成「整串往前轉一格」（Fisher–Yates 每次都抽到 0）＝斷言得出順序
-    await w.route(/\/data\/works\.json/, r => r.fulfill({ contentType: 'application/json', body: '[]' }));   // 本機的測試資料（works.js TEST_JSON）擋掉＝走後台那條（假資料好斷言）；最後再單獨看 json
     await w.route(/scaidcms\.usc\.edu\.tw\/items\/works/, r => r.fulfill({ headers: CORS, json: { data: { playlists: [{ url: 'https://www.youtube.com/playlist?list=PLaaa' },
-      { url: 'https://www.youtube.com/watch?v=x&list=PLbbb' }, { url: 'https://youtube.com/playlist?list=PLaaa' }, { url: '' }] } } }));
-    await w.route(/scaidcms\.usc\.edu\.tw\/files/, r => r.fulfill({ headers: CORS, json: { data: [{ id: 'f1', width: 1600, height: 900 }, { id: 'f2', width: 900, height: 1200, description: '直的' }, { id: 'f3', width: 200, height: 150 }] } }));
+      { url: 'https://www.youtube.com/watch?v=x&list=PLbbb' }, { url: 'https://youtube.com/playlist?list=PLaaa' }, { url: '' }],
+      // 圖片欄位（files M2M，user 2026-11-24）：PDF 不是圖、檔案刪掉了（null）都不出
+      images: [{ directus_files_id: { id: 'f1', type: 'image/jpeg', width: 1600, height: 900 } }, { directus_files_id: { id: 'f2', type: 'image/png', width: 900, height: 1200, description: '直的' } },
+        { directus_files_id: { id: 'pdf', type: 'application/pdf' } }, { directus_files_id: null }, { directus_files_id: { id: 'f3', type: 'image/webp', width: 200, height: 150 } }] } } }));
     await w.route(/scaidcms\.usc\.edu\.tw\/assets\//, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"/>' }));
     const yt = [];
-    await w.route(/googleapis\.com\/youtube/, r => { const id = new URL(r.request().url()).searchParams.get('playlistId'); yt.push(id); r.fulfill({ headers: CORS, json: { items: [
+    await w.route(/googleapis\.com\/youtube/, r => { const u = new URL(r.request().url()), id = u.searchParams.get('playlistId');
+      // 影片真正的比例（videos.list player，user 2026-11-24）：PLbbb 那支是寬銀幕 1000×420、其他 16:9
+      if (u.pathname.endsWith('/videos')) { r.fulfill({ headers: CORS, json: { items: String(u.searchParams.get('id')).split(',').map(v => ({ id: v, player: { embedWidth: 1000, embedHeight: v.startsWith('PLbbb') ? 420 : 563 } })) } }); return; }
+      yt.push(id); r.fulfill({ headers: CORS, json: { items: [
       { snippet: { title: `${id} 影片`, resourceId: { videoId: `${id}-v` }, thumbnails: { medium: { url: 'https://i.ytimg.com/vi/m/mqdefault.jpg', width: 320, height: 180 }, standard: { url: `https://i.ytimg.com/vi/${id}/sddefault.jpg`, width: 640, height: 480 } } } },
       { snippet: { title: '私人影片', resourceId: { videoId: `${id}-private` }, thumbnails: {} } }] } }); });
     await w.goto(base + '/pages/sitemap.html');
@@ -1768,7 +1893,7 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     // 每個作品：誰（影片＝vid、圖＝檔案 id）、位置、大小、看不看得到
     const works = () => w.evaluate(() => {
       const stage = /** @type {Element} */ (document.querySelector('.works-items')).getBoundingClientRect();
-      return { stage: { l: stage.left, r: stage.right, h: stage.height }, mode: /** @type {HTMLElement} */ (document.querySelector('.works')).dataset.mode,
+      return { stage: { l: stage.left, r: stage.right, h: stage.height }, body: /** @type {Element} */ (document.querySelector('.works')).getBoundingClientRect().width, mode: /** @type {HTMLElement} */ (document.querySelector('.works')).dataset.mode,
         items: [...document.querySelectorAll('.works .work')].map(el => { const e = /** @type {HTMLElement} */ (el), r = e.getBoundingClientRect(), s = getComputedStyle(e), hit = /** @type {HTMLButtonElement} */ (e.querySelector('.work-hit'));
           const icon = e.querySelector('.work-hit .icon');
           return { id: e.dataset.vid || /** @type {HTMLImageElement} */ (e.querySelector('img')).src.split('/').pop(), pos: e.dataset.pos, l: r.left, r: r.right, t: r.top, w: r.width, h: r.height, o: +s.opacity, z: s.zIndex, blur: s.filter,
@@ -1782,12 +1907,20 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert(env.theme === 'dark' && env.btn && env.hid && !env.fig && !env.figBtn && env.bar === 'visible' && Math.abs(art.left + art.width / 2 - 640) < 1,
       `作品：亮色的頁走進來＝深色、深色模式鈕藏起來（user 2026-11-23）、沒有右圖、內容置中、底列有排法鈕（${JSON.stringify(env)}、內容 ${art.left}～${art.left + art.width}）`);
     assert(s.items.map(x => x.id).join() === 'f2,f3,PLaaa-v,PLbbb-v,f1' && yt.slice().sort().join() === 'PLaaa,PLbbb',
-      `作品：資料夾的圖＋播放清單拆出來的影片（私人的不出、同一個清單只抓一次）、順序打亂（${s.items.map(x => x.id).join()}；YouTube ${yt.join()}）`);
+      `作品：圖片欄位的圖（不是圖、刪掉的不出）＋播放清單拆出來的影片（私人的不出、同一個清單只抓一次）、順序打亂（${s.items.map(x => x.id).join()}；YouTube ${yt.join()}）`);
     const [c, L, R, v] = ['f2', 'f1', 'f3', 'PLaaa-v'].map(byId);
-    assert(c.pos === '0' && c.o === 1 && c.z === '3' && c.blur === 'none' && Math.abs(c.w / c.h - 0.75) < 0.01 && c.w <= 900 && c.h <= s.stage.h + 1 && !c.hit
-      && L.pos === '-1' && L.o === 1 && Math.abs(L.l - s.stage.l) < 1 && /blur/.test(L.blur) && R.pos === '1' && R.o === 1 && Math.abs(R.r - s.stage.r) < 1 && Math.abs(R.w - 200) < 0.5 && Math.abs(R.w / R.h - 4 / 3) < 0.01
-      && c.h > L.h && s.items.filter(x => Math.abs(+x.pos) === 2).every(x => x.o === 0) && Math.abs(v.w / v.h - 16 / 9) < 0.01 && L.label === '上一個' && R.label === '下一個',
-      `作品放映：正中最大（照比例、圖片點了不動）、兩邊貼舞台兩邊從後面露出來（失焦、照原本大小不放大）、再外面藏著；影片縮圖 16:9（${JSON.stringify(s)}）`);
+    { const wide = byId('PLbbb-v');   // 影片照真正的比例（YouTube videos.list 的 player；user 2026-11-24：總覽要 Pinterest 那種錯落）
+      assert(Math.abs(wide.w / wide.h - 1000 / 420) < 0.01, `作品：影片照它真正的比例（寬銀幕 1000×420、不是一律 16:9；${wide.w}×${wide.h}）`); }
+    // 放映＝一列（user 2026-11-24：「左右都幫我改成一樣大，然後整個 box 的左右邊緣加上 blur 的效果」；原本正中大、兩邊小貼著舞台兩邊、各自失焦）：
+    // 每個都撐滿最大框（舞台 72% 寬 × 舞台高裡照比例）、正中那個在舞台正中、其他隔一個 gutter 接在兩邊、不自己失焦；舞台兩側有漸進模糊那 5 層
+    // PC：最寬＝內文 6 欄（.works 的寬）、舞台＝畫面扣兩邊內距（兩邊的往外排、切在 menu 鈕那條線；user 2026-11-24）
+    { const full = (/** @type {number} */ ar) => Math.min(s.body, s.stage.h * ar);
+      const gap = await w.$eval('.works-items', l => parseFloat(getComputedStyle(l).columnGap)), layers = await w.$$eval('.works-items > .slide-blur > i', i => i.length);
+      const sized = /** @type {[any, number][]} */ ([[c, 900 / 1200], [L, 1600 / 900], [R, 200 / 150], [v, 1000 / 563]]).every(([x, ar]) => Math.abs(x.w - full(ar)) < 1 && Math.abs(x.w / x.h - ar) < 0.01);
+      assert(c.pos === '0' && Math.abs((c.l + c.r) / 2 - (s.stage.l + s.stage.r) / 2) < 1 && !c.hit && sized && Math.abs(s.stage.l - 60) < 1 && Math.abs(s.stage.r - 1220) < 1
+        && L.pos === '-1' && Math.abs(L.r + gap - c.l) < 1 && R.pos === '1' && Math.abs(R.l - gap - c.r) < 1 && Math.abs(v.l - gap - R.r) < 1
+        && s.items.every(x => x.o === 1 && x.blur === 'none') && layers === 5 && L.label === '上一個' && R.label === '下一個',
+        `作品放映：一列、每個跟正中一樣大（撐滿內文 6 欄或舞台高、照比例；舞台＝畫面扣兩邊內距＝切在 menu 鈕那條線）、隔一個 gutter 接在兩邊、不自己失焦；舞台兩側漸進模糊 ${layers} 層（gap ${gap}；${JSON.stringify(s)}）`); }
     // Chrome：.works 只有 min-height＝舞台的高是 flex 長出來的，cqh 算成 0、作品全是 0×0（user 2026-11-23 回報）。WebKit 重現不了，只守規則還在
     assert(await w.evaluate(() => { const all = (/** @type {any} */ rs) => [...rs].flatMap(r => [r, ...(r.cssRules ? all(r.cssRules) : [])]);
       return [...document.styleSheets].flatMap(s => { try { return all(s.cssRules); } catch { return []; } })
@@ -1797,10 +1930,11 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     assert((s = await works(), byId('f3').pos === '0' && byId('f2').pos === '-1' && byId('PLaaa-v').pos === '1' && byId('PLaaa-v').icon === 0),
       `作品放映：→ 換下一個；兩邊的影片不出 play（user 2026-11-23：只有正中那個出；PLaaa-v play ${byId('PLaaa-v').icon}）`);
     // 正中一律撐滿最大框（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」）：200×150 的小圖也放大到舞台寬的 72% 或舞台高
-    { const f3 = byId('f3'), full = Math.min(0.72 * (s.stage.r - s.stage.l), s.stage.h * 4 / 3);
+    { const f3 = byId('f3'), full = Math.min(s.body, s.stage.h * 4 / 3);
       assert(Math.abs(f3.w - full) < 1 && Math.abs(f3.w / f3.h - 4 / 3) < 0.01, `作品放映：正中的小圖（200×150）也撐滿最大框（寬 ${f3.w} vs ${full}）`); }
-    // 點左邊那個露出來的那一條（正中那個撐滿最大框，蓋住它的中間；user 2026-11-23）
-    await w.click('.work[data-pos="-1"] .work-hit', { position: { x: 8, y: 8 } }); await w.waitForTimeout(500);
+    // 點左邊那個露出來的那一段（一列之後它的左半多半切在舞台外 → 點它的右緣那邊；user 2026-11-24）
+    { const [lw, lh] = await w.$eval('.work[data-pos="-1"]', e => [e.getBoundingClientRect().width, e.getBoundingClientRect().height]);
+      await w.click('.work[data-pos="-1"] .work-hit', { position: { x: lw - 8, y: lh / 2 } }); } await w.waitForTimeout(500);
     s = await works();
     assert(byId('f2').pos === '0', '作品放映：點左邊那個＝換回上一個');
     await w.keyboard.press('ArrowDown'); await w.keyboard.press('ArrowDown'); await w.waitForTimeout(500);
@@ -1826,16 +1960,29 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     await w.click('.work:has(img[src$="/f3"]) .work-hit'); await w.waitForTimeout(600);
     let box = await lb();
     assert(box.open && box.tag === 'IMG' && /\/f3$/.test(box.src) && box.nav && box.mode === 'bento', `作品總覽：點一個＝就地開 lightbox（不切到放映）、一組可以左右切（${JSON.stringify(box)}）`);
-    await w.keyboard.press('ArrowRight'); await w.waitForTimeout(300);
+    // 切換＝淡出 → 換 → 淡入（user 2026-11-24：「作品頁面中的影片跟圖片切換，要用 fade in out」）：一按先淡掉、還是原本那張，淡完才換成影片
+    await w.keyboard.press('ArrowRight'); await w.waitForTimeout(150);
+    const mid = await w.evaluate(() => [document.getElementById('figure-dialog')?.classList.contains('is-swapping'), document.querySelector('.figure-dialog-body > *')?.tagName,
+      Number(getComputedStyle(/** @type {Element} */ (document.querySelector('.figure-dialog-body'))).opacity) < 1].join());
+    await w.waitForTimeout(800);
     box = await lb();
-    assert(box.tag === 'IFRAME' && /youtube-nocookie\.com\/embed\/PLaaa-v\?autoplay=1/.test(box.src), `作品總覽：lightbox 切到影片＝YouTube 播放器（${JSON.stringify(box)}）`);
+    assert(mid === 'true,IMG,true' && box.tag === 'IFRAME' && /youtube-nocookie\.com\/embed\/PLaaa-v\?autoplay=1/.test(box.src) && await css(w, '.figure-dialog-body', 'opacity') === '1',
+      `作品總覽：lightbox 切到影片＝先淡出原本那張、淡完換成 YouTube 播放器再淡入（${mid}｜${JSON.stringify(box)}）`);
     await w.keyboard.press('Escape'); await w.waitForTimeout(700);
     box = await lb();
     assert(!box.open && !box.tag && box.mode === 'bento', `作品總覽：關 lightbox＝影片拿掉（不留在背景播）、還在總覽（${JSON.stringify(box)}）`);
-    // 切回放映＝從總覽剛剛點開的那一個開始（兩種排法同一個順序、同一個 active）
+    // lightbox 切到別的作品再關＝背景的總覽對齊最後看的那一個（user 2026-11-24：「離開時應該要讓背景的 grid 對齊到之前查看的那個作品」）：
+    // 那一個在畫面正中；捲不到（在頁頭／頁尾附近）＝捲到頭為止（scrollIntoView center 的規矩）
+    const aligned = await w.evaluate(() => {
+      const r = /** @type {Element} */ (document.querySelector('.work[data-vid="PLaaa-v"]')).getBoundingClientRect(), mid = r.top + r.height / 2 - innerHeight / 2;
+      const max = document.documentElement.scrollHeight - innerHeight;
+      return Math.abs(mid) < 2 || (scrollY <= 0 && mid > 0) || (scrollY >= max - 1 && mid < 0) ? true : `mid ${mid} scrollY ${scrollY}/${max}`;
+    });
+    assert(aligned === true, `作品總覽：lightbox 切到別的再關＝背景對齊最後看的那一個（${aligned}）`);
+    // 切回放映＝從總覽最後看的那一個開始（兩種排法同一個順序、同一個 active；lightbox 裡切到哪就記到哪）
     await w.click('.bar-works [data-works-mode="slideshow"]'); await w.waitForTimeout(800);
     s = await works();
-    assert(s.mode === 'slideshow' && byId('f3').pos === '0', '作品：總覽點開的那一個＝切回放映從它開始');
+    assert(s.mode === 'slideshow' && byId('PLaaa-v').pos === '0', '作品：總覽最後看的那一個＝切回放映從它開始');
     // 離開：回到存的那種（亮色）、深色模式鈕回來、排法鈕淡掉
     await w.click('.menu-btn'); await w.waitForTimeout(600);
     await w.click('.site-menu a[href="about.html"]');
@@ -1843,14 +1990,18 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     await w.waitForTimeout(700);
     const back = await w.evaluate(() => ({ theme: document.documentElement.dataset.theme || '', btn: /** @type {HTMLButtonElement} */ (document.querySelector('.theme-btn')).disabled, bar: getComputedStyle(/** @type {Element} */ (document.querySelector('.bar-works'))).visibility }));
     assert(back.theme === '' && !back.btn && back.bar === 'hidden', `作品：離開＝回到原本的亮色、深色模式鈕回來、排法鈕收掉（${JSON.stringify(back)}）`);
-    await w.unroute(/\/data\/works\.json/);   // 放開：直接開 works.html＝讀本機的測試資料（works.js TEST_JSON）
     await w.goto(base + '/pages/works.html');
     assert(await w.evaluate(() => document.documentElement.dataset.theme) === 'dark', '作品：直接開 works.html 也是深色（<head> 的 inline script）');
-    // 檔裡一筆圖＝一個；一筆播放清單＝上面給的假 API 拆出一支（私人的不出）
-    const tj = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/works.json'), 'utf8')), ids = tj.filter(x => x.kind === 'playlist').map(x => String(x.url).match(/[?&]list=([\w-]+)/)?.[1]).filter(Boolean);
-    assert(await w.waitForFunction(([n, v]) => document.querySelectorAll('.works .work').length === n && document.querySelectorAll('.works .work[data-kind="video"]').length === v,
-      [tj.filter(x => x.kind !== 'playlist').length + ids.length, tj.filter(x => x.kind === 'video').length + ids.length], { timeout: 8000 }).then(() => true, () => false) && ids.every(id => yt.includes(id)),
-      `作品：本機的測試資料 data/works.json 讀得到（圖＋播放清單拆出來的影片，user 2026-11-23 先用 json 試效果；YouTube ${yt.join()}）`);
+    await w.setViewportSize({ width: 390, height: 844 }); await w.waitForTimeout(300);
+    { const box = await rect(w, '.works');   // 手機＝內頁內文的寬＝內距 16＋rail（半欄 38.75）（user 2026-11-24：「不需要整個 page 那麼寬」；原本手機不讓 rail、滿版）
+      assert(Math.abs(box.left - 54.75) < 0.5 && Math.abs(box.width - 280.5) < 0.5, `手機作品＝內頁內文的寬、左右各讓內距＋rail（${box.left}～${box.left + box.width}、應為 54.75～335.25）`);
+      // 放映的舞台＝畫面扣左右內距就好、不讓 rail（user 2026-11-24：「這邊不需要跟全站的寬度一樣」）；總覽照舊＝內文的寬（下面那條）
+      const st = await rect(w, '.works-items');
+      assert(Math.abs(st.left - 16) < 0.5 && Math.abs(st.width - 358) < 0.5, `手機放映的舞台＝畫面扣左右內距（${st.left}＋${st.width}、應為 16＋358）`); }
+    await w.click('.bar-works [data-works-mode="bento"]'); await w.waitForTimeout(800);
+    { const col = await rect(w, '.works'), one = await w.$$eval('.works .work', els => els.map(e => { const r = e.getBoundingClientRect(); return [r.left, r.width, r.top]; }));
+      assert(one.length > 1 && one.every(([l, wd, t], i) => Math.abs(l - col.left) < 0.5 && Math.abs(wd - col.width) < 0.5 && (i === 0 || one[i - 1][2] < t)),
+        `手機總覽＝一欄、由上往下（user 2026-11-24：「不用分兩列」；欄 ${col.left}＋${col.width}，前三個 ${JSON.stringify(one.slice(0, 3))}）`); }
     await w.close();
   }
 
@@ -1869,18 +2020,21 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
         album: [{ sort: 2, directus_files_id: file('b', 300, 200) }, { sort: 1, directus_files_id: file('a') }], attachments: [] },
       { id: 2, date: null, title_zh: '後台動態二', title_en: null, album: [], attachments: [] },   // 沒時間也沒日期、沒地點、沒相簿＝沒得展開
     ];
-    const ADM = [{ id: 3, date: '2027-01-01', title_zh: '後台入學一', time_zh: '2027.01（示意）', summary_zh: '第一行\n第二行', summary_en: 'Line 1\nLine 2', album: [], attachments: [{ sort: 1, directus_files_id: file('brochure') }] }];
-    await c.route(/\/items\/news\?/, r => r.fulfill({ headers: CORS, json: { data: decodeURIComponent(r.request().url()).includes('filter[admission][_eq]=true') ? ADM : NEWS } }));
-    // 首頁動態（home_news，user 2026-11-23 跟動態頁拆開）：首頁那串＋底列跑馬燈；點了去哪＝入學頁某一則（ADM 那則）／外部網址（只放 http(s)）／都沒有＝不能點
-    // 連到的入學那則要上架、還勾著入學才算（首頁四：連到草稿＝不能點）
-    await c.route(/\/items\/home_news\?/, ok([{ title_zh: '首頁一', title_en: 'Home 1', admission_item: { id: 3, status: 'published', admission: true } },
-      { title_zh: '首頁二', summary_zh: '第二行', url: 'https://example.com/z' }, { title_zh: '首頁三', url: 'javascript:alert(1)' },
-      { title_zh: '首頁四', admission_item: { id: 9, status: 'draft', admission: true } }]));
+    // 入學的時間用選的（user 2026-11-24）：日期＋結束日期 → 2027.01.05–01.08；沒有幾點（同一天拿掉開始／結束時間，「留下日期即可」）
+    const ADM = [{ id: 3, date: '2027-01-05', end_date: '2027-01-08', title_zh: '後台入學一', summary_zh: '第一行\n第二行', summary_en: 'Line 1\nLine 2', album: [], attachments: [{ sort: 1, directus_files_id: file('brochure') }] }];
+    await c.route(/\/items\/activities\?/, ok(NEWS));   // 動態、入學各一個集合（user 2026-11-24）
+    await c.route(/\/items\/admission\?/, ok(ADM));
+    // 首頁的 news（user 2026-11-24：原本叫 home_news）：首頁那串＋底列跑馬燈；點了去哪＝入學頁某一則（ADM 那則）／外部網址（只放 http(s)）／都沒有＝不能點
+    await c.route(/\/items\/news\?/, ok([{ title_zh: '首頁一', title_en: 'Home 1', image: 'img1', admission_item: { id: 3 } },
+      { title_zh: '首頁二', url: 'https://example.com/z' }, { title_zh: '首頁三', url: 'javascript:alert(1)' }, { title_zh: '首頁四' }]));
     await c.route(/\/items\/home_video\?/, ok({ url: 'https://youtu.be/dQw4w9WgXcQ' }));   // 首頁影片（單例）→ 底列 ▶ 鈕的 data-video
     await c.route(/\/items\/courses/, ok([{ year: 2, sort: 2, required: false, name_zh: '選修課', name_en: 'Elective course' }, { year: 2, sort: 1, required: true, name_zh: '必修課 A', name_en: 'Core A', description_zh: '說明', description_en: 'About' }]));
     await c.route(/\/items\/about\?/, ok({ lead_zh: '後台導言', lead_en: 'CMS lead', sections: [{ title_zh: '後台段落', title_en: 'CMS section', description_zh: '段落說明\n第二行\n\n說明第二段', description_en: 'Section intro',
       timeline: [{ year: '2026', text_zh: '成立', text_en: 'Founded' }, { year: '', text_zh: '沒年份' }, { year: '2030' }],
-      subsections: [{ sort: 2, text_zh: '沒標題的小節' }, { sort: 1, title_zh: '小標', title_en: 'Sub', image: file('sub1'), text_zh: '第一行\n第二行\n\n第二段<b>', text_en: 'Line 1', note_zh: '小節附註' }],
+      // 小節的圖可以多張（user 2026-11-24）：一張＝<img>、多張＝輪播（照 sort）
+      subsections: [{ sort: 2, text_zh: '沒標題的小節', images: [{ sort: 2, directus_files_id: file('sub3') }, { sort: 1, directus_files_id: file('sub2', 400, 600) }] },
+        { sort: 1, title_zh: '小標', title_en: 'Sub', images: [{ sort: 1, directus_files_id: file('sub1') }], text_zh: '第一行\n第二行\n\n第二段<b>', text_en: 'Line 1', note_zh: '小節附註' },
+        { sort: 3, title_zh: '多圖', images: [{ sort: 1, directus_files_id: file('sub4') }, { sort: 2, directus_files_id: file('sub5') }] }],
       images: [{ sort: 1, directus_files_id: file('img1', 800, 533) }] }] }));
     await c.route(/\/items\/faculty\/\d+/, ok({ status: 'published', photo: null, person: { name_zh: '後台老師', name_en: 'CMS Teacher' }, subtitles: [{ text_zh: '教授', text_en: 'Professor' }],
       education: [{ year: '2001', text_zh: '學士', text_en: 'BA' }], expertise: [{ year: '', text_zh: '專長一', text_en: 'Skill 1' }], awards: [] }));
@@ -1901,11 +2055,16 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
     const about = await c.evaluate(() => {
       const img = /** @type {HTMLElement} */ (document.querySelector('main .page-section > img')), cs = getComputedStyle(img);
       return { menu: document.querySelector('.site-menu a[href="about.html"]')?.textContent, title: document.title, lead: document.querySelector('.page-lead')?.textContent,
-        slides: document.querySelectorAll('main .slideshow[data-ready] .slide').length, dots: document.querySelectorAll('.section-nav-dot').length,
+        slides: document.querySelector('main .page-section > h2 + .slideshow[data-ready]')?.querySelectorAll('.slide').length, dots: document.querySelectorAll('.section-nav-dot').length,
+        // 輪播（段落的、小節多張的）：class、裡面的圖照 sort；小節標題下面的輪播跟標題隔 xs（同一張圖）
+        shows: [...document.querySelectorAll('main .page-section > .slideshow[data-ready]')].map(s => `${s.className}:${[...s.querySelectorAll('img')].map(i => i.src.split('/').pop()).join('+')}`).join('|'),
+        showGap: (h => h && /** @type {Element} */ (h.nextElementSibling).getBoundingClientRect().top - h.getBoundingClientRect().bottom)([...document.querySelectorAll('main .page-section > h3')].find(x => x.textContent === '多圖')),
         img: { max: cs.maxHeight, fit: cs.objectFit, h: img.getBoundingClientRect().height },
         tlGap: getComputedStyle(/** @type {Element} */ (document.querySelector('main .timeline > li + li'))).marginTop === getComputedStyle(/** @type {Element} */ (document.querySelector('main .page-section > h3'))).marginBottom };
     });
-    const aboutZh = await subs(), tail = '|P.whitespace-pre-line mt-sm:第二段<b>|P.whitespace-pre-line mt-sm text-xs:小節附註|P.whitespace-pre-line mt-md:沒標題的小節|UL.timeline mt-md:2026';
+    const aboutZh = await subs(), tail = '|P.whitespace-pre-line mt-sm:第二段<b>|P.whitespace-pre-line mt-sm text-xs:小節附註|P.whitespace-pre-line mt-sm:沒標題的小節|H3.:多圖|UL.timeline mt-md:2026';
+    assert(about.shows === 'slideshow:img1|slideshow mt-md:sub2+sub3|slideshow:sub4+sub5' && Math.abs(about.showGap - 8) < 0.5,
+      `接後台：小節的圖多張＝輪播、照 sort，沒標題＝隔 md、有標題＝跟標題隔 xs（${about.shows}、${about.showGap}）`);
     assert(about.menu === '關於我們' && about.title === '關於我們 - SCAID' && about.lead === '後台導言' && about.slides === 1 && about.dots === 1 && about.tlGap
       && about.img.max !== 'none' && about.img.fit === 'contain' && Math.abs(about.img.h - parseFloat(about.img.max)) < 1
       && aboutZh === 'P.whitespace-pre-line mt-md:段落說明\n第二行|P.whitespace-pre-line mt-sm:說明第二段|H3.:小標|IMG.:sub1|P.whitespace-pre-line mt-sm:第一行\n第二行' + tail + '成立沒年份',
@@ -1928,27 +2087,32 @@ const openMenu = async (page) => { if (!(await has(page, 'menu-open'))) { await 
       `接後台：捐款單例（導言＋重複列的段落；內文 sanitize、跟著語言只顯示一份）（${JSON.stringify(don)}）`);
     await c.evaluate(() => localStorage.setItem('scaid:lang', 'zh'));
 
-    await c.goto(base + '/pages/news.html');
+    await c.goto(base + '/pages/activities.html');
     await c.waitForFunction(() => document.querySelectorAll('main .item-list > li').length === 2 && document.querySelector('.bar-news-copy span')?.textContent === '首頁一');
     const news = await c.evaluate(() => ({ folds: document.querySelectorAll('main details').length, plain: document.querySelectorAll('main li > div.item-row').length,
       album: [...document.querySelectorAll('main .album img')].map(i => /** @type {HTMLImageElement} */ (i).src.split('/').pop() + ':' + i.getAttribute('width')).join(),
       meta: [...document.querySelectorAll('main .fold-meta p')].map(p => p.textContent).join('|'), cat: document.querySelector('main summary p')?.textContent }));
     assert(news.folds === 1 && news.plain === 1 && news.album === 'a:600,b:300' && news.meta === '2026.12.01|台北' && news.cat === '講座',
-      `接後台：動態一則一摺疊、相簿照 sort＋寬高、沒時間用日期、沒展開內容＝不能點、底列跑馬燈換首頁動態的（${JSON.stringify(news)}）`);
+      `接後台：動態一則一摺疊、相簿照 sort＋寬高、只有日期、沒展開內容＝不能點、底列跑馬燈換首頁 news 的（${JSON.stringify(news)}）`);
     await c.goto(base + '/index.html');
     await c.waitForFunction(() => document.querySelector('#page-content .home-news-list li p')?.textContent === '首頁一');
     const home = await c.evaluate(() => [...document.querySelectorAll('#page-content .home-news-list li')]
       .map(li => { const a = /** @type {HTMLAnchorElement | null} */ (li.querySelector(':scope > a')); return a ? (a.getAttribute('href') || '').replace(/^.*\//, '') + (a.target ? '+' + a.target : '') : '-'; }).join());
-    assert(home === 'admission.html?item=3,z+_blank,-,-', `接後台：首頁動態點了＝入學頁那一則（站內）／外部網址（另開）／不安全的網址、連到草稿的不能點（${home}）`);
+    assert(home === 'admission.html?item=3,z+_blank,-,-', `接後台：首頁 news 點了＝入學頁那一則（站內）／外部網址（另開）／不安全的網址、都沒填的不能點（${home}）`);
+    const boxes = await c.$$eval('#page-content .home-news-list li', ls => ls.map(l => l.querySelector('.home-news-box img') ? 'img' : l.querySelector('.home-news-box') ? 'box' : '-').join());
+    assert(boxes === 'img,-,-,-', `接後台：首頁動態有圖＝圖框、沒有圖＝不放圖框（user 2026-11-24；${boxes}）`);
     assert(await c.waitForFunction(() => /** @type {HTMLElement | null} */ (document.querySelector('.site-bar .play-btn'))?.dataset.video === 'https://youtu.be/dQw4w9WgXcQ', null, { timeout: 5000 }).then(() => true, () => false),
       '接後台：首頁影片（單例）的連結填進底列 ▶ 鈕');
     await c.goto(base + '/pages/admission.html?item=3');
     await c.waitForFunction(() => document.querySelector('main .item-row h3')?.textContent === '後台入學一');
+    // 首頁連過來（?item=）＝先做完 hover 的蓋黑收直條、才打開那一則（user 2026-11-24：「不是同時做」）：一到還沒開、等一下才開，開的時候直條已經在
+    const early = await c.evaluate(() => !!document.querySelector('main .item-list details')?.open);
+    const opened = await c.waitForFunction(() => document.querySelector('main .item-list details')?.open, null, { timeout: 5000 }).then(() => true, () => false);
     const adm = await c.evaluate(() => ({ time: document.querySelector('main summary p')?.textContent, desc: document.querySelector('main .fold-body > p')?.textContent,
       pre: getComputedStyle(/** @type {Element} */ (document.querySelector('main .fold-body > p'))).whiteSpace, file: document.querySelector('main .fold-body .link-list a')?.getAttribute('target'),
-      open: !!document.querySelector('main .item-list details')?.open }));
-    assert(adm.time === '2027.01（示意）' && adm.desc === '第一行\n第二行' && adm.pre === 'pre-line' && adm.file === '_blank' && adm.open,
-      `接後台：入學只抓勾了入學的、說明換行照留、附件另開、首頁連過來（?item=）＝那一則打開（${JSON.stringify(adm)}）`);
+      stroke: !!document.querySelector('main .item-list details[open] .item-cover') }));
+    assert(adm.time === '2027.01.05–01.08' && adm.desc === '第一行\n第二行' && adm.pre === 'pre-line' && adm.file === '_blank' && !early && opened && adm.stroke,
+      `接後台：入學的時間（日期用選的、只有日期）、說明換行照留、附件另開、首頁連過來（?item=）＝先做完 hover 才打開那一則（一到 ${early ? '已經開了' : '還沒開'}、${opened ? '後來打開' : '沒打開'}；${JSON.stringify(adm)}）`);
 
     await c.goto(base + '/pages/curriculum.html');
     await c.waitForFunction(() => document.querySelectorAll('main .page-section').length === 1);
