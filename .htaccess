@@ -8,6 +8,10 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 其他路徑全部 fallback 到 index.html
+  # pages/ 底下找不到的頁（打錯的網址）＝404 頁：index.html 的相對路徑（css/…）在 pages/ 底下會變 pages/css/…＝整頁沒樣式、程式也沒載入；
+  # 404.html 的是 ../css/…，在 pages/ 底下、根目錄都對得上，路由認不得網址就顯示 404（user 2026-11-24）
+  RewriteRule ^pages/ pages/404.html [L]
+
+  # 其他路徑全部 fallback 到 index.html（乾淨網址 /about 這種；認不得的路由由 router 載 404）
   RewriteRule ^ index.html [L]
 </IfModule>

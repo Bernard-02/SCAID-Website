@@ -18,18 +18,16 @@
 
   <div id="site-header"></div>
 
-  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/404.html 也能獨立跑。版型同 about（css/components/page.css）。
-       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+  <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/404.html 也能獨立跑。
+       簡單版（user 2026-11-24：「只有 stroke mode 的 logo 還有一個文字」）：一個字＝後台介面文字 error.unknown（未知／unknown），放在各頁標題那條線；
+       沒有右圖＝logo 是系名那 17 根 stroke；左下角是語言鈕、不放 menu（同一天：「左下角加一個語言切換的 btn 就好，不需要整個 menu」；header.html .bar-lang、chrome.css）。
+       原本是 404、找不到這一頁、回首頁（舊的箭頭）＋右圖 -->
   <main id="page-content">
     <div class="site-container site-grid">
-      <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
-        <h1>404</h1>
-        <p data-label="error.lead" class="page-lead" data-en="Page not found">找不到這一頁</p>
-        <a href="../index.html" class="nav-link inline-flex items-center gap-xs mt-md"><span class="icon icon-arrow-left icon-m"></span><span data-label="error.back-home" data-en="Back to home">回首頁</span></a>
+      <!-- 那一個字在畫面正中、Regular、md（user 2026-11-24：「置中，regular 字重，size 是 md」；原本是頁標題 lg Medium、在標題那條線；page.css） -->
+      <article class="page-body col-span-full flex items-center justify-center">
+        <h1 data-label="error.unknown" class="text-md font-regular" data-en="unknown">未知</h1>
       </article>
-
-      <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden pc:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
     </div>
   </main>
 

@@ -13,7 +13,7 @@ import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
 // <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
-const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'works', 'news', 'records', 'press', 'admission',
+const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'works', 'activities', 'records', 'press', 'admission',
                'qa', 'donate', 'regulations', 'sitemap', 'contact', '404'];
 const routes = {
   '/':           { page: 'index', htmlFile: 'index.html' },
@@ -72,6 +72,12 @@ export function updateNavActive(page = document.body.dataset.page) {
     a.classList.toggle('active', on);
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
+  // logo：首頁點了去關於（user 2026-11-24），其他頁回首頁。報讀名稱跟著換：首頁借選單「關於」那一項的字（跟語言走）
+  const logo = document.querySelector('#site-header .site-logo');
+  if (!logo) return;
+  const home = page === 'index';
+  logo.setAttribute('href', home ? 'about.html' : '../index.html');
+  if (home) logo.setAttribute('aria-labelledby', 'nav-about'); else logo.removeAttribute('aria-labelledby');
 }
 
 // ── 內容替換。navSeq：快速連點時只讓最後一次導航生效（每個 await 後比對，舊的放棄不 swap）──
