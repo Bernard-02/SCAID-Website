@@ -203,13 +203,13 @@ export async function loadIntroVideo() {
   const v = await single('home_video', 'url'), btn = /** @type {HTMLElement | null} */ (document.querySelector('.site-bar .play-btn'));
   if (btn && /^https?:\/\//i.test(v?.url || '')) btn.dataset.video = v.url;
 }
-/** 底列動態跑馬燈（殼裡、每頁都在）：最近幾則的標題；換完內容拿掉接力那份、fitBar 重做 */
+/** 底列的動態（殼裡、只在首頁看得到）：首頁動態的標題，一則一個 span（順序同首頁清單＝點了定位到同一則）；
+ *  換完叫 fitBar＝從第一則重來（chrome.js：一次顯示一則，user 2026-11-23） */
 export async function loadBarNews() {
   const rows = await list('home_news', 'sort=sort&limit=8&fields=title_zh,title_en');
   const copy = document.querySelector('.site-bar .bar-news-copy');
   if (!rows || !copy) return;
   copy.innerHTML = rows.map(n => bi('span', n.title_zh, n.title_en)).join('');
-  copy.parentElement?.querySelector('[data-dup]')?.remove();
   applyLang(copy);
   fitBar();
 }

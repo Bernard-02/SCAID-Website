@@ -68,12 +68,11 @@
         <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
       </button>
     </div>
-    <!-- MOCK 動態跑馬燈（user 2026-11-21）：最近幾則的標題排成一排一直跑、左右兩端淡掉（跟 index.html 清單同一份示意；接 Directus 後填，
-         換內容時把 [data-dup] 拿掉再叫 fitBar）。永遠在畫面正中；跑馬燈＋「＋」一起＝--col-w＝logo 寬。
-         首頁：點了原地展開清單——跑馬燈先淡出、＋同時往右滑到欄外變－，清單才升上來（chrome.js 攔）；內頁：整塊淡掉。選單開著時跑馬燈淡掉只剩＋。
-         hover 別的鈕名字出來、側邊放不下才縮這塊（中心不動） -->
+    <!-- MOCK 首頁的動態（跟 index.html 清單同一份示意、同一個順序；後台 cms-pages.js loadBarNews 換掉 .bar-news-copy 裡的 span 再叫 fitBar）：
+         一次只顯示一則（user 2026-11-23：拿掉＋、只剩跑馬燈；原本好幾則排成一排一直跑）——放得下停 3 秒、放不下跑一趟馬燈，跑完 fade 換下一則（chrome.js runNews）。
+         永遠在畫面正中、寬＝--col-w＝logo 寬。首頁：點了原地展開清單、定位到看到的那則（chrome.js 攔）；內頁：整塊淡掉 -->
     <a href="news.html" class="bar-news">
-      <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span><span class="bar-plus" aria-hidden="true"></span>
+      <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span>
     </a>
     <!-- 右圖 object 的開關（PC 以外；user 2026-11-13 手機稿、2026-11-22 改成 object 可以打開、關閉）：右下角、長得跟 menu 鈕一樣（骨牌；user 2026-11-23，
          原本是內頁右緣中線上幾根 stroke 圍成的圓）。名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；

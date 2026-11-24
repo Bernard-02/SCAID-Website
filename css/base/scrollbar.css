@@ -16,6 +16,7 @@ html::-webkit-scrollbar { display: none; }
   will-change: transform, height;
   display: none;          /* JS 偵測到可捲才顯示 */
   animation: fade-in var(--dur-fade) var(--ease-standard);   /* 出現＝淡入（user 2026-11-21）：display none → block 時 animation 會從頭跑；keyframes 在 chrome.css */
+  transition: var(--transition-fade);   /* 淡出（首頁動態收起來，home.css）、進場與放大 dialog 的模糊疊白也跟著淡；位置、高度照樣馬上跟 */
 }
 @media (max-width: 767px) {
   #custom-scrollbar-thumb { display: none !important; }

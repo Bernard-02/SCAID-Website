@@ -6,6 +6,7 @@
 import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
+import { flash, remeasure } from './item-marquee.js';
 
 const html = document.documentElement;
 const phoneMenu = matchMedia('(max-width: 767px)');   // ＝chrome.css 手機全螢幕選單那段的斷點
@@ -32,8 +33,8 @@ function setMenu(open) {
   else if (open) { clearTimeout(menuClosingTimer); html.classList.remove('menu-closing'); menuUnlockAt = 0; }
   fitBar();
 }
-// 首頁動態展開：底列跑馬燈先淡出，logo 上移、清單從畫面底下升上來（晚 --news-wait 才動，home.css），底列＋變－（chrome.css）。
-// 收合＝反向（user 2026-11-19）：news-open 先拿掉（logo 回中間、－變回＋），清單掛著 html.news-closing 往下滑出畫面，
+// 首頁動態展開（點底列的動態，下面 openNewsAt）：底列的動態先淡出，logo 上移、清單從畫面底下升上來（晚 --news-wait 才動，home.css）。
+// 收合（點動態以外的地方／再點底列／Esc）＝反向（user 2026-11-19）：news-open 先拿掉（logo 回中間），清單掛著 html.news-closing 往下滑出畫面，
 // 滑完才真的藏起來、捲回頂。捲到一半收的話，畫面上緣以上的部分先切掉（--news-cut），不然往下滑時會從上面跑出來
 let newsClosingTimer = 0;
 function endNewsClosing() {
@@ -45,8 +46,9 @@ function endNewsClosing() {
 function setNews(open) {
   const was = html.classList.contains('news-open');
   const list = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .home-news-list'));
-  if (open) { endNewsClosing(); html.classList.add('news-open'); return; }   // 收到一半又開＝先收完再照常升上來
+  if (open) { endNewsClosing(); html.classList.add('news-open'); awayNews(); return; }   // 收到一半又開＝先收完再照常升上來
   if (!was) { if (!list) endNewsClosing(); return; }   // 本來沒開著就沒事（closeOverlays 每次 Esc／換頁都會進來）；收到一半換頁了＝直接收尾
+  clearTimeout(flashTimer);   // 定位後那一閃還沒開始就收＝不閃了（openNewsAt；閃到一半的跟著清單滑走）
   const slide = !!list && !prefersReducedMotion();     // 換頁帶走了清單／減少動態：照舊直接收、捲回頂
   if (list && slide) {
     // 先量、先掛 news-closing，才拿掉 news-open：中間只要有一刻兩個 class 都不在，清單就是 display none——
@@ -78,7 +80,7 @@ function toggleTheme() {
 }
 
 // 換頁／Esc：選單、首頁展開全收（main.js initPageModules 每次換頁呼叫）。news＝false：只收選單、首頁展開先留著（router.js 換頁前用）
-export function closeOverlays(news = true) { setMenu(false); if (news) setNews(false); }
+export function closeOverlays(news = true) { setMenu(false); if (news) setNews(false); awayNews(); }   // awayNews：換頁離開首頁（router 先換 data-page 才叫這裡）
 
 // intro：data-video 有網址才開 <dialog> 播；關掉就停並卸載
 function openIntro(btn) {
@@ -153,35 +155,104 @@ function closeFigure() {
   setTimeout(() => { dialog.classList.remove('is-closing'); dialog.close(); }, prefersReducedMotion() ? 0 : DUR.fade * 1000);
 }
 
-// 底列量測（chrome.css .site-bar）：
-// 1) 兩側欄最小寬＝左欄內容寬（--side-min；右欄空著，原本 footer 鈕）→ 兩側等寬＝動態永遠畫面正中；hover 名字出來側邊放不下才縮動態。
-//    選單開著不量：menu 鈕撐成選單欄那格（chrome.css），量進去會把中欄擠掉；就讓它溢出側欄（跑馬燈那時已淡掉）
-// 2) 動態跑馬燈（user 2026-11-21：好幾則標題排成一排一直跑，chrome.css .bar-news-track）：複製第二份接力（還沒有才做）；
-//    一圈的時間照內容寬算＝速度固定（標題幾則、中英怎麼換、字體載入前後都一樣快）→ 盯著 copy 的寬，變了重算
-export const MARQUEE_SPEED = 2.5;   // 每秒走幾個 em（清單列的跑馬燈也用這個速度，item-marquee.js）
-const marqueeSize = new ResizeObserver(([e]) => {
-  const copy = /** @type {HTMLElement} */ (e.target), track = copy.parentElement;
-  if (track) track.style.setProperty('--marquee-dur', `${copy.offsetWidth / (MARQUEE_SPEED * parseFloat(getComputedStyle(track).fontSize))}s`);
-});
+// 底列量測（chrome.css .site-bar）：兩側欄最小寬＝左欄內容寬（--side-min；右欄只有右圖的鈕、比左欄窄，user 2026-11-23）→ 兩側等寬＝動態永遠畫面正中。
+// 選單開著不量：menu 鈕撐成選單欄那格（chrome.css），量進去會把中欄擠掉；就讓它溢出側欄（動態那時是糊掉的內容）。
+// 順便：動態的標題整個換掉了（後台晚到：cms-pages.js loadBarNews 換完叫這裡）＝從第一則重來
 export function fitBar() {
   const bar = /** @type {HTMLElement | null} */ (document.querySelector('.site-bar'));
   if (!bar) return;
-  const track = bar.querySelector('.bar-news-track'), copy = track?.querySelector('.bar-news-copy');
-  if (track && copy && !track.querySelector('[data-dup]')) {
-    const dup = /** @type {HTMLElement} */ (copy.cloneNode(true));
-    dup.setAttribute('data-dup', '');
-    dup.setAttribute('aria-hidden', 'true');
-    track.appendChild(dup);
-    marqueeSize.observe(copy);
-  }
+  if (!newsCur?.isConnected) startNews();
   const left = /** @type {HTMLElement} */ (bar.querySelector('.bar-left'));
   if (html.classList.contains('menu-open')) return;
   bar.style.setProperty('--side-min', left.offsetWidth + 'px');
 }
 
+// 首頁底列的動態（user 2026-11-23：拿掉＋、一次只顯示一則；原本好幾則排成一排一直跑、兩份接力）：
+// 放得下＝停 NEWS_HOLD；放不下＝淡入完就從頭捲到尾、捲到尾馬上換（user 2026-11-23：前後都不停；原本前後各停 1 秒）；
+// 換＝網站 fade，先淡出、淡完才淡入下一則（不交疊＝不會兩則疊在一起）。
+// 滑鼠在上面／鍵盤聚焦＝先不換（WCAG 2.2.2；點下去展開的就是看到的這則）；看不到的時候（不在首頁、首頁展開著）＝在底下換好下一則、停著，
+// 回來才開始計時（awayNews）。減少動態＝不捲、直接換
+const MARQUEE_SPEED = 2.5;                  // 跑馬燈每秒走幾個 em（清單列的跑馬燈 2026-11-23 起照 SCCD 每秒 80px，不跟這個，item-marquee.js）
+const NEWS_HOLD = 3000;                     // 放得下停多久（ms）
+let newsAt = 0, newsGen = 0, newsSeen = false;   // newsSeen：現在這則被看到過了（awayNews 才換）
+/** 現在顯示的那則（被換掉＝不在頁面上了＝fitBar 從頭重來） @type {HTMLElement | null} */ let newsCur = null;
+const newsItems = () => /** @type {HTMLElement[]} */ ([...document.querySelectorAll('.site-bar .bar-news-copy > span')]);
+const newsSleep = (/** @type {number} */ ms) => new Promise(r => setTimeout(r, ms));
+/** 看不到動態：不在首頁、首頁展開著（底列的動態淡掉了） */
+const newsAway = () => document.body.dataset.page !== 'index' || html.classList.contains('news-open') || html.classList.contains('news-closing');
+const newsHeld = () => newsAway()
+  || !!document.querySelector(window.SCAIDHelpers?.canHover() ? '.bar-news:is(:hover, :focus-visible)' : '.bar-news:focus-visible');   // 觸控：點完 :hover 會黏著
+function startNews() { newsAt = 0; runNews(++newsGen); }
+/** 動態看不到了（展開清單、離開首頁；setNews／closeOverlays 叫）：看到過的那則等淡完就換到下一則、停在那裡——
+ * 回來淡出現的就是下一則、從那時才開始計時（user 2026-11-23：「回到外面時是直接下一個 news，它不需要回來又 fade 成下一個」） */
+function awayNews() {
+  if (!newsSeen || !newsAway()) return;
+  newsSeen = false;
+  const gen = ++newsGen, prev = newsCur;
+  newsSleep(prefersReducedMotion() ? 0 : DUR.fade * 1000).then(() => {
+    if (gen !== newsGen) return;
+    prev?.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });   // 跑到一半的跑馬燈回到起點（看不到了）
+    newsAt++;
+    runNews(gen);
+  });
+}
+/** @param {number} gen 重來一次就換一個號碼，舊的那圈看到號碼不對就停 */
+async function runNews(gen) {
+  const still = prefersReducedMotion(), fade = still ? 0 : DUR.fade * 1000, alive = () => gen === newsGen;
+  for (;;) {
+    const items = newsItems();
+    if (!items.length) { newsCur = null; return; }
+    newsAt %= items.length;
+    const cur = newsCur = items[newsAt], track = cur.closest('.bar-news-track');
+    const over = cur.getBoundingClientRect().width - (track?.clientWidth ?? Infinity);
+    cur.classList.toggle('is-long', over > 0.5);   // 放不下＝從欄的左緣起；放得下＝置中（chrome.css）
+    items.forEach(s => s.classList.toggle('is-current', s === cur));   // 淡入（看不到的時候＝在底下換好）
+    remeasure();   // hover 著的直條搬到這則的字尾（展開時在底下換的，收回來游標還在上面）
+    await newsSleep(fade);
+    while (alive() && newsAway()) await newsSleep(300);   // 看不到：停在這則，回來才開始算
+    if (!alive()) return;
+    newsSeen = true;
+    if (over > 0.5 && !still) {
+      const run = cur.animate([{ transform: 'none' }, { transform: `translateX(${-over}px)` }],
+        { duration: over / (MARQUEE_SPEED * parseFloat(getComputedStyle(cur).fontSize)) * 1000, easing: 'linear', fill: 'forwards' });
+      await run.finished.catch(() => {});
+    } else await newsSleep(NEWS_HOLD);
+    while (alive() && newsHeld()) await newsSleep(300);
+    if (!alive()) return;
+    cur.classList.remove('is-current');   // 淡出，淡完才換下一則
+    await newsSleep(fade);
+    cur.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });   // 捲過去的那則回到起點（已經淡掉、看不到了）
+    if (!alive()) return;
+    newsAt++;
+  }
+}
+// 首頁：點底列的動態＝原地展開清單，定位到點下去時顯示的那一則、閃一下（user 2026-11-23）
+let flashTimer = 0;
+/** @param {number} i */
+function openNewsAt(i) {
+  setNews(true);
+  const li = /** @type {HTMLElement | undefined} */ (document.querySelectorAll('#page-content .home-news-list li')[i]);
+  const list = /** @type {HTMLElement | null | undefined} */ (li?.closest('.home-news-list'));
+  if (!li || !list) return;
+  // 那則的中線對到畫面正中；捲不到（太上面、只有一則）＝捲到能捲的地方為止、不硬置中。清單這時還在畫面底下等著升上來
+  // （home.css news-rise，有位移）→ 量的時候先拿掉動畫（還沒開始跑；拿掉再放回＝照常從頭跑）；先捲好，升上來就是定位好的樣子
+  list.style.animation = 'none';
+  const r = li.getBoundingClientRect(), y = r.top + scrollY + r.height / 2 - innerHeight / 2, max = document.documentElement.scrollHeight - innerHeight;
+  const top = Math.max(0, Math.min(max, y)), listTop = list.getBoundingClientRect().top + scrollY - top;   // 捲好之後清單上緣在畫面的哪裡
+  list.style.animation = '';
+  // 升上來的起點＝看得到的最上面那一點在畫面底緣（同收合的 --news-drop）：沒捲＝原本的 100svh − top-h，捲了就照捲完的位置算
+  list.style.setProperty('--news-rise', `${innerHeight - Math.max(0, listTop)}px`);
+  window.scrollTo({ top, behavior: 'instant' });
+  // 升好了閃一下（同 SCCD 的 deep link）＝hover 的蓋黑收直條、直條停一下就淡掉（item-marquee.js flash；user 2026-11-23：「highlight 是指我 hover 的效果」）
+  clearTimeout(flashTimer);
+  flashTimer = window.setTimeout(() => flash(li), prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);   // ＝home.css --news-wait（底列的動態淡出）＋清單升上來
+}
+
 export function initChrome() {
+  let menuTap = false;   // 這一下的按下剛把選單收掉（下面 pointerdown）＝它的 click 不再做別的事（第一下只收選單）
   document.addEventListener('click', (e) => {
-    const t = e.target instanceof Element ? e.target : null;
+    const t = e.target instanceof Element ? e.target : null, tap = menuTap;
+    menuTap = false;
     if (!t) return;
     if (t.closest('.menu-btn')) { setMenu(!html.classList.contains('menu-open')); return; }
     if (t.closest('.theme-btn')) { toggleTheme(); return; }
@@ -202,12 +273,17 @@ export function initChrome() {
     if (t.closest('.site-menu a')) return;
     // 手機選單全螢幕（chrome.css，user 2026-11-22）：點選單的空白處＝收選單。用 click 不用 pointerdown：拖著捲選單不會觸發
     if (t.closest('.site-menu') && !t.closest('button') && phoneMenu.matches) { setMenu(false); return; }
-    // 首頁：動態原地展開、不走 router（preventDefault → router 看到 defaultPrevented 放行）
+    // 首頁展開著：點動態以外的地方＝收回去（user 2026-11-23：「點別的地方可以回到上一個畫面」；原本靠底列的 －）。
+    // 清單裡那幾則照常點進去；連結、鈕、選單照它們自己的；這一下的按下剛收掉選單＝不算
+    if (!tap && html.classList.contains('news-open') && document.body.dataset.page === 'index' && !t.closest('.home-news-list li, a, button, .site-menu')) { setNews(false); return; }
+    // 首頁：點底列的動態＝原地展開、定位到看到的那則（不走 router：preventDefault → router 看到 defaultPrevented 放行）；展開著再點＝收回去。
     // 選單開著時動態是糊掉的內容（chrome.css，user 2026-11-21）：點它＝第一下只收選單、不展開／收合（同右邊內容）。
     // 滑鼠點不到它（不吃指標，下面 pointerdown 那條收）；這裡接的是沒經過聚焦的 click（程式、輔助科技）
     if (t.closest('.bar-news') && document.body.dataset.page === 'index') {
       e.preventDefault();
-      if (html.classList.contains('menu-open')) setMenu(false); else setNews(!html.classList.contains('news-open'));
+      if (html.classList.contains('menu-open')) setMenu(false);
+      else if (html.classList.contains('news-open')) setNews(false);
+      else openNewsAt(newsAt);
     }
   });
   // 打開的那則（details[open]）點封面縮圖＝放大封面（user 2026-11-18）。走 capture：那時 open 還是點之前的狀態
@@ -250,7 +326,7 @@ export function initChrome() {
     e.preventDefault();
     if (closing) lockScroll(LOCK_TAIL); else setMenu(false);
   };
-  document.addEventListener('pointerdown', (e) => { if (inContent(e)) closeMenuIfOpen(); });
+  document.addEventListener('pointerdown', (e) => { menuTap = inContent(e) && html.classList.contains('menu-open'); if (menuTap) setMenu(false); });
   document.addEventListener('focusin', (e) => { if (inContent(e)) closeMenuIfOpen(); });
   document.addEventListener('wheel', onScrollGesture, { passive: false });
   document.addEventListener('touchmove', onScrollGesture, { passive: false });

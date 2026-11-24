@@ -11,15 +11,16 @@
     transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade);
   }
   /* 換頁 transition＝fade out → 換內容 → fade in（router.js：換頁前加 html.page-leaving 淡出、換完拿掉＝淡入）。
-     每個 fade 都帶模糊（user 2026-11-21；variables.css --transition-fade）：藏著的那一態 opacity 0＋blur，全站同一套寫法 */
-  html.page-leaving #page-content { opacity: 0; filter: blur(var(--blur)); }
+     每個 fade 都帶模糊（user 2026-11-21；variables.css --transition-fade）：藏著的那一態 opacity 0＋blur，全站同一套寫法。
+     捲軸是內容的、跟著一起淡（CLAUDE.md「消失也要 fade」那條；原本內容淡掉了它還亮著，換到短頁才一下子不見） */
+  html.page-leaving :is(#page-content, #custom-scrollbar-thumb) { opacity: 0; filter: blur(var(--blur)); }
   /* 進場（user 2026-11-22）：logo 的進場動畫演完，其他東西才 fade in。各頁 <head> 的 inline script 在畫出來之前就掛上 html.is-intro（不閃），
      logo.js 演完拿掉。data-logo-still＝煙霧測試不演 logo 的那個開關：連這段淡入也不要（斷言一載入就量得到終態） */
   html.is-intro:not([data-logo-still]) :is(#page-content, .site-bar, #custom-scrollbar-thumb, .site-chrome > .object-canvas) { opacity: 0; filter: blur(var(--blur)); pointer-events: none; }
   /* 選單開著：內容左緣推到選單右緣（＝play 鈕那條線）。內容自己帶左內距 → 推「選單寬 − 內距」，不重複算 padding（user 2026-11-03）。
      開著＋收回去那 --dur-medium（html.menu-closing，chrome.js setMenu）內容鎖住不捲：第一下滾輪／觸控只關選單、內容不動（user 2026-11-18） */
   html.menu-open { --shift: calc(var(--menu-w) - var(--container-padding)); }
-  /* 首頁展開的動態不右推（user 2026-11-21）：清單留在 logo 底下、底列的－留在圖片右邊，只模糊＋疊白（下面那條）。
+  /* 首頁展開的動態不右推（user 2026-11-21）：清單留在 logo 底下，只模糊＋疊白（下面那條）。
      手機清單滿版 → 選單直接疊在糊掉的清單上 */
   html.menu-open.news-open { --shift: 0px; }
   html:is(.menu-open, .menu-closing) { overflow: hidden; }
@@ -350,54 +351,47 @@
   .object-canvas.is-on { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   .figure-dialog-body > .object-canvas { position: static; background: none; opacity: 1; visibility: visible; filter: none; }
 
-  /* 動態（首頁）：中欄＝跑馬燈——好幾則標題排成一排一直跑、左右兩端淡掉（user 2026-11-21；原本只放最新一則、放不下才跑）。
-     跑馬燈＋「＋」一起＝中欄＝--col-w＝logo 寬：跑馬燈在左、＋在右端（右緣對齊 logo 右緣）
-     （手機：左右讓給 menu／intro 鈕之後剩下的寬，仍在畫面正中）。
-     首頁展開／清單收回去的途中（news-closing）：跑馬燈淡掉——展開時它先淡完清單才升上來（home.css --news-wait），
-     收合反過來：清單滑走了才淡回來。
-     首頁展開：＋往右滑到欄外一個 gutter（不擋動態圖片）、豎線收掉變－；滑的時機、時長、曲線＝跑馬燈淡出那一段（user 2026-11-21），
-     收合時跟跑馬燈淡回來一起滑回去。
-     跑馬燈＝兩份 copy 接力（第二份 chrome.js fitBar 複製）；copy 至少跟框一樣寬＝標題再少、兩份也接得起來；
-     一圈的時間 --marquee-dur 照內容寬算（chrome.js）＝速度固定 */
-  .bar-news { position: relative; min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
+  /* 動態（首頁）：中欄＝一次只顯示一則標題（user 2026-11-23：拿掉＋、只剩跑馬燈；原本好幾則排成一排一直跑＋右端的＋）。
+     放得下＝置中、停 3 秒；放不下＝從欄的左緣起跑一趟馬燈、跑完才換；換＝網站 fade（先淡出、淡完才淡入下一則）——時間、順序都在 chrome.js runNews。
+     兩端不淡（user 2026-11-23 拿掉）。中欄＝--col-w＝logo 寬（手機：左右讓給 menu／intro 鈕之後剩下的寬，仍在畫面正中）。
+     首頁：點了原地展開清單、定位到看到的那則（chrome.js openNewsAt）；展開／清單收回去的途中（news-closing）動態淡掉——
+     展開時它先淡完清單才升上來（home.css --news-wait），收合反過來：清單滑走了才淡回來 */
+  /* grid-area 寫死中欄：作品頁的排法鈕（works.css .bar-works）也疊在這一格，不寫的話自動排會被擠到右欄 */
+  .bar-news { grid-area: 1 / 2; position: relative; min-width: 0; display: flex; align-items: center; color: inherit; transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s; }
   body:not([data-page="index"]) .bar-news { transition: transform var(--dur-medium) var(--ease-wipe), var(--transition-fade), visibility 0s var(--dur-fade); }
-  /* 首頁選單開著：動態當內容處理（user 2026-11-21；原本跑馬燈淡掉只剩＋、＋／－照常清楚）——模糊＋疊 60% 白（同上面 #page-content 那條），
-     點它＝只收選單（chrome.js）。位置不動（先試過跟內容一起右推，user 2026-11-21：不用動）；
-     首頁展開時清單也不右推（最上面 --shift 那條）→ －本來就在圖片右邊，不用跟 */
+  /* 首頁選單開著：動態當內容處理（user 2026-11-21）——模糊＋疊 60% 白（同上面 #page-content 那條），
+     點它＝只收選單（chrome.js）。位置不動（先試過跟內容一起右推，user 2026-11-21：不用動）；首頁展開時清單也不右推（最上面 --shift 那條） */
   html.menu-open body[data-page="index"] .bar-news { filter: blur(var(--blur)); opacity: 0.4; }
   /* 深色模式／語言切換（View Transition，檔尾 ::view-transition-*）時動態自己一組（user 2026-11-21）：整個畫面的舊那張是靜止的截圖，
      跑馬燈在交叉淡化那段看起來會停一下 → 動態不放舊的那張、新的那張（活的）直接顯示＝照常一直跑；
      顏色改由它自己的 color 過場淡過去（同時長、同曲線＝跟畫面一起變）。color 的過場只在切換那段掛：平常 hover 換色要馬上換（下面 :hover） */
   .bar-news { view-transition-name: bar-news; }
   html:active-view-transition .bar-news { transition: color var(--dur-fade) var(--ease-standard); }
+  /* hover＝蓋黑收直條（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」；原本字色變 0.75）：帶與直條插在軌道裡、照軌道的框擺
+     （item-marquee.js hostOf；展開時跟著軌道一起淡掉）。放得下＝帶蓋那則的字、直條在字尾後面；放不下（跑馬燈）＝帶到欄的右緣、直條在欄外 */
   .bar-news-track {
-    --edge: 2em;   /* 兩端淡掉的寬 */
+    position: relative;
     flex: 1 1 0;
     min-width: 0;
-    overflow: hidden;
     white-space: nowrap;
     display: flex;
-    -webkit-mask: linear-gradient(to right, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
-            mask: linear-gradient(to right, transparent, #000 var(--edge), #000 calc(100% - var(--edge)), transparent);
     transition: var(--transition-fade);
   }
-  .bar-news-copy { flex: none; min-width: 100%; display: flex; gap: 2em; padding-right: 2em; animation: bar-marquee var(--marquee-dur, 40s) linear infinite; }
-  .bar-plus { position: relative; flex: none; width: 1.5em; height: 1.5em; margin-left: 0.5em; transition: transform var(--dur-fade) var(--ease-standard); }
-  .bar-plus::before, .bar-plus::after {
-    content: '';
-    position: absolute;
-    background: currentColor;
-    transition: transform var(--dur-medium) var(--ease-standard);
+  /* 每則疊在同一格、一次只亮一則（chrome.js 掛 .is-current）；藏著的 visibility hidden＝報讀只念看得到的那則。
+     放不下的字在這層切掉、兩端不淡（user 2026-11-23：「news 的左右 fade 拿掉」；原本兩端各淡 2em）——不在軌道切：hover 的直條在欄外。
+     欄寬固定＝這一格的寬（minmax(0, 1fr)）：自動的欄會被最長的那則撐寬，放得下的那則就置中到撐寬的欄裡＝偏右、被切掉（user 2026-11-23 手機回報） */
+  .bar-news-copy { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; }
+  .bar-news-copy > span {
+    grid-area: 1 / 1;
+    justify-self: center;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(var(--blur));
+    transition: var(--transition-fade), visibility 0s var(--dur-fade);
   }
-  .bar-plus::before { left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; }
-  .bar-plus::after { top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; }
+  .bar-news-copy > span.is-long { justify-self: start; }   /* 放不下＝從欄的左緣起跑（chrome.js 量） */
+  .bar-news-copy > span.is-current { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   html:is(.news-open, .news-closing) .bar-news-track { opacity: 0; filter: blur(var(--blur)); }
-  html:is(.news-open, .news-closing) .bar-plus { transform: translateX(calc(100% + var(--spacing-gutter))); }
-  html.news-open .bar-plus::after { transform: scaleY(0); }
-  @media (hover: hover) {
-    .bar-news:hover { color: rgb(var(--theme-fg-rgb), 0.75); }   /* 用顏色不用 opacity／filter：那兩個有 fade 過場，hover 會變成慢慢淡（字與＋都吃 currentColor）。
-                                                                    0.75（原本 0.6）：游標停在跑馬燈上、底下的背景筆跡疊到最濃（bg.js），0.6 的字對比會掉到 4.5:1 以下 */
-  }
 
   /* ── intro 影片 dialog：滿版黑底 ── */
   .intro-dialog {
@@ -453,9 +447,6 @@
 }
 
 /* 跑馬燈：兩份 copy 各走自己的寬（含 padding-right 當間距）＝無縫接力 */
-@keyframes bar-marquee {
-  to { transform: translateX(-100%); }
-}
 /* 深色模式／語言切換＝整個畫面新舊兩張交叉淡化（View Transition，motion.js fadeSwap；user 2026-11-21）：時長、曲線吃網站 fade。
    淡的時候底下照樣點得到（預設那層會把點擊吃掉）。換成自己的 keyframes＝帶模糊（舊的那張淡出變糊、新的那張從糊淡進來） */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--dur-fade); animation-timing-function: var(--ease-standard); }

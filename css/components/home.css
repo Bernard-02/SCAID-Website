@@ -1,5 +1,6 @@
-/* 首頁（index.html）：未展開＝一屏只有畫面正中央的 logo（同全站鎖定版）；點底列動態「+」→ html.news-open：logo 上移到頂，
-   清單在畫面中間展開、頁面可捲；底列＋滑到右端放大變－（chrome.css）。切 class 在 chrome.js */
+/* 首頁（index.html）：未展開＝一屏只有畫面正中央的 logo（同全站鎖定版）；點底列的動態 → html.news-open：logo 上移到頂，
+   清單在畫面中間展開、頁面可捲，定位到點下去時看到的那則、閃一下＝hover 的蓋黑收直條（user 2026-11-23；原本點的是底列右端的＋，展開後變－）；
+   點動態以外的地方＝收回去。切 class 在 chrome.js（setNews／openNewsAt） */
 
 @layer components {
   /* 未展開：logo 在畫面正中央（變數由 chrome.css .site-logo 吃，位移走 transition）。
@@ -15,10 +16,12 @@
   :root { --news-wait: var(--dur-fade); }
   @media (prefers-reduced-motion: reduce) { :root { --news-wait: 0s; } }
   html.news-open body[data-page="index"] :is(.site-logo, .top-blur) { transition-delay: var(--news-wait); }
-  /* 首頁 main 撐滿一屏（未展開時是空的，頁面不捲） */
-  body[data-page="index"] #page-content { min-height: 100svh; }
+  /* 首頁 main 撐滿一屏（未展開時是空的，頁面不捲）。直的方向 clip：清單升上來／滑下去時是用位移推到畫面底下，
+     不切的話推出去那段會撐大可捲的高度，捲軸照撐大的量（變小、偏上），升完也不會自己回來、要捲一下才跳回去（user 2026-11-23 回報）。
+     切在 main 的底緣＝頁面底緣，升起的起點在畫面底緣以上＝看得到的部分切不到 */
+  body[data-page="index"] #page-content { min-height: 100svh; overflow-y: clip; }
 
-  /* 展開的動態清單：畫面中間一欄（手機滿版；桌面寬＝--col-w，跟底列動態欄同寬）。
+  /* 展開的動態清單：畫面中間一欄（手機＝內頁內文的寬；桌面寬＝--col-w，跟底列動態欄同寬）。
      出現＝從畫面底下往上滑進來、邊滑邊淡入，不是直接跳出來（user 2026-11-19）：起點＝清單上緣在畫面底緣，時長與曲線同 logo 上移那一段
      （--dur-slow／--ease-standard，chrome.css .site-logo）＝兩個一起往上。display none → block 起不了 transition，所以用 keyframes */
   .home-news-list { display: none; }
@@ -30,7 +33,14 @@
     clip-path: inset(var(--news-cut, 0px) 0 0 0);
     animation: news-fall var(--dur-slow) var(--ease-standard) forwards;
   }
-  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); }
+  /* 捲軸跟著清單淡掉（user 2026-11-23：「news 離開的時候，scrollbar 的消失也是 fade out 才對」；原本清單滑完、頁面變短才直接收掉） */
+  html.news-closing #custom-scrollbar-thumb { opacity: 0; filter: blur(var(--blur)); }
+  /* 手機＝內頁內文的寬：左右各讓 --rail-w（同 page.css .page-body；user 2026-11-23：「比照其他頁面的內容寬度，不一定要跟 logo 等寬」，原本＝logo 寬、滿版）。
+     桌面 --rail-w 是 0、下面那條置中 --col-w */
+  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); margin-inline: var(--rail-w); }
+  /* 一則＝蓋黑收直條的一列（user 2026-11-23：hover 整則；點底列的動態展開、定位到那則之後也閃一下＝同一套、直條停一下就淡掉）：
+     帶與直條插在 li 裡、照 li 的框擺（item-marquee.js strike／flash，樣子 page.css .item-cover） */
+  .home-news-list li { position: relative; }
   @media (min-width: 768px) {
     .home-news-list > ul { width: var(--col-w); margin: 0 auto; }
   }
@@ -46,7 +56,8 @@
 
 /* 首頁動態清單進場：從畫面底緣升到定位（清單定位後的上緣＝--top-h）、同時淡入；退場反過來滑到畫面底緣以下、同時淡出 */
 @keyframes news-rise {
-  from { transform: translateY(calc(100svh - var(--top-h))); opacity: 0; filter: blur(var(--blur)); }
+  /* 起點＝看得到的最上面那一點在畫面底緣：沒捲＝100svh − top-h；點底列的動態會先捲到那則（chrome.js openNewsAt 照捲完的位置算 --news-rise，user 2026-11-23） */
+  from { transform: translateY(var(--news-rise, calc(100svh - var(--top-h)))); opacity: 0; filter: blur(var(--blur)); }
 }
 @keyframes news-fall {
   to { transform: translateY(var(--news-drop, 100svh)); opacity: 0; filter: blur(var(--blur)); }
