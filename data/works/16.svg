@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1050" viewBox="0 0 1400 1050">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(263 55% 58%)"/><stop offset="1" stop-color="hsl(303 50% 30%)"/></linearGradient></defs>
-<rect width="1400" height="1050" fill="url(#g)"/>
-<text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-family="system-ui, sans-serif" font-weight="700" font-size="378" fill="#fff" fill-opacity="0.92">16</text>
-<text x="50%" y="840" text-anchor="middle" font-family="system-ui, 'Microsoft JhengHei', 'PingFang TC', sans-serif" font-size="79" fill="#fff" fill-opacity="0.85">1400 × 1050・橫式</text>
-</svg>

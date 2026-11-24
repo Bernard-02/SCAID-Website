@@ -21,10 +21,10 @@
   <!-- 作品（user 2026-11-23）：像電影院——整頁深色、沒有右圖（不放 .page-figure）、內容置中（md 起中間 8 欄）。
        兩種排法：放映（slideshow，一次一個在正中、前後兩個躲在後面）／總覽（bento，照比例排成幾欄），底列中間那組鈕切（header.html .bar-works）。
        每個作品照自己的比例與大小、只限最大寬；每次進來順序都打亂；影片在放映時點了就地播、可以全螢幕，圖片不放大。行為 js/modules/pages/works.js、版型 css/components/works.css。
-       內容為 MOCK 示意：圖暫時是 Lorem Picsum、影片是 Blender 的開放影片；後台（單例 works 的 YouTube 播放清單＋檔案庫「作品」資料夾的圖）有東西就換掉 -->
+       內容為 MOCK 示意：圖暫時是 Lorem Picsum、影片是 Blender 的開放影片；後台（單例 works 的 YouTube 播放清單＋圖片欄位）有東西就換掉 -->
   <main id="page-content">
     <div class="site-container site-grid">
-      <article class="page-body works col-span-full md:col-start-3 md:col-span-8" data-mode="slideshow">
+      <article class="page-body works col-span-full md:col-start-4 md:col-span-6" data-mode="slideshow">
         <h1 data-label="nav.works" data-en="Works">作品</h1>
         <div class="works-items">
           <div class="work" data-kind="image" style="--w:1600;--h:900"><img src="https://picsum.photos/seed/scaid-work-1/1600/900" alt="" width="1600" height="900" loading="lazy"><button type="button" class="work-hit"></button></div>

@@ -1,17 +1,16 @@
 /* 作品頁（user 2026-11-23；行為 js/modules/pages/works.js）：像電影院——整頁一律深色（chrome.js syncPageTheme）、沒有右圖、內容置中（works.html 的欄）。
    兩種排法掛在 .works 的 data-mode：放映（slideshow）／總覽（bento），底列中間那組鈕切（.bar-works）。
-   放映時兩邊的照自己的比例與大小、只限最大寬（user：「顯示的 thumbnail 都以圖片本身的大小爲主，但需要設一個 max width」），正中那個一律撐滿最大框；總覽撐滿一欄（user 2026-11-23）：
+   放映時每個都跟正中那個一樣大＝撐滿最大框（user 2026-11-24；原本兩邊的照自己的大小、只限最大寬）；總覽撐滿一欄（user 2026-11-23）：
    大小＝自己的寬高（.work 上的 --w／--h，works.js／HTML 寫）照比例縮進最大框、不放大——寫在框上不靠圖：圖的寬高寫 auto 的話，載到之前是 0×0（lazy 也就不載）。
-   影片的寬高寫成 16:9（standard／high 縮圖是 4:3 上下帶黑邊，cover 裁掉） */
+   影片的寬高＝影片真正的比例（works.js 向 YouTube 要；user 2026-11-24 總覽要 Pinterest 那種錯落，原本一律 16:9）：縮圖帶黑邊，cover 裁掉 */
 @layer components {
-  .works { margin-inline: 0; }   /* 沒有段落導覽、沒有右圖的鈕 → 手機也不用讓出兩邊那條（.page-body 的 --rail-w） */
   .works-items { margin-top: var(--spacing-md); }
   .work { aspect-ratio: var(--w) / var(--h); }
   .work img { display: block; width: 100%; height: 100%; object-fit: cover; }
   /* 點的範圍＝蓋在整個作品上的鈕（放映：兩邊那個＝換、正中的影片＝播；總覽：點了切到放映）；影片中間一顆 play */
   .work-hit { position: absolute; inset: 0; display: grid; place-items: center; width: 100%; padding: 0; color: var(--theme-fg); cursor: pointer; }
   .work-hit:disabled { cursor: default; }
-  .work-hit .icon { font-size: 2.5rem; filter: drop-shadow(0 0 0.4rem rgb(var(--theme-bg-rgb), 0.6)); transition: var(--transition-fade); }
+  .work-hit .icon { font-size: var(--block-h); filter: drop-shadow(0 0 0.4rem rgb(var(--theme-bg-rgb), 0.6)); transition: var(--transition-fade); }
   /* 放映：只有正中那個出 play（user 2026-11-23：兩邊的即便是影片也不出）；總覽照常出 */
   .works[data-mode="slideshow"] .work:not([data-pos="0"]) .work-hit .icon { opacity: 0; filter: blur(var(--blur)); }
   /* 影片就地播：蓋在縮圖上、同一個框（YouTube 播放器自己的鈕可以全螢幕） */
@@ -19,33 +18,45 @@
   .work:has(.work-frame) .work-hit { visibility: hidden; }
 
   /* ── 放映：舞台吃掉 h1 下面剩下的高（.works 定高＝畫面扣掉頂、底列，同 .page-body 的 min-height），一屏放得下、不捲。
-     正中最大壓最上層；前後兩個縮小、貼著舞台兩邊、被正中那個擋住一部分＝從兩邊露出來；再外面的藏在兩邊那個底下。
-     兩邊失焦（景深，同關於的段落輪播 page.css .slide）。換一個＝位置、大小、模糊一起補間（時長同網站 fade）。
+     一列（user 2026-11-24：「左右都幫我改成一樣大，然後整個 box 的左右邊緣加上 blur 的效果」；原本正中最大壓最上層、前後兩個縮小貼著舞台兩邊、各自失焦）：
+     每個都撐滿最大框＝舞台的 72cqw × 100cqh 裡照比例、寬高哪邊先碰到就停，圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」），
+     從正中往兩邊、隔一個 gutter 接下去（中線的位置＝works.js layoutRow 照每個的寬算 --x）；換一個＝整列滑過去（時長同網站 fade），繞到另一頭的直接跳（.is-jump，同關於的輪播）。
+     超出舞台的切掉（overflow: clip，理由同 page.css .slide-strip）；舞台的左右兩側＝漸進模糊（.slide-blur，同關於的段落輪播，works.js 插）＋透明度淡到邊（mask）＝邊不是一刀切。
+     糊的那一段（--band）＝正中那個最寬（72cqw）時兩邊剩下的＝正中的永遠不會被糊到。mask 也讓舞台變成 backdrop root＝那幾層只糊得到作品。
      大小用舞台的 cq 單位（container-type: size；總覽不能掛，高會被鎖成 0）。.works 一定要定高：只有 min-height＝舞台的高是 flex 長出來的，
      Chrome 的 cqh 會算成 0＝作品寬高全是 0、只看得到 play（2026-11-23 user 回報；WebKit 沒事，煙霧測試只守這條規則還在）── */
   .works[data-mode="slideshow"] { display: flex; flex-direction: column; height: calc(100vh - var(--top-h) - var(--bar-h)); }
-  .works[data-mode="slideshow"] .works-items { flex: 1; position: relative; min-height: 12rem; margin-bottom: var(--spacing-md); container-type: size; --step: 0.6cqw; }   /* 下面留一段：直的圖撐滿高時不貼著底列 */
-  .works[data-mode="slideshow"] .work {
-    --mw: 40cqw; --mh: 60cqh;   /* 兩邊那個（還有藏著的）的最大框 */
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: min(calc(var(--w) * 1px), var(--mw), calc(var(--mh) * var(--w) / var(--h)));
-    opacity: 0; z-index: 1; filter: blur(calc(2 * var(--step)));
-    transition: left var(--dur-fade) var(--ease-standard), transform var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard),
-      opacity var(--dur-fade) var(--ease-standard), filter var(--dur-fade) var(--ease-standard);
+  .works[data-mode="slideshow"] .works-items {
+    touch-action: pan-y;   /* 手機左右拖＝換作品（works.js；user 2026-11-24），上下照常捲 */
+    flex: 1; position: relative; min-height: 12rem; margin-bottom: var(--spacing-md); container-type: size;   /* 下面留一段：直的圖撐滿高時不貼著底列 */
+    margin-inline: calc(-1 * var(--rail-w));   /* 手機：舞台＝畫面扣左右內距就好、不讓 rail（user 2026-11-24：「不需要跟全站的寬度一樣」；h1、總覽照舊讓）；桌面 rail＝0 */
+    column-gap: var(--spacing-gutter);   /* 作品之間（框本身不是 flex／grid，這個值只給 works.js 讀） */
+    --out: var(--spacing-gutter); --band: calc((100% - 72cqw) / 2);
+    overflow: clip;
+    -webkit-mask: linear-gradient(to right, transparent, #000 var(--out), #000 calc(100% - var(--out)), transparent);
+            mask: linear-gradient(to right, transparent, #000 var(--out), #000 calc(100% - var(--out)), transparent);
   }
-  .works[data-mode="slideshow"] .work:is([data-pos="-2"], [data-pos="-1"]) { left: 0; transform: translate(0, -50%); }
-  .works[data-mode="slideshow"] .work:is([data-pos="1"], [data-pos="2"]) { left: 100%; transform: translate(-100%, -50%); }
-  .works[data-mode="slideshow"] .work:is([data-pos="-1"], [data-pos="1"]) { z-index: 2; opacity: 1; filter: blur(var(--step)); }
-  /* 正中那個一律撐滿最大框（寬、高哪邊先碰到就停）、照比例，圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」；
-     原本也不放大，小圖在正中反而比兩邊小） */
-  .works[data-mode="slideshow"] .work[data-pos="0"] { --mw: 72cqw; --mh: 100cqh; width: min(var(--mw), calc(var(--mh) * var(--w) / var(--h))); z-index: 3; opacity: 1; filter: none; }
+  .works[data-mode="slideshow"] .work {
+    position: absolute; top: 50%; left: calc(50% + var(--x, 0px) + var(--drag, 0px)); transform: translate(-50%, -50%);   /* --drag＝手指拖的距離（works.js，掛在清單上） */
+    width: min(var(--work-max, 72cqw), calc(100cqh * var(--w) / var(--h)));   /* --work-max＝最寬多寬：手機 72cqw、PC 內文 6 欄（下面） */
+    transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard);
+  }
+  /* PC（md 起）：正中那個撐滿內文的 6 欄（--body-w，variables.css），兩邊的往外排、切在左右內距那條線（＝menu 鈕的左緣）＝舞台＝畫面扣兩邊內距、
+     糊的那一段＝6 欄以外（user 2026-11-24：「pc 的作品，中間的影片是拉長到 col-6 的寬度，然後左右兩邊再往外擴散」→「有點太寬了，左右兩邊的影片切到 menu btn 那邊即可」；
+     總覽照舊——「grid 的不要調整」） */
+  @media (min-width: 768px) {
+    .works[data-mode="slideshow"] .works-items { margin-inline: calc((100% - 100vw) / 2 + var(--container-padding)); --work-max: var(--body-w); --band: calc((100% - var(--body-w)) / 2); }
+  }
+  .works[data-mode="slideshow"] .work.is-jump { transition: none; }   /* 繞到另一頭、第一次擺：直接到位 */
+  .works[data-mode="slideshow"] .works-items.is-dragging .work { transition: none; }   /* 拖著＝直接跟手指；放開才補間（彈回或換） */
   .works[data-mode="slideshow"] .work[data-pos="0"] .work-hit:disabled { pointer-events: none; }   /* 正中的圖片不放大：點了等於沒點 */
+  .works:not([data-mode="slideshow"]) .slide-blur { display: none; }   /* 舞台兩側的漸進模糊只有放映有 */
 
   /* ── 總覽（bento）：照比例排成幾欄（masonry），照閱讀順序擺（user 2026-11-23：放映的第 8 個＝總覽的第 8 個）：
      一個一個由左到右放進最矮的那一欄，位置 works.js layoutBento 算（--x／--y／--bw）——原本 CSS 多欄是一欄排滿才換下一欄，順序對不上。
-     手機 2 欄、md 起 3 欄（--cols；user 的截圖），欄距＝gutter（column-gap 只給 JS 量）；每個作品都撐滿一欄寬（--bw 掛在清單上；
-     user 2026-11-23：「有些圖片應該是拉滿到那個格子」，原本比一欄窄的照原本大小置中）── */
-  .works[data-mode="bento"] .works-items { --cols: 2; position: relative; column-gap: var(--spacing-gutter); }
+     手機 1 欄＝由上往下（user 2026-11-24：「不用分兩列」；原本 2 欄）、md 起 3 欄（--cols；user 的截圖），欄距＝gutter（column-gap 只給 JS 量，一欄時＝上下的間距）；
+     每個作品都撐滿一欄寬（--bw 掛在清單上；user 2026-11-23：「有些圖片應該是拉滿到那個格子」，原本比一欄窄的照原本大小置中）── */
+  .works[data-mode="bento"] .works-items { --cols: 1; position: relative; column-gap: var(--spacing-gutter); }
   .works[data-mode="bento"] .work { position: absolute; left: var(--x, 0); top: var(--y, 0); width: var(--bw, 0); }
   @media (min-width: 768px) {
     .works[data-mode="bento"] .works-items { --cols: 3; }
@@ -56,10 +67,13 @@
   .works.is-switching .work { transition: none; }
 
   /* ── 底列中間那組鈕：放映／總覽（header.html .bar-works）。只在作品頁（同首頁的動態只在首頁：別頁淡掉、淡完才 hidden）；
-     跟首頁的動態同一格（底列中欄、畫面正中）。目前的那個全亮、另一個淡（同段落導覽的淡 0.3），深淺的過場走網站 fade ── */
-  .bar-works { grid-area: 1 / 2; justify-self: center; display: flex; gap: 1em; transition: var(--transition-fade), visibility 0s; }
+     跟首頁的動態同一格（底列中欄、畫面正中）。目前的那個全亮、另一個淡（同段落導覽的淡 0.3），深淺的過場走網站 fade。
+     鈕＝ai 的 slide show／grid 兩個 icon（user 2026-11-24；原本寫字「放映／總覽」，字留著當報讀名稱），大小、間距同底列左邊的 play 鈕 ── */
+  .bar-works { grid-area: 1 / 2; justify-self: center; position: relative; display: flex;   /* relative：背後的毛玻璃（.fs-blur，chrome.css）貼著這一組 */ gap: var(--bar-gap); transition: var(--transition-fade), visibility 0s; }
   body:not([data-page="works"]) .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
-  .bar-works button { color: inherit; opacity: 0.3; transition: var(--transition-fade); }
+  html.logo-moving .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }   /* 首頁 → 作品頁：logo 移完才淡進來（理由同 chrome.css html.logo-moving .fs-blur） */
+  .bar-works button { display: flex; color: inherit; opacity: 0.3; transition: var(--transition-fade); }
+  .bar-works .icon { font-size: var(--block-h); }
   .bar-works button[aria-pressed="true"] { opacity: 1; }
   @media (hover: hover) {
     .bar-works button:hover { opacity: 1; }
