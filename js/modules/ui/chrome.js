@@ -7,7 +7,7 @@ import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
 import { logoToStroke, logoPage } from './logo.js';
-import { flash, remeasure } from './item-marquee.js';
+import { flash, remeasure, hoverIfOver } from './item-marquee.js';
 
 const html = document.documentElement;
 const phoneMenu = matchMedia('(max-width: 767px)');   // ＝chrome.css 手機全螢幕選單那段的斷點
@@ -44,10 +44,21 @@ function endNewsClosing() {
   html.classList.remove('news-closing');
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
+let risingTimer = 0;
 function setNews(open) {
   const was = html.classList.contains('news-open');
   const list = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .home-news-list'));
-  if (open) { endNewsClosing(); html.classList.add('news-open'); awayNews(); return; }   // 收到一半又開＝先收完再照常升上來
+  clearTimeout(risingTimer);
+  if (open) {   // 收到一半又開＝先收完再照常升上來
+    endNewsClosing(); html.classList.add('news-open', 'news-rising'); awayNews();
+    // 升上來的途中不能 hover（item-marquee.js rising；user 2026-11-24），升完（＝home.css --news-wait＋news-rise，同 openNewsAt 那一閃）才可以、游標停著的那則補做
+    risingTimer = window.setTimeout(() => {
+      html.classList.remove('news-rising');
+      document.querySelectorAll('#page-content .home-news-list li').forEach(hoverIfOver);
+    }, prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);
+    return;
+  }
+  html.classList.remove('news-rising');
   if (!was) { if (!list) endNewsClosing(); return; }   // 本來沒開著就沒事（closeOverlays 每次 Esc／換頁都會進來）；收到一半換頁了＝直接收尾
   clearTimeout(flashTimer);   // 定位後那一閃還沒開始就收＝不閃了（openNewsAt；閃到一半的跟著清單滑走）
   const slide = !!list && !prefersReducedMotion();     // 換頁帶走了清單／減少動態：照舊直接收、捲回頂
@@ -107,7 +118,7 @@ export function closeOverlays(news = true) { setMenu(false); if (news) setNews(f
 // 其他＝直連的影片檔（.mp4、.m3u8）＝原生 <video>。控制列、關燈、關掉整個拿掉＝放大 dialog 那套（renderFigure）
 /** YouTube 的影片 id（youtu.be/…、watch?v=…、/embed/、/shorts/、/live/）；不是 YouTube 的網域＝undefined——不先看網域的話，
  *  …/live/graduation-2026.mp4、?v=快取參數 這種直連的檔會被認成 YouTube @param {string} url */
-const youtubeId = (url) => {
+export const youtubeId = (url) => {
   let u;
   try { u = new URL(url, location.href); } catch { return undefined; }
   if (!/(^|\.)(youtube(-nocookie)?\.com|youtu\.be)$/.test(u.hostname)) return undefined;
@@ -119,13 +130,17 @@ export const youtubeFrame = (id, title) => Object.assign(document.createElement(
   src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&playsinline=1&rel=0`,
   allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, title,
 });
+/** 一支影片的播放器（intro、動態相簿裡的影片）：YouTube 連結＝iframe，其他＝直連的影片檔＝原生 <video>
+ *  （preload auto：logo 還在動、影片先藏著不播（openFigure）的時候就開始緩衝，淡出來時接得上） @param {string} url @param {string} title */
+const player = (url, title) => {
+  const id = youtubeId(url);
+  return id ? youtubeFrame(id, title) : Object.assign(document.createElement('video'), { src: url, playsInline: true, preload: 'auto' });
+};
 /** @param {HTMLElement} btn @param {MouseEvent} e */
 function openIntro(btn, e) {
   const url = btn.dataset.video;
   if (!url) return;   // 後台「首頁影片」沒填、header.html 的備援也空著
-  const id = youtubeId(url);
-  // preload auto：logo 還在動、影片先藏著不播（openFigure）的時候就開始緩衝，淡出來時接得上
-  openFigure(id ? youtubeFrame(id, btn.textContent?.trim() || 'intro') : Object.assign(document.createElement('video'), { src: url, playsInline: true, preload: 'auto' }), e);
+  openFigure(player(url, btn.textContent?.trim() || 'intro'), e);
 }
 
 // 內頁的右圖＝殼上的 object 畫布（user 2026-11-22；object.js）。PC：疊在當頁右圖那一格（page.css .page-figure）上；
@@ -175,8 +190,15 @@ function renderFigure() {
   if (prev instanceof HTMLButtonElement) prev.disabled = figureIndex <= 0;
   if (next instanceof HTMLButtonElement) next.disabled = figureIndex >= figureItems.length - 1;
 }
-/** 動態那則的一組圖：封面縮圖在前、相簿照順序（不在摺疊裡的相簿＝只有那本） @param {Element} el */
-const galleryOf = (el) => [...(el.closest('details') ?? el.closest('.album'))?.querySelectorAll(':scope > summary .item-thumb img, .album button img') ?? []];
+/** 動態那則的一組：封面縮圖在前、相簿照順序（不在摺疊裡的相簿＝只有那本）。相簿裡的影片（button[data-video]；動態，user 2026-11-24，
+ *  cms-pages.js videoShot）＝放大 dialog 裡放播放器、切到才載（同作品頁的總覽），其他＝那張圖
+ *  @param {Element} el 點的那一格（相簿的 button）或封面的 img @param {MouseEvent} e */
+function openGallery(el, e) {
+  const src = [...(el.closest('details') ?? el.closest('.album'))?.querySelectorAll(':scope > summary .item-thumb img, .album button') ?? []];
+  const items = src.map(s => !(s instanceof HTMLButtonElement) ? s : s.dataset.video ? player(s.dataset.video, s.textContent?.trim() || '影片') : s.querySelector('img'));
+  const node = items[src.indexOf(el)];
+  if (node) openFigure(node, e, /** @type {Element[]} */ (items.filter(Boolean)));
+}
 /** 作品頁的總覽也用它（user 2026-11-23：點了就地開 lightbox，一組＝總覽全部；影片的節點＝youtubeFrame，切到才載、切走就停）
  *  @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張）
  *  @param {(i: number) => void} [onStep] 上一個／下一個切到第 i 個時叫（作品總覽：背景的總覽跟著捲到那一個） */
@@ -437,7 +459,7 @@ export function initChrome() {
     if (t.closest('.figure-close')) { closeFigure(); return; }   // 關閉（X）在正中那排裡（user 2026-11-24），下一行之前先接
     if (t.closest('.figure-ctrl')) return;   // 控制列的空隙、音量拉桿：不算「點旁邊」
     const shot = t.closest('.album button');
-    if (shot) { openFigure(shot.querySelector('img'), e, galleryOf(shot)); return; }
+    if (shot) { openGallery(shot, e); return; }
     // 清單列掛 data-zoom（報導，user 2026-11-21）：不換頁、不另開，放大 dialog 直接看 href 那張圖（報導的截圖）
     const zoom = t.closest('a[data-zoom]');
     if (zoom instanceof HTMLAnchorElement) { e.preventDefault(); openFigure(Object.assign(new Image(), { src: zoom.href, alt: zoom.querySelector('h3')?.textContent ?? '' }), e); return; }
@@ -447,7 +469,8 @@ export function initChrome() {
     // 手機選單全螢幕（chrome.css，user 2026-11-22）：點選單的空白處＝收選單。用 click 不用 pointerdown：拖著捲選單不會觸發
     if (t.closest('.site-menu') && !t.closest('button') && phoneMenu.matches) { setMenu(false); return; }
     // 首頁展開著：點動態以外的地方＝收回去（user 2026-11-23：「點別的地方可以回到上一個畫面」；原本靠底列的 －）。
-    // 清單裡那幾則照常點進去；連結、鈕、選單照它們自己的；這一下的按下剛收掉選單＝不算
+    // 清單裡那幾則照常點進去；連結、鈕、選單照它們自己的——底列的 menu、play 這時點不到（chrome.css，user 2026-11-24）＝按下去落在底列本身＝收回去；
+    // 這一下的按下剛收掉選單＝不算
     if (!tap && html.classList.contains('news-open') && document.body.dataset.page === 'index' && !t.closest('.home-news-list li, a, button, .site-menu')) { setNews(false); return; }
     // 首頁：點底列的動態＝原地展開、定位到看到的那則（不走 router：preventDefault → router 看到 defaultPrevented 放行）；展開著再點＝收回去。
     // 選單開著時動態是糊掉的內容（chrome.css，user 2026-11-21）：點它＝第一下只收選單、不展開／收合（同右邊內容）。
@@ -467,7 +490,7 @@ export function initChrome() {
     const img = cover?.querySelector('img');   // 裡面有圖的才是封面（榮譽的國旗本身就是 .item-thumb＝點了照常收合）
     if (!cover || !img) return;
     e.preventDefault(); e.stopPropagation();
-    openFigure(img, e, galleryOf(cover));
+    openGallery(img, e);
   }, true);
   // 放大 dialog 關了（X、點旁邊、Esc、換頁）：object 的畫布搬回殼上。close 不冒泡 → 用 capture 接
   document.addEventListener('close', (e) => { if (e.target === figureDialog()) closeObject(); }, true);

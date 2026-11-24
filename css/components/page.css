@@ -15,20 +15,35 @@
   .page-body { @apply text-s; grid-row: 1; margin-inline: var(--rail-w); overflow-wrap: anywhere; }   /* anywhere：窄手機上放不下的長英文字折在欄內，不衝出右邊那條 */
   .page-lead { margin-top: var(--spacing-md); }   /* 字級＝內文的 text-s（p 的預設），不另外寫 */
   .page-section { margin-top: var(--spacing-2xl); }
-  /* Subsection title 跟下面內文隔 xs，掛在標題上（user 2026-11-21；原本貼著、試過 sm）。
+  /* 標題那塊（h1＋導言）到第一段＝3xl、段跟段之間照舊 2xl（user 2026-11-24：「這個 title 的區塊到下面的內容，gap 改成 3xl」「分開好了，不要合在一起」） */
+  .page-body > :is(h1, .page-lead) + .page-section { margin-top: var(--spacing-3xl); }
+  /* Subsection title 跟下面內文隔 sm，掛在標題上（user 2026-11-24：「subsection 下面的 mb 改成 sm 大小」＝同條列筆與筆之間的 gap；
+     11-21 定的是 xs，原本貼著）。
      看起來的距離還含行距：試過用 text-box 把標題的行距切掉，user 2026-11-21 拿回——要調就直接調 spacing 的值 */
-  .page-section h3 { margin-top: var(--spacing-md); margin-bottom: var(--spacing-xs); }
+  .page-section h3 { margin-top: var(--spacing-md); margin-bottom: var(--spacing-sm); }
+  /* 關於的小節（cms-pages.js subsection；user 2026-11-24：「年級這邊應該是用 gap 來調整，且 gap 跟 list 的調整一致」）：一個小節一塊 .subsection、
+     整串包在 .subsections，塊與塊之間＝容器的 gap、同清單列（.item-list：標題到清單 xl、列與列之間 xl）——原本攤在段落裡、靠 h3 的上距 md 隔開。
+     塊的第一個東西（標題，沒標題時是圖／輪播）不再自己留上距 */
+  .subsections { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-xl); }
+  /* 小節裡的圖上下多留 md（user 2026-11-24：「輪播的上下 padding 應該要更多」；原本跟標題隔 xs（標題的 margin-bottom）、跟下面的內文隔 sm（內文的 mt-sm））：
+     一張圖＝這裡；多張＝輪播，照輪播自己的（下面 .slideshow：從上下暈出去的模糊外緣再隔 md）。跟標題、內文的 margin 疊在一起取大的 */
+  /* 圖 → 下面的內文 xl、標題 → 圖 md（user 2026-11-24：「我想要圖片到那個段落文字是 xl，但 title 到圖片可以是 md」；
+     輪播同一天又改回上下 md（下面 .slideshow），一張圖還沒說要不要跟著改） */
+  .subsection > img { margin-top: var(--spacing-md); margin-bottom: var(--spacing-xl); }
+  .subsection > :first-child { margin-top: 0; }
+  .subsection > :last-child { margin-bottom: 0; }   /* 塊之間只算 gap（塊是 grid 的一格，裡面的 margin 不會疊出去、會撐大） */
+  /* 輪播在塊的頭尾：留模糊暈出去的那段（--up），不然模糊吃進塊之間的 gap */
+  .subsection > .slideshow:first-child { margin-top: var(--up); }
+  .subsection > .slideshow:last-child { margin-bottom: var(--up); }
   /* 關於的小節圖（cms-pages.js subsection；user 2026-11-23）：照原比例、寬＝內文欄，最高 16rem，比這還高的等比縮小、在內文欄正中
      （user 2026-11-23：「如果只有一張照片，就要 center 然後置中」；原本靠左）。
      用 object-fit、不用 width: auto：框照 img 的 width／height 屬性先排好，lazy 載入前後版面不跳（框＝整欄寬，圖畫在框的正中；
      圖本身比欄窄＝框也窄 → margin auto 把框置中） */
-  .page-section > img { max-height: 16rem; object-fit: contain; margin-inline: auto; }
-  /* 小節放多張圖＝輪播（user 2026-11-24）：跟標題的距離同一張圖（標題的 margin-bottom xs），不用段落輪播的 md */
-  .page-section > h3 + .slideshow { margin-top: 0; }
-  /* 關於的年表（沿革；user 2026-11-23：跟師資詳細頁的學歷一樣，年份一行、說明一行）：筆與筆之間同詳細頁（.profile-photo 下面那條 h3 + ul） */
-  .timeline > li + li { margin-top: var(--spacing-xs); }
-  /* 後台的段落內文（WYSIWYG，cms-pages.js）：中英各一份 HTML、不能走 data-en → 兩份都放、跟著 <html lang>（lang.js 設）只顯示一份 */
-  html[lang="en"] [data-lang-block="zh"], html:not([lang="en"]) [data-lang-block="en"] { display: none; }
+  .subsection > img { max-height: 16rem; object-fit: contain; margin-inline: auto; }
+  /* 年表（關於的沿革）、師資詳細頁的學歷…（cms-pages.js entryList：一筆＝年份一行＋說明一行；user 2026-11-23：沿革跟詳細頁的學歷一樣）＝清單：
+     筆與筆之間 sm＝ul 的 gap（user 2026-11-24：「如果是 list 類別，就是像這樣的老師副標，或是沿革這樣的 list，gap 從 xs 改成 sm，且用 gap 來分，不要用 mt」；
+     原本 li + li 的 margin-top xs＝標題到第一筆的距離）。詳細頁的只選到它自己的 h3＋ul */
+  :is(.timeline, .subsection > h3 + ul) { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-sm); }
 
   /* 高 0 的 sticky 錨點（右圖停畫面中線、導覽停 h1 那條線，user 2026-11-10／2026-11-18）：內容從錨點溢出去。
      sticky 會把自己的框留在內容格子裡，捲到底時格子底只到「畫面底 − 底列高」→ 有高度的框會被頂上去；高 0 就不會 */
@@ -113,7 +128,12 @@
   /* 社群＝一個 IG icon（user 2026-11-24）：高＝menu 鈕那顆骨牌（全站 icon 的規矩）；連結的框＝icon 本身（flex：沒有行高多出來的那截） */
   .footer-social a { display: flex; }
   .footer-social .icon { font-size: var(--block-h); }
-  .footer-contact { display: flex; flex-direction: column; gap: var(--spacing-md); }
+  /* 聯絡資訊＝清單，同師資詳細頁（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」）：標記就是那邊的
+     .subsections > .subsection > h3 + ul（contact.html 另掛 .subsections、text-s；footer-cms.js）＝清單之間 xl、標題 Medium、筆與筆之間 sm 都吃同一組規則。
+     這裡只補：整塊的上距交給 .footer-body 的 gap（.subsections 自己的 xl 不要）、撐滿內文欄（同下面的連結清單）、
+     標題到第一筆 sm（那條掛在 .page-section h3，聯絡頁沒有 .page-section）。原本是 dl：一列＝標籤＋值、列與列之間 md */
+  .footer-contact { margin-top: 0; align-self: stretch; }
+  .footer-contact h3 { margin-bottom: var(--spacing-sm); }
   /* 姊妹系所＝連結清單（HTML 另掛 .link-list；user 2026-11-21：寫全名、一行一個，原本縮寫排一列）：
      撐滿內文欄（.footer-body 的子項預設靠左縮到內容寬）＝整列都點得到 */
   .footer-links { align-self: stretch; }
@@ -122,19 +142,23 @@
 
   /* 師資詳細頁的照片：寬同列表縮圖，下面接名字＋副標（user 2026-11-21：上下排） */
   .profile-photo { width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-md); }
-  /* 學歷／經歷…一筆一筆：筆與筆之間＝標題到第一筆的距離（h3 的 margin-bottom；user 2026-11-23，原本不空、看不出是一筆一筆）。
-     > 只選到詳細頁自己的 h3＋ul，後台段落內文（.cms-rich 裡）的清單不吃 */
-  .page-section > h3 + ul > li + li { margin-top: var(--spacing-xs); }
+  /* 學歷／經歷…一筆一筆：筆與筆之間 sm（上面年表那條；user 2026-11-23 原本不空、看不出是一筆一筆 → 標題到第一筆的距離 xs → 2026-11-24 sm）。
+     一組（標題＋那幾筆）＝一塊 .subsection、包在 .subsections（上面關於的小節那幾條）：組與組之間＝gap xl、同動態的清單列
+     （user 2026-11-24：「所有的 list 的 gap 都調整跟 activities 的一樣」；原本組之間＝h3 的上距 md） */
 
   @media (hover: hover) {
     .back-btn:hover { opacity: 0.6; }
   }
 
-  /* 段落裡的條列（user 2026-11-10 草圖）：一項一塊。標題到清單 xl、列與列之間也是 xl＝清單自己的 gap、不用 li 的 pb／mb
-     （user 2026-11-24：「list 之間的 gap 太小」→ lg →「可以再大一點」；11-23 是 md、再之前 lg；手機的 xl＝lg）。標題到副標隔 xs、副標之間不留距（user 2026-11-21） */
-  .item-list { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-xl); }   /* minmax(0)：一行不折的標題不會把整欄撐寬 */
+  /* 段落裡的條列（user 2026-11-10 草圖）：一項一塊。標題到清單 xl、列與列之間 lg＝清單自己的 gap、不用 li 的 pb／mb。
+     每一種清單都一樣（user 2026-11-24：「所有的 list 的 gap 都調整跟 activities 的一樣」「這個規章應該跟課程一樣」）——同一天稍早是 xl（「可以再大一點」），
+     接著只有手風琴的清單改 lg（「這個 accordion 之間的 gap 應該是 lg」）、點進內頁／外連的（師資、合作企業、規章、報導）還留在 xl＝規章看起來比課程鬆；手機的 xl＝lg */
+  .item-list { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-lg); }   /* minmax(0)：一行不折的標題不會把整欄撐寬 */
   .page-body .item-list h3 { margin-block: 0; }   /* 不是 Subsection title：上下距都歸零 */
-  .item-row :is(h1, h3) + p { margin-top: var(--spacing-xs); }
+  /* 清單列的字（標題＋副標，一行一個）＝清單：之間 sm＝那一塊的 gap（user 2026-11-24：「如果是 list 類別，就是像這樣的老師副標…gap 從 xs 改成 sm，
+     且用 gap 來分，不要用 mt」；原本標題 → 副標 margin-top xs、副標之間不留距，user 2026-11-21）。有縮圖＝文字那一欄（最後一格）、沒縮圖＝列本身；
+     插在列裡的帶／直條、報讀用的字都是絕對定位＝不算一格 */
+  .page-body .item-row:not(:has(> .item-thumb)), .page-body .item-row:has(> .item-thumb) > :last-child { display: flex; flex-direction: column; gap: var(--spacing-sm); }
   /* ── 清單列＝積木（user 2026-11-21）：師資、合作企業、課程、動態、榮譽、報導、入學、規章全是同一種列 .item-row，
      標題 h3＝text-md（Medium）、副標 p＝text-s，一行一個、可以沒有（同入學）。三塊自己挑著組：
      ・圖：第一個子項放 .item-thumb（框 1.5 欄、圖照原比例，見下面 .item-thumb；榮譽的國旗＝.record 改成一行字高的 4:3）→ 自動排成左圖、隔一個 gutter 右文字（文字包一個 div）；沒放＝純文字
@@ -265,10 +289,12 @@
      展開內容從縮圖的左緣排起、吃整列寬（user 2026-11-21；原本桌面對齊縮圖右邊的文字那一欄）。
      入學沒有縮圖（user 2026-11-19）：summary 一樣是 .item-row，只是不放 .item-thumb。
      右邊同 summary 讓出 --row-pad（user 2026-11-24：內文原本排到最右、壓到打開時常駐的直條底下）。
-     跟 summary 那一列隔 xs＝展開內容自己的 padding-top（user 2026-11-24：「打開的 gap 太大」「用內容區的 pt 去設定」；原本 margin-top md）：
-     要比列距小很多才看得出是這一則的（列距還是 lg 時比過：sm 在 PC 加上橫圖在框裡上下的空，看起來跟列距差不多）；同「標題 → 自己的內容」隔 xs */
-  .fold-body { @apply text-s; padding-top: var(--spacing-xs); padding-right: var(--row-pad); display: grid; gap: var(--spacing-md); }
-  /* 時間、地點直接寫、一行一個，不加「時間／地點」標籤（user 2026-11-18） */
+     跟 summary 那一列隔 sm＝展開內容自己的 padding-top（user 2026-11-24：「打開的 gap 太大」「用內容區的 pt 去設定」先給 xs，
+     同一天看課程頁又說「這個內文的 pt 改成 sm」；原本 margin-top md）。要比列距小很多才看得出是這一則的（列距還是 lg 時比過：sm 在 PC 加上橫圖在框裡上下的空，看起來跟列距差不多） */
+  .fold-body { @apply text-s; padding-top: var(--spacing-sm); padding-right: var(--row-pad); display: grid; gap: var(--spacing-md); }
+  /* 時間、地點直接寫、一行一個，不加「時間／地點」標籤（user 2026-11-18）。一行一個＝清單：之間 sm＝這一塊的 gap、同清單列的標題／副標
+     （user 2026-11-24：「這個應該是 list 的 gap，比照老師的副標那個去調整」；原本貼著）。榮譽展開的主辦方、獎別也是這一塊 */
+  .fold-meta { display: flex; flex-direction: column; gap: var(--spacing-sm); }
   .fold-body .link-list { font-weight: var(--font-weight-bold); }   /* 附件（展開內容裡的連結清單）＝粗體（user 2026-11-18） */
   /* 相簿（user 2026-11-18 改）：所有圖一排、同一個最大高（--album-h）、照原比例不裁切；放不下橫向捲（藏捲軸）、圖列吃滿、左緣對齊文字欄。
      框的前後＝漸進模糊（user 2026-11-24：「預設整個 box 的前後會有 blur，如果整個 gallery 裏面的圖片比 box 長的話，則需要加上 blur，如果沒有，則不需要 blur」
@@ -276,21 +302,35 @@
      糊的樣子同關於的段落輪播（.slide-blur；user 2026-11-24：「應該比照 about 頁面的那個輪播圖片才對」）：每邊一塊（.album-blur）5 層 backdrop-filter、
      每層模糊加倍、越糊的越窄＝越外面越糊，圖列往那一邊淡到透明（mask）＝框的邊不是一刀切；mask 也讓 .album 變成 backdrop root＝那幾層只糊得到圖。
      但框不伸出內文欄（輪播是左右各伸出 --out）：淡到透明的那一點就是欄的左右緣（user 2026-11-24：「左右還是比較大了點…要 blur 的那個邊緣看起來還是有對到寬度」）。
-     上下不伸＝圖的上下緣是直線（試過上下也伸出去糊開、模糊那幾層蓋在框外，user：「另外渲染一個比較寬的 box，超怪的」）。
+     上下各伸 --album-up（padding 撐高、負 margin 抵掉＝版面不變；1.5rem 的理由同輪播 .slide-strip --up）：兩側的模糊往圖的上下暈出去，不是在上下緣被切成直線
+     （user 2026-11-24：「左右的 fade，是會延伸到上下的區塊」＝同作品頁的放映、關於的輪播）；mask 的框跟著高＝模糊那幾層照舊在框裡。
+     伸出去的那圈不吃指標（圖列自己接）：不然第一個就是相簿時會蓋到 summary 的下緣。摺疊補間時下面那段不被切＝accordion.js 的 clip-path。
+     （11-24 稍早試過上下伸、模糊那幾層蓋在框外，user：「另外渲染一個比較寬的 box，超怪的」——那次是層在 backdrop root 外面＋補間完才冒出來。）
      捲動時馬上糊、馬上收、不補間（user 2026-11-24：「blur 的添加可以再及時一點…感覺有點 clip 的添加，能不能直接 blur 的添加」——原本淡進來的寬跟著補間＝像從邊切進來，
      模糊層也慢慢淡）；選單、放大 dialog 開關時照舊跟著內容一起淡（下面那兩條）。淡的是每一層自己的 opacity（掛在 .album-blur 上它會變 backdrop root、糊不到圖） */
-  .album { --album-h: 6rem; --album-fade: var(--spacing-gutter); }   /* 原本 8rem／12rem，user 2026-11-19 嫌大縮成 6rem／9rem；--album-fade＝從欄的邊淡進來多長（兩個 gutter 太長＝圖看起來比欄窄） */
+  .album { --album-h: 6rem; --album-fade: var(--spacing-gutter); --album-up: 1.5rem; }   /* 原本 8rem／12rem，user 2026-11-19 嫌大縮成 6rem／9rem；--album-fade＝從欄的邊淡進來多長（兩個 gutter 太長＝圖看起來比欄窄） */
   @media (min-width: 768px) { .album { --album-h: 9rem; } }
   .album.is-ready {
     position: relative;
+    padding-block: var(--album-up); margin-block: calc(-1 * var(--album-up)); pointer-events: none;
     -webkit-mask: linear-gradient(to right, transparent, #000 var(--album-fade-start, 0px), #000 calc(100% - var(--album-fade-end, 0px)), transparent);
             mask: linear-gradient(to right, transparent, #000 var(--album-fade-start, 0px), #000 calc(100% - var(--album-fade-end, 0px)), transparent);
   }
+  /* 圖跟上面那塊（動態的時間地點、入學的說明）隔 sm（user 2026-11-24：「gallery 到上面的 gap 改成 sm」；展開內容其他的塊照舊 .fold-body 的 gap md）：
+     上面那條的負 margin 再多抵 md − sm。上面沒東西（相簿排第一個）不動＝不會蓋到 summary */
+  .fold-body > * + .album.is-ready { margin-top: calc(var(--spacing-sm) + var(--lead) - var(--spacing-md) - var(--album-up)); }
+  /* 圖 ↔ 字補半個行距（--lead，variables.css；user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」）：
+     上面那條＝字 → 相簿；這條＝相簿 → 下面的字（入學的附件）；PC 摘要的底是縮圖（有圖的列）→ 展開的第一行字。
+     手機圖在上、字在下＝摘要的底是字，不用補；榮譽的國旗是一行字高＝摘要的底是字 */
+  .fold-body > .album.is-ready + * { margin-top: var(--lead); }
+  @media (min-width: 768px) { details:has(> summary > .item-thumb img) > .fold-body { padding-top: calc(var(--spacing-sm) + var(--lead)); } }
   .album.more-start { --album-fade-start: var(--album-fade); }   /* 還捲得過去的那一邊淡到透明 */
   .album.more-end { --album-fade-end: var(--album-fade); }
   .album-blur { position: absolute; top: 0; bottom: 0; width: calc(var(--album-fade) / 2 + 22%); pointer-events: none; }   /* 糊的那段＝欄寬 22%＋淡掉那段的一半（同輪播從欄的邊算） */
-  .album-blur-start { left: 0; }
-  .album-blur-end { right: 0; }
+  /* 糊的那段＝完整露出的那幾張以外（user 2026-11-24：「順便同步更改 gallery 的」＝同輪播、作品頁的放映：看得完整的不糊，被框切到的那張才糊）：
+     從框的邊到最近那張完整的圖（album.js 量；捲動時馬上跟、不補間）；一張完整的都沒有（圖比框寬）＝照舊上面那條 */
+  .album-blur-start { left: 0; width: var(--album-cut-start, calc(var(--album-fade) / 2 + 22%)); }
+  .album-blur-end { right: 0; width: var(--album-cut-end, calc(var(--album-fade) / 2 + 22%)); }
   .album-blur > i {
     /* 第 i 層（0 最淡）：從框的外緣到 a 全實、到 b 淡完＝越糊的那層越窄 */
     --a: calc(100% * (4 - var(--i)) / 5);
@@ -311,10 +351,15 @@
   html:is(.menu-open, .menu-closing, :has(#figure-dialog[open])) .album-blur > i { transition: opacity var(--dur-fade) var(--ease-standard); }
   /* relative＝每張的報讀文字（.sr-only，絕對定位）以這一排為準、被它的捲動裁掉：不然它們的定位基準在捲動框外面，排在後面幾張的會把手機的版面撐寬
      ＝fixed 的 logo、放大 dialog 跟著偏（user 2026-11-24 回報：手機上點開動態 logo 跑位、lightbox 版面錯；390 寬被撐到 469） */
-  .album-strip { position: relative; display: flex; gap: var(--spacing-gutter); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .album-strip { position: relative; pointer-events: auto; display: flex; gap: var(--spacing-gutter); overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
   .album-strip::-webkit-scrollbar { display: none; }
   .album-strip > button { flex: none; display: block; height: var(--album-h); background: var(--light-gray); cursor: pointer; scroll-snap-align: start; }   /* 只管圖，chevron 是 .album 直接的子 button。游標＝手指（user 2026-11-23；原本放大鏡 zoom-in） */
   .album-strip img { display: block; height: 100%; width: auto; }
+  /* 相簿裡的影片（動態；user 2026-11-24：「影片要有，因爲要做影片渲染」，照 SCCD；cms-pages.js videoShot）：一格 16:9＝YouTube 的縮圖（4:3、上下帶黑邊 → cover 裁掉）
+     ＋正中一顆 play（樣子同作品縮圖上的那顆，works.css .work-hit）；直連的影片檔沒有縮圖＝灰底。點了在放大 dialog 播（chrome.js openGallery） */
+  .album-strip > .album-video { position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; color: var(--theme-fg); }
+  .album-strip > .album-video img { position: absolute; inset: 0; width: 100%; object-fit: cover; }
+  .album-strip > .album-video .icon { position: relative; font-size: var(--block-h); filter: drop-shadow(0 0 0.4rem rgb(var(--theme-bg-rgb), 0.6)); }
   /* 封面縮圖有圖就鋪滿（動態；打開那則點它放大） */
   .item-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }   /* 圖在框的正中（user 2026-11-24：「讓裏面的圖片 center 這個 box」；原本貼左） */
 
@@ -359,14 +404,19 @@
   /* 段落圖片輪播（user 2026-11-18 about 起；slideshow.js）：一列、每張一樣高（＝框高）、寬照後台檔案的比例、不裁
      （user 2026-11-23：「照片應該以後台的 size 為主，不要 crop 原本上傳的 size」「要一樣大的高度」）；目前那張在正中、其他隔一個 gutter
      接在兩邊（column-gap，slideshow.js 讀），超出框的切掉；換張＝整列滑過去（left／width 過場，時長同網站 fade）。
-     框高＝同小節圖（.page-section > img，user 2026-11-23：「段落應該跟小節圖同步」；原本＝欄寬 × 0.44、螢幕越寬越大）：
+     框高＝同小節圖（.subsection > img，user 2026-11-23：「段落應該跟小節圖同步」；原本＝欄寬 × 0.44、螢幕越寬越大）：
      最高 16rem（這裡的 max-height），而且最寬的那張也放得進內文欄＝slideshow.js 算 min(16rem, 欄寬 ÷ 最寬那張的比例) 寫進 height。
      框的左右兩側＝漸進模糊（.slide-blur，slideshow.js 插；user 2026-11-23：「blur 改成這個 box 的左右兩邊加上 blur 到清晰的漸層，不是加在左右兩張圖片」）：
      同 logo 後面 .top-blur 那套＝疊幾層、每層模糊加倍；越糊的那層越窄＝越外面越糊、往中間淡到清楚。照片本身不糊。
      試過、被 user 退掉的：中間大兩邊小＋左右兩張各自失焦（景深，11-21～23；那時也退過「蓋一層漸進模糊」，11-23 改要框兩側的漸層）、
      圖不動改成點哪張哪張對焦、五張／三張由大到小排一排 */
   .slideshow {
-    position: relative; height: 16rem; max-height: 16rem; margin-top: var(--spacing-md);   /* 高由 slideshow.js 寫（16rem＝還沒算之前）；標題 → 圖 → 內文（user 2026-11-18） */
+    position: relative; height: 16rem; max-height: 16rem;   /* 高由 slideshow.js 寫（16rem＝還沒算之前）；標題 → 圖 → 內文（user 2026-11-18） */
+    --up: 1.5rem;   /* 上下暈出去的模糊（下面 .slide-strip） */
+    /* 上下 md（user 2026-11-24：「輪播那邊改回上下 md 好了」；段落的、小節的輪播都是）＝上下暈出去的模糊（--up）剛好在標題、內文的邊淡完。
+       同一天中間試過：上下 md＋--up（「輪播的上下 padding 應該要更多」）、標題 → 輪播 md／輪播 → 內文 xl（「圖片到那個段落文字是 xl」）。
+       用 margin 不用 padding：框高是 slideshow.js 寫的，padding 會吃掉照片 */
+    margin-block: var(--spacing-md);
     column-gap: var(--spacing-gutter);   /* 張與張之間（slideshow.js 讀；框本身不是 flex／grid，這個值只給 JS 用） */
   }
   /* 照片＋兩側模糊那幾層（slideshow.js 包）：左右各伸出框外 --out，透明度從伸出去的外緣淡進來、到框內 --out 才全實
@@ -376,15 +426,21 @@
      點／聚焦到旁邊那張時瀏覽器會把整列捲歪（2026-11-23 煙霧測試踩過）；也不讓照片撐出整頁的橫向寬度 */
   .slide-strip {
     --out: var(--spacing-gutter);   /* 往框外糊出去多少：落在內文欄旁邊的 gutter／手機的 rail 裡 */
-    --band: calc(var(--out) + (100% - 2 * var(--out)) * 0.22);   /* 從列的外緣算、糊的那一段多寬：伸出去的＋框寬的 22%（100%＝列寬，用在漸層裡才解析） */
+    --band: var(--slide-cut);   /* 從列的外緣算、糊的那一段多寬＝到目前那張的邊（slideshow.js；user 2026-11-24 照作品頁：目前那張以外才糊。原本伸出去的＋框寬 22%） */
+    transition: --slide-cut var(--dur-fade) var(--ease-standard);   /* 跟照片的 left／width 同一組＝一起滑（檔尾 @property 註冊才補間得了） */
     position: absolute;
-    inset: 0 calc(-1 * var(--out));
+    /* 上下也伸出 --up（照片照舊＝框高，下面 .slide）：兩側的模糊往照片的上下暈出去，不是在上下緣被切成直線
+       （user 2026-11-24：「左右的 fade，是會延伸到上下的區塊」＝同作品頁的放映：那邊舞台比作品高，模糊層本來就蓋到作品上下）。
+       --up＝最糊那層（8px）的三倍：暈到那裡已經淡完；用手機的 gutter（16px）還剩一點、深色模式會在邊上切出一條線＝像另外一個框。
+       --up 寫在 .slideshow（上面）：輪播上下的 margin 也要算這段 */
+    inset: calc(-1 * var(--up)) calc(-1 * var(--out));
+    pointer-events: none;   /* 伸出去的那圈不擋上下的字；照片自己接（.slide） */
     overflow: clip;
     -webkit-mask: linear-gradient(to right, transparent, #000 calc(2 * var(--out)), #000 calc(100% - 2 * var(--out)), transparent);
             mask: linear-gradient(to right, transparent, #000 calc(2 * var(--out)), #000 calc(100% - 2 * var(--out)), transparent);
   }
   .slide {
-    position: absolute; top: 0; height: 100%; padding: 0; border: 0; background: var(--light-gray);
+    position: absolute; top: var(--up); height: calc(100% - 2 * var(--up)); padding: 0; border: 0; background: var(--light-gray); pointer-events: auto;
     transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard);
   }
   .slide img { display: block; width: 100%; height: 100%; object-fit: contain; }   /* 框的寬照圖的比例算好了；contain＝圖還沒載到、比例先猜的時候也不裁 */
@@ -416,3 +472,5 @@
   /* 中文最後一個字右邊燒了一段字距（build-fonts.py TRACKING＝0.205em）→ 扣掉才是字本身置中（英文 JetBrains Mono 沒有這段） */
   html[lang="zh-Hant"] body[data-page="404"] .page-body > h1 { margin-right: -0.205em; }
 }
+/* 輪播糊的那段跟著目前那張滑（.slide-strip transition；slideshow.js 寫）：註冊成長度才補間得了 */
+@property --slide-cut { syntax: '<length>'; inherits: true; initial-value: 0px; }

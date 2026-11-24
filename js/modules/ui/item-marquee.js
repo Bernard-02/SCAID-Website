@@ -293,6 +293,12 @@ export function flash(row) {
   });
 }
 
+/** 首頁的動態正在升上來（chrome.js setNews 掛 html.news-rising）：還不能 hover，升完才可以（user 2026-11-24：「這個 news 出場時應該要 disable 掉 hover，只有在動畫結束才可以 hover」）。
+ * 點照常（不用 pointer-events: none：點下去會穿到後面＝被當成點動態以外、收回去） @param {Element} row */
+const rising = (row) => document.documentElement.classList.contains('news-rising') && !!row.closest('.home-news-list');
+/** 升完：游標停在那一則上（升的途中進去、沒有再進出一次＝pointerover 不會再來）＝照 hover 的規矩補做（chrome.js） @param {Element} row */
+export function hoverIfOver(row) { if (row.matches(':hover')) strike(/** @type {HTMLElement} */ (row), wipe); }
+
 /** 程式叫的 hover：不管游標在不在都跑完整段（蓋 → 收 → 直條），回傳做完的 Promise；做完直條留著。
  * 入學頁的 deep link 先做完這個才打開那一則（cms-pages.js newsList；user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」）
  * @param {Element} row */
@@ -353,7 +359,7 @@ export function initItemMarquee() {
   document.addEventListener('pointerover', (e) => {
     const row = crossed(e, '.item-row'), hit = crossed(e, ROWS);
     if (row) clippedIn(row).forEach(start);
-    if (hit) strike(hit, wipe);
+    if (hit && !rising(hit)) strike(hit, wipe);
   });
   /** 開著的摺疊（不是正在收）的那一列：直條留著（user 2026-11-22） @param {Element} el */
   const openFold = (el) => el.matches('details[open]:not(.is-closing) > summary');

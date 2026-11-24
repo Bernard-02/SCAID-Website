@@ -71,43 +71,28 @@ const when = el => {
 const pool = (p, el) => el ? { $pool: p, name_zh: text(el), name_en: el.attrs['data-en'] ?? text(el) } : null;
 const keyOf = r => `${(r.name_en || '').trim().toLowerCase()}|${(r.name_zh || '').trim()}`;
 
-// 文字頁的段落內文：照 HTML 抄成中英兩份（只留前台 sanitize 會放行的標籤與 class；輪播、sr-only 不進內文）
-const RICH = new Set(['p', 'h3', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'a', 'br']);
-const KEEP_CLASS = new Set(['mt-sm', 'mt-md', 'text-xs']);
-const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-function rich(n, lang) {
-  if (!isEl(n)) return /^\s*$/.test(n.text) ? '' : esc(n.text);
-  if (!RICH.has(n.tag)) return '';
-  if (n.tag === 'br') return '<br>';
-  const c = (n.attrs.class || '').split(/\s+/).filter(k => KEEP_CLASS.has(k)).join(' ');
-  const href = n.tag === 'a' && n.attrs.href ? ` href="${esc(n.attrs.href)}"` : '';
-  const inner = lang === 'en' && n.attrs['data-en'] != null ? esc(n.attrs['data-en']) : n.children.map(x => rich(x, lang)).join('');
-  return `<${n.tag}${c ? ` class="${c}"` : ''}${href}>${inner}</${n.tag}>`;
-}
-
 // ── 各集合（照各頁現在的標記；標記改了這裡跟著改） ──
-// 動態、入學各一個集合（user 2026-11-24；原本共用 news、勾「入學」）。動態頁每則＝縮圖＋標題＋分類，展開＝時間、地點；入學頁每則＝標題＋時間，展開＝說明
+// 動態、入學各一個集合（user 2026-11-24；原本共用 news、勾「入學」）。動態頁每則＝縮圖＋標題＋副標（一筆一行，同師資那種；user 2026-11-24 從「分類」改的），展開＝時間、地點（可以好幾個、一個一行）、相簿裡的影片（button[data-video]）；入學頁每則＝標題＋時間，展開＝說明
 const meta = d => kids(find(d, cls('fold-meta')), tag('p'));
 const activities = () => findAll(read('activities'), tag('details')).map(d => {
-  const sum = find(d, tag('summary')), [time, place] = meta(d);
-  return { ...when(time), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(find(sum, tag('p')), 'category'), ...zhEn(place, 'place') };
+  const sum = find(d, tag('summary')), [time, ...places] = meta(d);
+  return { ...when(time), ...zhEn(find(sum, tag('h3')), 'title'), subtitles: subsOf(kids(sum).at(-1)),
+    locations: places.map(p => ({ name_zh: text(p), name_en: p.attrs['data-en'] ?? text(p) })), videos: findAll(d, cls('album-video')).map(b => ({ url: b.attrs['data-video'] })) };
 });
 const admission = () => findAll(read('admission'), tag('details')).map(d => {
   const sum = find(d, tag('summary'));
   return { ...when(find(sum, tag('p'))), ...zhEn(find(sum, tag('h3')), 'title'), ...zhEn(kids(find(d, cls('fold-body')), tag('p'))[0], 'summary') };
 });
-// 師資：三段（介面文字 faculty.type.*）；名字進人名庫；履歷只有 faculty-detail.html 那一位有（名字對得上的才掛）
-const FAC_CAT = { 'faculty.type.full_time': 'full_time', 'faculty.type.part_time': 'part_time', 'faculty.type.mentor': 'mentor' };
+// 師資：三段（介面文字 faculty.type.*）；名字進人名庫；詳細頁的清單（子集合 faculty_sections：標題＋一筆一筆，user 2026-11-24：可以自己加）
+// 只有 faculty-detail.html 那一位有（名字對得上的才掛）
+const FAC_CAT = { 'faculty.type.full_time': 'full_time', 'faculty.type.part_time': 'part_time', 'faculty.type.admin': 'admin' };
 function faculty() {
-  const d = read('faculty-detail'), who = text(find(find(d, cls('item-row')), tag('h1'))), cv = {};
-  let k = null;
-  for (const n of kids(find(d, cls('page-section')))) {
-    if (n.tag === 'h3') k = (n.attrs['data-label'] || '').replace('faculty.cv.', '');
-    else if (n.tag === 'ul' && k) cv[k] = entriesOf(n);
-  }
+  const d = read('faculty-detail'), who = text(find(find(d, cls('item-row')), tag('h1')));
+  // 一個清單一塊 .subsection（user 2026-11-24，同關於的小節）：標題 h3 ＋ ul
+  const lists = kids(find(d, cls('subsections')), cls('subsection')).map((sub, i) => ({ sort: i + 1, ...zhEn(find(sub, tag('h3')), 'title'), entries: entriesOf(find(sub, tag('ul'))) }));
   return sections(read('faculty')).flatMap(sec => pub(findAll(sec, cls('item-row')).map(row => {
     const box = kids(row).at(-1), h3 = find(box, tag('h3'));
-    return { category: FAC_CAT[titleOf(sec)?.attrs['data-label']], person: pool('people', h3), subtitles: subsOf(box), ...(text(h3) === who ? cv : {}) };
+    return { category: FAC_CAT[titleOf(sec)?.attrs['data-label']], person: pool('people', h3), subtitles: subsOf(box), ...(text(h3) === who ? { sections: lists } : {}) };
   })));
 }
 // 合作企業：名字進單位庫；整列外連
@@ -123,13 +108,13 @@ const courses = () => sections(read('curriculum')).flatMap(sec => pub(findAll(se
 })));
 const qa = () => pub(sections(read('qa')).flatMap(sec => findAll(sec, tag('details')).map(d => ({
   ...zhEn(titleOf(sec), 'category'), ...zhEn(find(d, tag('summary')), 'question'), ...zhEn(kids(d, tag('p'))[0], 'answer') }))));
-// 規章與政策（單例）：有清單的段（學程規章、表單下載）一條一列（重複列 items，副標一行一個）＋沒清單的段（使用條款…）
+// 規章與政策（單例）：有清單的段（學程規章、表單下載）一條一列（重複列 items，副標一行一個）＋沒清單的段（使用條款…）＝同關於的段落（子集合 regulations_sections，user 2026-11-24）
 function regulations() {
   const items = sections(read('regulations')).filter(s => find(s, cls('item-list'))).flatMap(sec => findAll(sec, cls('item-row')).map(row => {
     const subs = subsOf(row);
     return { ...zhEn(titleOf(sec), 'category'), ...zhEn(find(row, tag('h3')), 'title'), subtitles_zh: subs.map(s => s.text_zh).join('\n'), subtitles_en: subs.map(s => s.text_en).join('\n'), url: row.attrs.href || '' };
   }));
-  return { items, sections: page('regulations').sections };
+  return { items, sections: textSingle('regulations').sections };
 }
 // 榮譽：國旗檔名＝國家代碼；主辦方進單位庫
 const records = () => pub(findAll(read('records'), tag('details')).map(d => {
@@ -145,27 +130,29 @@ const homeNews = () => findAll(find(parse('index.html'), cls('home-news-list')),
 });
 // 報導：媒體進媒體庫；截圖之後在後台上傳（沒截圖前台那列不能點）
 const press = () => findAll(read('press'), cls('item-row')).map(row => ({ ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
-// 段落內文＝一段 rich text（捐款、規章）
-const richBody = s => { const body = kids(s).filter(n => !cls('section-title')(n)); return { body_zh: body.map(n => rich(n, 'zh')).filter(Boolean).join('\n'), body_en: body.map(n => rich(n, 'en')).filter(Boolean).join('\n') }; };
 // 關於的段落內文＝小節（user 2026-11-23：標題＋純文字、可以一直加，不要一整段 rich text；子集合 about_subsections）：
-// h3 起一個小節，p／li 一行一行接上去（mt-sm＝空一行＝分段）；text-xs＝那個小節的附註（段落自己的附註同一天拿掉）；ul.timeline＝段落的年表（沿革）。
-// 小節的圖、段落的說明 HTML 示意沒有
+// 一個 .subsection＝一個小節（包在 .subsections 裡，user 2026-11-24 改成一塊一塊、塊之間 gap）：h3＝標題，p／li 一行一行接上去（mt-sm＝空一行＝分段）；
+// text-xs＝那個小節的附註（段落自己的附註同一天拿掉）；ul.timeline＝段落的年表（沿革）；段落裡直接放的 p（小節外面）＝說明（description，空一行＝分段）。
+// 小節的圖 HTML 示意沒有。捐款、規章的條款同這個（user 2026-11-24：「捐款頁面應該比照 about 的去調整」「使用條款就是跟 about 的一樣」）——後台沒有 rich text 的段落了
 function subsections(sec) {
-  const items = [];
-  for (const n of kids(sec, e => ['h3', 'p', 'ul'].includes(e.tag) && !cls('timeline')(e))) {
-    if (n.tag === 'h3') { items.push({ ...zhEn(n, 'title'), text_zh: '', text_en: '' }); continue; }
-    if (!items.length) items.push({ text_zh: '', text_en: '' });
-    const it = items.at(-1);
-    if (cls('text-xs')(n)) { Object.assign(it, zhEn(n, 'note')); continue; }
-    (n.tag === 'ul' ? kids(n, tag('li')) : [n]).forEach((l, i) => {
-      const sep = !it.text_zh ? '' : !i && cls('mt-sm')(n) ? '\n\n' : '\n';
-      it.text_zh += sep + text(l); it.text_en += sep + (l.attrs['data-en'] ?? text(l));
-    });
-  }
-  return { subsections: items.map((x, i) => ({ sort: i + 1, ...x })), timeline: entriesOf(find(sec, cls('timeline'))) };
+  const desc = kids(sec, tag('p'));
+  const items = kids(find(sec, cls('subsections')), cls('subsection')).map(sub => {
+    const it = { text_zh: '', text_en: '' };
+    for (const n of kids(sub, e => ['h3', 'p', 'ul'].includes(e.tag))) {
+      if (n.tag === 'h3') { Object.assign(it, zhEn(n, 'title')); continue; }
+      if (cls('text-xs')(n)) { Object.assign(it, zhEn(n, 'note')); continue; }
+      (n.tag === 'ul' ? kids(n, tag('li')) : [n]).forEach((l, i) => {
+        const sep = !it.text_zh ? '' : !i && cls('mt-sm')(n) ? '\n\n' : '\n';
+        it.text_zh += sep + text(l); it.text_en += sep + (l.attrs['data-en'] ?? text(l));
+      });
+    }
+    return it;
+  });
+  return { ...(desc.length ? { description_zh: desc.map(text).join('\n\n'), description_en: desc.map(p => p.attrs['data-en'] ?? text(p)).join('\n\n') } : {}),
+    subsections: items.map((x, i) => ({ sort: i + 1, ...x })), timeline: entriesOf(find(sec, cls('timeline'))) };
 }
-// 文字頁：導言＋沒有清單的段落（標題＋內文）。頁名不在這裡（介面文字 nav.<slug>）
-function page(slug, body = richBody) {
+// 文字頁：導言＋沒有清單的段落（標題＋說明、小節、年表）。頁名不在這裡（介面文字 nav.<slug>）
+function page(slug, body = subsections) {
   const root = read(slug), lead = find(root, cls('page-lead')), row = {};
   if (lead && !lead.attrs['data-label']) Object.assign(row, zhEn(lead, 'lead'));
   const secs = sections(root).filter(s => !find(s, cls('item-list')) && titleOf(s));
@@ -186,10 +173,11 @@ function labels() {
 }
 
 const POOLS = ['people', 'organizations', 'media_outlets'];
-// 每頁一個單例（user 2026-11-22，照 SCCD）。關於的段落是子集合（about_sections，有排序）、其他是重複列
+// 每頁一個單例（user 2026-11-22，照 SCCD）。關於、捐款、規章的條款的段落是子集合（about_sections／donate_sections／regulations_sections，有排序；捐款、規章 user 2026-11-24 比照關於）
+const textSingle = slug => { const r = page(slug, subsections); return { ...r, sections: pub(r.sections || []) }; };
 const SINGLES = {
-  about: () => { const r = page('about', subsections); return { ...r, sections: pub(r.sections || []) }; },
-  donate: () => page('donate'),
+  about: () => textSingle('about'),
+  donate: () => textSingle('donate'),
   regulations,
   faculty_page: () => page('faculty'),
   partners_page: () => page('partners'),

@@ -42,4 +42,8 @@ function check(album) {
   const max = strip.scrollWidth - strip.clientWidth;
   album.classList.toggle('more-start', max > 1 && strip.scrollLeft > 1);
   album.classList.toggle('more-end', max > 1 && strip.scrollLeft < max - 1);
+  // 糊的那段＝完整露出的那幾張以外（同關於的輪播、作品頁的放映；user 2026-11-24）：從框的邊到最近那張完整的圖；一張完整的都沒有＝CSS 的備援（框寬 22%）
+  const box = album.getBoundingClientRect(), whole = [...strip.children].map(c => c.getBoundingClientRect()).filter(r => r.width > 0 && r.left >= box.left - 0.5 && r.right <= box.right + 0.5);
+  album.style.setProperty('--album-cut-start', whole.length ? `${whole[0].left - box.left}px` : '');
+  album.style.setProperty('--album-cut-end', whole.length ? `${box.right - whole[whole.length - 1].right}px` : '');
 }

@@ -19,8 +19,10 @@
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/activities.html 也能獨立跑。版型同 about（css/components/page.css）。
        沒有段落導覽（左邊的 anchor 方塊；user 2026-11-18），也不分年份（user 2026-11-21 拿掉年份標題）：一整串由新到舊。
-       每則＝一個摺疊（原生 <details>，user 2026-11-18）：收著的樣子同師資那一列（縮圖＋標題＋分類），時間不寫在外面；
+       每則＝一個摺疊（原生 <details>，user 2026-11-18）：收著的樣子同師資那一列（縮圖＋標題＋副標），時間不寫在外面；
        點了展開＝時間、地點（沒有就不出那一行），下面相簿（沒有就不出）；點相簿的圖放大到整個畫面（chrome.js openFigure）。
+       後台照 SCCD 的活動（user 2026-11-24）：標題下面是副標（一筆一行、可以沒有；原本一行「分類」）、地點可以好幾個（一個一行）、
+       影片（button.album-video[data-video]）排在相簿的照片前面＝YouTube 的縮圖＋一顆 play，點了在放大畫面播（示意的那支是 Blender 的開放影片 Big Buck Bunny，同作品頁的示意）。
        樣式見 page.css「摺疊」「動態」。相簿圖暫時是 Lorem Picsum stock（彩色，user 2026-11-19）。
        相簿的 <img> 一定要寫原圖 width／height（user 2026-11-19）：圖還沒載進來就知道寬 → 一打開就排好、chevron 當下就決定出不出
        （沒寫＝寬 0，載完才跳出 chevron）。接 Directus 後從檔案的 width／height 帶。
@@ -37,7 +39,7 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-1-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</h3>
-                <p data-en="Admission">招生</p>
+                <p data-en="Online info session">線上說明會</p>
               </div>
             </summary>
             <div class="fold-body">
@@ -57,7 +59,7 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-2-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</h3>
-                <p data-en="Visit">參訪</p>
+                <p data-en="Year 2 field trip">二年級校外教學</p>
               </div>
             </summary>
             <div class="fold-body">
@@ -80,13 +82,17 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-3-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</h3>
-                <p data-en="Talk">講座</p>
+                <p data-en="Speaker: Wang Da-Ming (placeholder)">講者：王大明（示意）</p>
+                <p data-en="Director, Placeholder Animation Studio">示意動畫工作室 導演</p>
               </div>
             </summary>
             <div class="fold-body">
               <div class="fold-meta">
                 <p data-en="1 Oct 2026, 18:30 (placeholder)">2026.10.01 18:30（示意）</p>
                 <p data-en="College of Design lecture hall">設計學院演講廳</p>
+              </div>
+              <div class="album">
+                <button type="button" class="album-video" data-video="https://www.youtube.com/watch?v=aqz-KE-bpKQ"><img src="https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg" alt="" width="480" height="360" loading="lazy"><span class="icon icon-play" aria-hidden="true"></span><span data-label="common.play_video" class="sr-only" data-en="Play video">播放影片</span></button>
               </div>
             </div>
           </details></li>
@@ -95,13 +101,14 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-4-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</h3>
-                <p data-en="Exhibition">展覽</p>
+                <p data-en="Year 1 end-of-term group show">一年級期末作品聯展</p>
               </div>
             </summary>
             <div class="fold-body">
               <div class="fold-meta">
                 <p data-en="20–27 Dec 2025 (placeholder)">2025.12.20–12.27（示意）</p>
                 <p data-en="Campus gallery">校內展覽空間</p>
+                <p data-en="College of Design lobby">設計學院大廳</p>
               </div>
               <div class="album">
                 <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
@@ -116,7 +123,6 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-5-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Program website launched">學程網站上線</h3>
-                <p data-en="Announcement">公告</p>
               </div>
             </summary>
             <div class="fold-body">
@@ -130,7 +136,7 @@
               <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-6-cover/800/800" alt="" loading="lazy"></div>
               <div>
                 <h3 data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</h3>
-                <p data-en="Event">活動</p>
+                <p data-en="Orientation for new students and parents">新生與家長座談</p>
               </div>
             </summary>
             <div class="fold-body">

@@ -21,6 +21,8 @@
        規章＋原本的條款頁（使用條款、隱私權政策）併成一頁（user 2026-11-21）。
        規章、表單（user 2026-11-21）：同入學那種列（.item-row：標題＋副標、沒縮圖），但不展開——整列外連、另開新視窗
        （後台 file 優先、沒有就 url；都沒有＝那列用 div、不能點）。副標一行一個 p、沒有就不出（後台 subtitles）。
+       使用條款、隱私權政策＝同關於的段落（user 2026-11-24；後台 regulations_sections，裡面可以加小節）：標題下面的 p＝說明（第一段 mt-md、之後每段 mt-sm），
+       有小節的話照 about.html 包 .subsections／.subsection。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
@@ -64,7 +66,7 @@
       <section class="page-section">
         <h2 class="section-title" data-en="Terms of Use">使用條款</h2>
         <p class="mt-md" data-en="This site is provided by the program for information only; courses, faculty and dates are subject to the official announcements of the program.">本網站內容由實踐大學 AI 設計職人學位學程提供，僅供參考；課程、師資與日程以學程正式公告為準。</p>
-        <p class="mt-md" data-en="Text and images on this site may not be reproduced without permission.">網站文字與圖片未經同意請勿轉載。</p>
+        <p class="mt-sm" data-en="Text and images on this site may not be reproduced without permission.">網站文字與圖片未經同意請勿轉載。</p>
       </section>
 
       <section class="page-section">

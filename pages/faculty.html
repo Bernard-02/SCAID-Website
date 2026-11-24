@@ -19,7 +19,8 @@
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；每位老師點進 faculty-detail.html（接 Directus 後帶 ?id=）；直接開 /pages/faculty.html 也能獨立跑。版型同 about（css/components/page.css）。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。全部文字（含名字／單位）中文寫內文、英文寫 data-en（lang.js；user 2026-11-18：名字也跟語言走，不再兩行並排）。
-       段落順序：專任 → 兼任 → 業界導師（user 2026-11-18；這頁是寫死的 HTML，順序就是檔案裡的順序）；段落名稱是示意，待學程確認。
+       段落順序：專任 → 兼任 → 行政管理（user 2026-11-18；這頁是寫死的 HTML，順序就是檔案裡的順序）；段落名稱走介面文字 faculty.type.*、後台可以改。
+       第三段原本叫「業界導師」，user 2026-11-24 改名行政管理：key 也跟著改（「這樣會誤導」）＝介面文字 faculty.type.admin、後台的類別值 admin（原本 mentor）。
        名字＝標題 text-md、職稱等副標 text-s（清單列的積木，page.css .item-row；user 2026-11-21）。
        副標＝名字下面一行一個 p（後台 faculty.subtitles，一筆一行、沒填就不出；user 2026-11-21）。
        接後台：js/modules/ui/item-list-cms.js 照 ul 的 data-cms（faculty:類別）把列換掉（合作企業同一種列）；後台還沒任何一筆／抓不到＝留這份 MOCK -->
@@ -101,8 +102,8 @@
       </section>
 
       <section class="page-section">
-        <h2 data-label="faculty.type.mentor" class="section-title" data-en="Industry Mentors">業界導師</h2>
-        <ul class="item-list" data-cms="faculty:mentor">
+        <h2 data-label="faculty.type.admin" class="section-title" data-en="Administration">行政管理</h2>
+        <ul class="item-list" data-cms="faculty:admin">
           <li><a class="item-row" href="faculty-detail.html">
             <div class="item-thumb"></div>
             <div>

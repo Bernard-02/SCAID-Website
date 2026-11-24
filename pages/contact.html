@@ -19,25 +19,28 @@
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/contact.html 也能獨立跑。版型同 about（css/components/page.css）。
        原本的 footer 覆蓋層搬成選單最後一頁（user 2026-11-21）；不分段＝沒有段落導覽。
-       內容走後台：footer-cms.js 抓 Directus 單例 footer 換掉下面的 MOCK（抓不到就留著）；data-cms＝欄位掛點，class 名 JS 也在用。
+       內容走後台：footer-cms.js 抓 Directus 單例 footer 換掉下面的 MOCK（抓不到就留著）；class 名（.footer-*）JS 也在用。
        文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
         <h1 data-label="nav.contact" data-en="Contact">聯絡</h1>
 
-        <div class="footer-body text-md mt-md">
+        <div class="footer-body text-md mt-3xl">
           <!-- 社群＝IG、YouTube 兩個 icon，YT 在 IG 右邊（user 2026-11-24）；網址走後台 footer.instagram／footer.youtube（這裡是佔位） -->
           <div class="footer-social">
             <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram"><span class="icon icon-ig" aria-hidden="true"></span></a>
             <a href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube"><span class="icon icon-yt" aria-hidden="true"></span></a>
           </div>
-          <dl class="footer-contact">
-            <div data-cms="email"><dt data-label="contact.email" data-en="E-Mail">電子郵件</dt><dd><a href="mailto:scaid@g2.usc.edu.tw">scaid@g2.usc.edu.tw</a></dd></div>
-            <div data-cms="tel"><dt data-label="contact.tel" data-en="Tel">電話</dt><dd data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</dd></div>
-            <div data-cms="fax"><dt data-label="contact.fax" data-en="Fax">傳真</dt><dd data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</dd></div>
-            <div data-cms="address"><dt data-label="contact.address" data-en="Add">地址</dt><dd data-en="Address (placeholder)">地址（示意）</dd></div>
-          </dl>
+          <!-- 聯絡資訊＝清單，同師資詳細頁（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」「每個都有個 url，有寫就可以 jump 到那個 url」）：
+               一個清單＝標題（h3）＋一筆一筆（li），標記同那邊的 .subsections > .subsection > h3 + ul、字級 text-s；連結有填的那筆＝整筆是 a（http(s) 另開新視窗、mailto:、tel:）。
+               後台＝footer 的子集合 footer_sections（標題＋entries：文字＋選填的連結），可以自己加；標題是內容、不是介面文字（不標 data-label） -->
+          <div class="footer-contact subsections text-s">
+            <div class="subsection"><h3 data-en="E-Mail">電子郵件</h3><ul><li><a href="mailto:scaid@g2.usc.edu.tw">scaid@g2.usc.edu.tw</a></li></ul></div>
+            <div class="subsection"><h3 data-en="Tel">電話</h3><ul><li data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</li></ul></div>
+            <div class="subsection"><h3 data-en="Fax">傳真</h3><ul><li data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</li></ul></div>
+            <div class="subsection"><h3 data-en="Address">地址</h3><ul><li data-en="Address (placeholder)">地址（示意）</li></ul></div>
+          </div>
           <!-- 姊妹系所（user 2026-11-21）：寫全名、一行一個＝內頁的連結清單（.link-list，hover 蓋黑收直條；原本縮寫 SCD／SCCD…排一列）。
                後台 footer.links 一列一筆（label_zh／label_en／url）。TODO 全名待 user 確認，SCAC 的正式名稱還不確定（先標示意） -->
           <ul class="footer-links link-list">

@@ -48,9 +48,9 @@ const repeater = (field, label, sub, template, note) => ({ field, type: 'json', 
   const [type, iface, options] = SUB[kind] || ['string', 'input'];
   return { field: f, name, type, meta: { field: f, type, interface: iface, width: 'full', ...(options ? { options } : {}) } };
 }) } }, schema: {} });
-// 副標（師資、合作企業共用同一種列，user 2026-11-21）：標題下面一筆一行、沒填就不出
+// 副標（師資、合作企業共用同一種列，user 2026-11-21；動態也是，2026-11-24）：標題下面一筆一行、沒填就不出
 const subtitles = repeater('subtitles', '副標', [['text_zh', '副標（中）'], ['text_en', '副標（英）']], '{{text_zh}}', '一筆＝標題下面一行，可拖曳排序；沒填＝只有標題。' + EN_NOTE);
-// 中英成對的「年份／說明」條列（faculty-detail 每段一個）
+// 中英成對的「年份／說明」條列（師資的清單 faculty_sections.entries、關於的年表）
 const entries = (field, label) => repeater(field, label, [['year', '年份／標題'], ['text_zh', '說明（中）', 'text'], ['text_en', '說明（英）', 'text']], '{{year}} {{text_zh}}', '一列一筆；' + EN_NOTE);
 // 從庫選（人名庫／單位庫／媒體庫，user 2026-11-21 照 SCCD）：M2O 一列一個。庫那邊自動多一欄「用在：○○」（欄名＝這個集合），
 // 關聯 RESTRICT＝還有人用就刪不掉（重複的要合併、不能直接刪）
@@ -73,13 +73,42 @@ const LOCK = (other, why) => [{ name: why, rule: { [other]: { _nnull: true } }, 
 // 介面文字的分類（後台整理用，前台只認 key；key 的開頭決定分類，seed-directus.cjs LABEL_CAT）
 const LABEL_CATS = ['選單與頁名', '底列與共用', '師資', '課程', '聯絡', '榮譽', '404'].map(c => ({ text: c, value: c }));
 
-const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '業界導師', value: 'mentor' }];
+// 第三類原本是「業界導師」mentor，user 2026-11-24 改成行政管理、值也改 admin（「key 還是要改，這樣會誤導」）。
+// 這支只加不改＝已經建好的後台是另外改的：下拉的選項（PATCH /fields/faculty/category）、原本那幾筆的 category、介面文字的 key（faculty.type.admin）
+const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '行政管理', value: 'admin' }];
 const YEARS = [1, 2, 3, 4].map(n => ({ text: `${'一二三四'[n - 1]}年級`, value: n }));
 
 // 單例頁的導言、段落（每頁一個集合，user 2026-11-22 照 SCCD）。段落用重複列；關於的段落要放輪播圖、重複列放不了檔案 → 子集合 about_sections（裡面的小節要放圖 → 再一層子集合 about_subsections）
 const lead = [multi('lead_zh', '導言（中，選填）'), multi('lead_en', '導言（英，選填）', { note: EN_NOTE })];
-const textSections = repeater('sections', '段落', [['title_zh', '段落標題（中）'], ['title_en', '段落標題（英）'], ['body_zh', '內文（中）', 'rich'], ['body_en', '內文（英）', 'rich']],
-  '{{title_zh}}', '一段一列、可拖曳排序；段落標題＝左側段落導覽。' + EN_NOTE);
+// 段落＝子集合：單例上的那一格 sections（O2M），在同一個表單裡新增、可拖曳排序。原本規章、捐款的段落是重複列（JSON：標題＋一段 rich text），2026-11-24 都換成這個
+const sectionList = { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('段落'), options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } };
+// 一頁的段落 → 小節那四個集合（同關於）：<頁>_sections（標題、輪播圖、說明、小節、年表）→ <頁>_subsections（標題、圖、內文、附註），圖各一張 junction；前台同一支 textSection()。
+// 規章的條款用這支（user 2026-11-24：「使用條款就是跟 about 的一樣，也讓後臺可以 custom 這個文字」）。
+// ponytail: 關於（帶藏起來的舊欄位）、捐款的那四個是手寫的、沒併進來；改欄位三邊都要改，之後要整理再把那兩頁換成這支
+const pageSections = (page, label) => ({
+  [`${page}_sections`]: {
+    meta: { icon: 'segment', translations: zh(`${label}的段落`), display_template: '{{title_zh}}', sort_field: 'sort', hidden: true, note: `從「${label}」裡面新增` },
+    fields: [sort, { field: page, type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
+      str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'),
+      files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播'),
+      multi('description_zh', '說明（中，選填：段落圖片下面那段）', { note: '純文字：換行照留、空一行＝分段' }), multi('description_en', '說明（英）', { note: EN_NOTE }),
+      { field: 'subsections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('小節'), note: '一個小節＝標題、圖片、內文、附註（都可以不填），可拖曳排序',
+        options: { template: '{{title_zh}} {{text_zh}}', enableCreate: true, enableSelect: false } } },
+      entries('timeline', '年表（年份＋文字，沿革那種）')],
+    relations: [{ collection: `${page}_sections`, field: page, related_collection: page, meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
+  [`${page}_sections_images`]: junction(`${page}_sections`, 'images'),
+  [`${page}_subsections`]: {
+    meta: { icon: 'subject', translations: zh(`${label}的小節`), display_template: '{{title_zh}} {{text_zh}}', sort_field: 'sort', hidden: true, note: `從「${label}」的段落裡面新增` },
+    fields: [sort, { field: 'section', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬段落') }, schema: { is_nullable: true } },
+      str('title_zh', '小節標題（中，選填）'), strEn('title_en', '小節標題（英）'),
+      files('images', '圖片（選填，可以多張）', '標題下面、內文上面；一張＝照原比例放在內文欄正中，多張＝輪播（同段落圖片），可拖曳排序'),
+      multi('text_zh', '內文（中）', { note: '純文字：換行照留、空一行＝分段' }), multi('text_en', '內文（英）', { note: EN_NOTE }),
+      multi('note_zh', '附註（中，選填：小節最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],
+    relations: [{ collection: `${page}_subsections`, field: 'section', related_collection: `${page}_sections`, meta: { one_field: 'subsections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
+  [`${page}_subsections_images`]: junction(`${page}_subsections`, 'images'),
+});
 
 // ── SPEC：collection → { meta, fields, relations? }（folder: true＝側欄的資料夾）。順序有差：資料夾排在它裡面的集合前面、庫要排在選它的集合前面、junction 排在它的 parent 後面 ──
 const SPEC = {
@@ -116,10 +145,14 @@ const SPEC = {
     fields: [sort, keyField, { ...image('file', '檔案（SVG）'), meta: { ...image('file', '檔案（SVG）').meta, display: 'image' } }, str('note', '用在哪裡')],
   },
   footer: {
-    meta: { icon: 'call_to_action', singleton: true, translations: zh('聯絡'), note: '聯絡頁（原本的頁尾）；只有這一筆，欄位留空＝前台那一列不顯示' },
+    meta: { icon: 'call_to_action', singleton: true, translations: zh('聯絡'), note: '聯絡頁（原本的頁尾）；只有這一筆，欄位留空＝前台那一塊不顯示' },
     fields: [
-      str('email', '電子郵件'), str('tel', '電話（中英共用）'), str('fax', '傳真（中英共用）'),
-      str('address_zh', '地址（中）'), strEn('address_en', '地址（英）'),
+      // 聯絡資訊＝清單，同師資詳細頁的做法（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」「每個都有個 url，有寫就可以 jump 到那個 url」）：
+      // 子集合 footer_sections，一個清單＝標題＋一筆一筆（文字＋選填的連結），可以自己加。原本是寫死的五格 email／tel／fax／address_zh／address_en、
+      // 標題在介面文字 contact.*：搬成四個清單，那四個介面文字刪了；舊的五格（下面）藏起來（HIDE）、資料還在，user 說不要了再刪
+      str('email', '電子郵件'), str('tel', '電話（中英共用）'), str('fax', '傳真（中英共用）'), str('address_zh', '地址（中）'), strEn('address_en', '地址（英）'),
+      { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('聯絡資訊（電子郵件、電話…可以自己加）'),
+        note: '一個清單＝標題＋一筆一筆（文字＋選填的連結），可以自己新增、拖曳排序；裡面一筆都沒有的清單前台不出', options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } },
       // 社群只有 IG 一個 icon（user 2026-11-24：「只需要這個 icon 即可，不需要兩個 icon」）＝一格網址；原本的 social（一列一個方框）藏起來
       url('instagram', 'Instagram 網址', '聯絡頁那個 IG icon 連到這裡（https://）；留空＝不出 icon'),
       // YouTube（user 2026-11-24：「我加了一個 yt，幫我放在 ig 的右邊」）
@@ -130,14 +163,28 @@ const SPEC = {
       image('badge', '標章', '圖片替代文字＝檔案標題（在檔案庫改）'),
     ],
   },
+  footer_sections: {
+    meta: { icon: 'format_list_bulleted', translations: zh('聯絡資訊的清單'), display_template: '{{title_zh}}', sort_field: 'sort', hidden: true, note: '從「聯絡」裡面新增' },
+    fields: [sort, { field: 'footer', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
+      str('title_zh', '標題（中，例：電子郵件）'), strEn('title_en', '標題（英）'),
+      repeater('entries', '內容', [['text_zh', '文字（中）'], ['text_en', '文字（英）'], ['url', '連結（選填）']], '{{text_zh}}',
+        '一列一筆。連結有填＝那一筆可以點：https:// 開頭的網址（另開新視窗）、mailto:信箱、tel:電話；直接貼信箱也可以。' + EN_NOTE)],
+    relations: [{ collection: 'footer_sections', field: 'footer', related_collection: 'footer', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
   // 動態、入學、首頁的 news 各一個集合（user 2026-11-24：「news 是 news，動態是 activities」、「動態的資料庫不需要有入學的打勾」；
   // 原本動態＋入學共用 news、勾「入學」才列在入學頁，首頁那串叫 home_news）。日期、時間都用選的（同一天：不要手動輸入）
   activities: {
     meta: { icon: 'event', translations: zh('動態'), display_template: '{{date}} {{title_zh}}', note: '動態頁，依日期新到舊' },
+    // 副標（user 2026-11-24：「參照 sccd 的設計…不會有什麼分類…這應該是改成副標才對」）＝同 SCCD 活動的 subtitles、同這站師資／合作企業的那種重複列：
+    // 標題下面一筆一行、沒填＝只有標題。原本是一格「分類」category_zh／_en（招生、講座、參訪…）：後台的欄位刪了——別再寫回來，重跑這支會把它建回去
     fields: [...when, str('title_zh', '標題（中）', {}, 'full'), strEn('title_en', '標題（英）'),
-      str('category_zh', '分類（中，例 講座、參訪）'), strEn('category_en', '分類（英）'),
-      str('place_zh', '地點（中，選填）'), strEn('place_en', '地點（英）'),
-      image('image', '圖片（那一列的縮圖）'), files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序')],
+      subtitles,
+      // 地點可以好幾個、影片連結（user 2026-11-24，照 SCCD 活動的 locations／videoLinks：「影片要有，因爲要做影片渲染，如果有的話。地點也是可以先做吧」）。
+      // 地點原本是一格 place_zh／_en：搬成第一筆、舊欄位刪了（同上，別寫回來）
+      repeater('locations', '地點（選填）', [['name_zh', '地點（中）'], ['name_en', '地點（英）']], '{{name_zh}}', '一筆＝點開後時間下面的一行，可以好幾個、可拖曳排序。' + EN_NOTE),
+      image('image', '圖片（那一列的縮圖）'), files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序'),
+      repeater('videos', '影片（選填）', [['url', '影片連結']], '{{url}}',
+        '一列一支：YouTube 連結（https://youtu.be/…、https://www.youtube.com/watch?v=…），也可以貼直連的影片檔（.mp4、.m3u8）。排在相簿的照片前面、點了在放大畫面播')],
   },
   activities_album: junction('activities', 'album'),
   admission: {
@@ -174,7 +221,18 @@ const SPEC = {
       pick('person', '姓名（人名庫）', 'people'),
       str('name_zh', '姓名（中）'), str('name_en', '姓名（英）'),   // 舊欄位：名字改從人名庫選（user 2026-11-21），藏起來（HIDE）
       subtitles,   // 原本是單一欄位 affiliation_zh／_en（任職單位）
-      entries('education', '學歷'), entries('experience', '經歷'), entries('expertise', '專長'), entries('exhibitions', '展覽'), entries('awards', '獲獎'), entries('publications', '著作')],
+      // 詳細頁的清單（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）＝子集合 faculty_sections，一個清單＝標題＋一筆一筆。
+      // 原本是寫死的六格重複列 education／experience／expertise／exhibitions／awards／publications、標題在介面文字 faculty.cv.*：
+      // 學歷、經歷搬成每位老師的前兩個清單，其餘四格 user 說刪掉（後台的欄位、那六個介面文字都刪了）
+      { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('清單（學歷、經歷…可以自己加）'),
+        note: '詳細頁名字下面的清單：一個清單＝標題＋一筆一筆（年份＋說明），可以自己新增、拖曳排序；裡面一筆都沒有的清單前台不出', options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } }],
+  },
+  faculty_sections: {
+    meta: { icon: 'format_list_bulleted', translations: zh('師資的清單'), display_template: '{{title_zh}}', sort_field: 'sort', hidden: true, note: '從「師資名單」的老師裡面新增' },
+    fields: [sort, { field: 'faculty', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬老師') }, schema: { is_nullable: true } },
+      str('title_zh', '清單標題（中，例：學歷）'), strEn('title_en', '清單標題（英）'),
+      entries('entries', '內容（一筆＝年份＋說明；年份可以不填）')],
+    relations: [{ collection: 'faculty_sections', field: 'faculty', related_collection: 'faculty', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
   },
   partners: {
     meta: { icon: 'handshake', group: 'partners_folder', translations: zh('合作企業名單'), display_template: '{{organization.name_zh}}', sort_field: 'sort', note: '企業名稱從單位庫選' },
@@ -198,11 +256,14 @@ const SPEC = {
   },
   // 規章與政策（user 2026-11-22：一頁一個單例，照 SCCD；只放連結、不上傳檔案）：上面規章／表單清單、下面條款這種文字段落
   regulations: {
-    meta: { icon: 'gavel', singleton: true, translations: zh('規章與政策'), note: '上面是規章、表單（依分類分段、整列外連），下面是使用條款、隱私權政策這種文字段落' },
+    meta: { icon: 'gavel', singleton: true, translations: zh('規章與政策'), note: '上面是規章、表單（依分類分段、整列外連），下面是使用條款、隱私權政策這種文字段落（段落裡可以加小節，同關於）' },
     fields: [repeater('items', '規章、表單', [['category_zh', '分類（中，例 學程規章、表單下載）'], ['category_en', '分類（英）'], ['title_zh', '名稱（中）'], ['title_en', '名稱（英）'],
       ['subtitles_zh', '副標（中，一行一個，例 2026.08 修訂）', 'text'], ['subtitles_en', '副標（英，一行一個）', 'text'], ['url', '連結（整列外連、另開新視窗；空＝不能點）']],
-    '{{category_zh}}／{{title_zh}}', '一列一筆、可拖曳排序；分類一樣的排在同一段（照第一次出現的順序）。' + EN_NOTE), textSections],
+    '{{category_zh}}／{{title_zh}}', '一列一筆、可拖曳排序；分類一樣的排在同一段（照第一次出現的順序）。' + EN_NOTE), sectionList],
   },
+  // 條款那幾段＝同關於：段落是子集合、段落裡有小節（user 2026-11-24）。原本的 sections 是重複列（JSON，內文一整段 rich text）——同名、要先刪才建得了上面那一格，
+  // 正式後台 2026-11-24 把那兩段（使用條款、隱私權政策）搬成新的段落（內文 → 說明）後刪了（同捐款，user：「搬完後刪掉」）
+  ...pageSections('regulations', '規章與政策'),
   // 榮譽（user 2026-11-19）：一筆一個摺疊；收著＝國旗＋獎項＋得獎人，點開＝主辦方、獎別。得獎人照打字（同 SCCD：學生不進人名庫）
   records: {
     meta: { icon: 'emoji_events', translations: zh('榮譽'), display_template: '{{award_zh}}', sort_field: 'sort', note: '主辦方從單位庫選；國旗照國家代碼' },
@@ -253,7 +314,34 @@ const SPEC = {
     relations: [{ collection: 'about_subsections', field: 'section', related_collection: 'about_sections', meta: { one_field: 'subsections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
   },
   about_subsections_images: junction('about_subsections', 'images'),
-  donate: { meta: { icon: 'volunteer_activism', singleton: true, translations: zh('捐款'), note: '導言＋段落' }, fields: [...lead, textSections] },
+  // 捐款＝同關於（user 2026-11-24：「捐款頁面應該比照 about 的去調整」；原本段落是重複列、內文一整段 rich text）：段落子集合（輪播、說明、小節、年表）、小節子集合。
+  // 只是不帶關於那幾個藏起來的舊欄位。原本的 sections（JSON 重複列）2026-11-24 刪掉、兩段的內文搬成「說明」
+  donate: {
+    meta: { icon: 'volunteer_activism', singleton: true, translations: zh('捐款'), note: '導言＋段落；段落標題＝左側段落導覽，段落可以放輪播圖（同關於）' },
+    fields: [...lead, { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('段落'), options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } }],
+  },
+  donate_sections: {
+    meta: { icon: 'segment', translations: zh('捐款的段落'), display_template: '{{title_zh}}', sort_field: 'sort', hidden: true, note: '從「捐款」裡面新增' },
+    fields: [sort, { field: 'donate', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
+      str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'),
+      files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播'),
+      multi('description_zh', '說明（中，選填：段落圖片下面那段）', { note: '純文字：換行照留、空一行＝分段' }), multi('description_en', '說明（英）', { note: EN_NOTE }),
+      { field: 'subsections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('小節'), note: '一個小節＝標題、圖片、內文、附註（都可以不填），可拖曳排序',
+        options: { template: '{{title_zh}} {{text_zh}}', enableCreate: true, enableSelect: false } } },
+      entries('timeline', '年表（年份＋文字，沿革那種）')],
+    relations: [{ collection: 'donate_sections', field: 'donate', related_collection: 'donate', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
+  donate_sections_images: junction('donate_sections', 'images'),
+  donate_subsections: {
+    meta: { icon: 'subject', translations: zh('捐款的小節'), display_template: '{{title_zh}} {{text_zh}}', sort_field: 'sort', hidden: true, note: '從「捐款」的段落裡面新增' },
+    fields: [sort, { field: 'section', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬段落') }, schema: { is_nullable: true } },
+      str('title_zh', '小節標題（中，選填）'), strEn('title_en', '小節標題（英）'),
+      files('images', '圖片（選填，可以多張）', '標題下面、內文上面；一張＝照原比例放在內文欄正中，多張＝輪播（同段落圖片），可拖曳排序'),
+      multi('text_zh', '內文（中）', { note: '純文字：換行照留、空一行＝分段' }), multi('text_en', '內文（英）', { note: EN_NOTE }),
+      multi('note_zh', '附註（中，選填：小節最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],
+    relations: [{ collection: 'donate_subsections', field: 'section', related_collection: 'donate_sections', meta: { one_field: 'subsections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
+  },
+  donate_subsections_images: junction('donate_subsections', 'images'),
   // 作品頁（user 2026-11-23）：影片＝貼 YouTube 播放清單（可以好幾個，前台用 Data API 拆成一支一支）；
   // 圖片＝多圖欄位（user 2026-11-24：「除了 yt playlist 也可以上傳多張照片」；原本是檔案庫「作品」資料夾裡的圖——12 的 Core 集合上限快滿、省一張 junction，v11 沒有上限了），上傳的檔放進「作品」資料夾（下面設）
   works: {
@@ -266,9 +354,10 @@ const SPEC = {
 const WORKS_FOLDER = '作品';   // 作品的圖片欄位上傳到這個資料夾（只是放的地方，前台不看資料夾）
 // 舊欄位只藏不刪（同 SCCD 的做法；之後確定不要再刪）：名字改從庫選；關於的段落內文改成小節（先是 JSON 重複列，再改子集合）、段落的附註改放在小節裡
 const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en'], ['about_sections', 'body_zh'], ['about_sections', 'body_en'], ['about_sections', 'items'],
-  ['about_sections', 'note_zh'], ['about_sections', 'note_en'], ['footer', 'social'], ['about_subsections', 'image']];
+  ['about_sections', 'note_zh'], ['about_sections', 'note_en'], ['footer', 'social'], ['about_subsections', 'image'],
+  ['footer', 'email'], ['footer', 'tel'], ['footer', 'fax'], ['footer', 'address_zh'], ['footer', 'address_en']];   // 聯絡資訊改成清單（footer_sections，2026-11-24）
 // 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；師資、合作企業、庫收進資料夾；頁尾改叫聯絡；作品的說明）
-const META = ['faculty', 'partners', 'footer', 'people', 'organizations', 'media_outlets', 'works'];
+const META = ['faculty', 'partners', 'footer', 'people', 'organizations', 'media_outlets', 'works', 'donate', 'regulations'];
 // 後台側欄的順序＝前台選單（user 2026-11-23）：首頁 → 主選單 → 次選單 → 庫（資料夾）、介面文字；資料夾裡＝頁面（導言）→ 名單。
 // 網站地圖沒有內容；藏起來的（段落、小節、junction）不用排
 const NAV = ['home_folder', 'news', 'home_video', 'about', 'partners_folder', 'partners_page', 'partners', 'faculty_folder', 'faculty_page', 'faculty', 'courses', 'works', 'activities', 'records', 'press',
@@ -286,7 +375,9 @@ const PRESETS = {
 
 // contact.html（聯絡頁，原本的 footer）目前的示意值：singleton 建好後第一筆就是這些，前台畫面不變（接真資料時在後台改）
 const FOOTER_MOCK = {
-  email: 'scaid@g2.usc.edu.tw', tel: '02 0000 0000（示意）', fax: '02 0000 0000（示意）', address_zh: '地址（示意）', address_en: 'Address (placeholder)',
+  sections: [['電子郵件', 'E-Mail', 'scaid@g2.usc.edu.tw', '', 'mailto:scaid@g2.usc.edu.tw'], ['電話', 'Tel', '02 0000 0000（示意）', '02 0000 0000 (placeholder)', ''],
+    ['傳真', 'Fax', '02 0000 0000（示意）', '02 0000 0000 (placeholder)', ''], ['地址', 'Address', '地址（示意）', 'Address (placeholder)', '']]
+    .map(([title_zh, title_en, text_zh, text_en, url], i) => ({ sort: i + 1, title_zh, title_en, entries: [{ text_zh, text_en, url }] })),
   instagram: 'https://www.instagram.com/',
   youtube: 'https://www.youtube.com/',
   links: [['設計學院', 'College of Design', 'https://www.scdesign.usc.edu.tw/'], ['媒體傳達設計學系', 'Department of Communications Design', 'https://sccd.usc.edu.tw/'],
@@ -392,7 +483,8 @@ async function ensurePublicRead() {
   console.log('預設檢視');
   await ensurePresets();
   // footer 單例：還是空的才塞示意值（已經有人填過就不碰）
+  // 「空的」＝什麼都還沒有（原本看 email 那一格，2026-11-24 那格刪了——還看它的話每跑一次都會把示意值蓋回去）
   const f = DRY ? null : await get('/items/footer');
-  if (!DRY && f && !f.email) { console.log('+ footer 塞 contact.html 的示意值'); await api('PATCH', '/items/footer', FOOTER_MOCK); }
+  if (!DRY && f && !f.instagram && !f.youtube && !f.links?.length && !f.sections?.length) { console.log('+ footer 塞 contact.html 的示意值'); await api('PATCH', '/items/footer', FOOTER_MOCK); }
   console.log('完成');
 })().catch(e => { console.error(e.message); process.exit(1); });

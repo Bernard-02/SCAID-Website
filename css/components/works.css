@@ -4,7 +4,6 @@
    大小＝自己的寬高（.work 上的 --w／--h，works.js／HTML 寫）照比例縮進最大框、不放大——寫在框上不靠圖：圖的寬高寫 auto 的話，載到之前是 0×0（lazy 也就不載）。
    影片的寬高＝影片真正的比例（works.js 向 YouTube 要；user 2026-11-24 總覽要 Pinterest 那種錯落，原本一律 16:9）：縮圖帶黑邊，cover 裁掉 */
 @layer components {
-  .works-items { margin-top: var(--spacing-md); }
   .work { aspect-ratio: var(--w) / var(--h); }
   .work img { display: block; width: 100%; height: 100%; object-fit: cover; }
   /* 點的範圍＝蓋在整個作品上的鈕（放映：兩邊那個＝換、正中的影片＝播；總覽：點了切到放映）；影片中間一顆 play */
@@ -17,7 +16,8 @@
   .work-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--theme-bg); }
   .work:has(.work-frame) .work-hit { visibility: hidden; }
 
-  /* ── 放映：舞台吃掉 h1 下面剩下的高（.works 定高＝畫面扣掉頂、底列，同 .page-body 的 min-height），一屏放得下、不捲。
+  /* ── 放映：舞台吃掉頂距下面剩下的高（.works 定高＝畫面扣掉頂、底列，同 .page-body 的 min-height），一屏放得下、不捲。
+     h1 只留給報讀（.sr-only，user 2026-11-24：「作品頁的 title 可以拿掉」）＝舞台從 title 那條線（--top-h）起。
      一列（user 2026-11-24：「左右都幫我改成一樣大，然後整個 box 的左右邊緣加上 blur 的效果」；原本正中最大壓最上層、前後兩個縮小貼著舞台兩邊、各自失焦）：
      每個都撐滿最大框＝舞台的 72cqw × 100cqh 裡照比例、寬高哪邊先碰到就停，圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」），
      從正中往兩邊、隔一個 gutter 接下去（中線的位置＝works.js layoutRow 照每個的寬算 --x）；換一個＝整列滑過去（時長同網站 fade），繞到另一頭的直接跳（.is-jump，同關於的輪播）。
@@ -29,7 +29,7 @@
   .works[data-mode="slideshow"] .works-items {
     touch-action: pan-y;   /* 手機左右拖＝換作品（works.js；user 2026-11-24），上下照常捲 */
     flex: 1; position: relative; min-height: 12rem; margin-bottom: var(--spacing-md); container-type: size;   /* 下面留一段：直的圖撐滿高時不貼著底列 */
-    margin-inline: calc(-1 * var(--rail-w));   /* 手機：舞台＝畫面扣左右內距就好、不讓 rail（user 2026-11-24：「不需要跟全站的寬度一樣」；h1、總覽照舊讓）；桌面 rail＝0 */
+    margin-inline: calc(-1 * var(--rail-w));   /* 手機：舞台＝畫面扣左右內距就好、不讓 rail（user 2026-11-24：「不需要跟全站的寬度一樣」；總覽照舊讓）；桌面 rail＝0 */
     column-gap: var(--spacing-gutter);   /* 作品之間（框本身不是 flex／grid，這個值只給 works.js 讀） */
     --out: var(--spacing-gutter); --band: calc((100% - 72cqw) / 2);
     overflow: clip;

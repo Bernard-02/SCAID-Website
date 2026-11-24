@@ -36,13 +36,13 @@ user 2026-11-21 照 SCCD：**全站的人名、單位、媒體只在庫裡打一
 
 ## ui_labels（介面文字）
 
-user 2026-11-21 照 SCCD：選單、頁名、固定的小標（專任教師、一年級、必修、學歷…）、聯絡頁的欄位名、404 的字。**一個 key 一筆**，`key` 唯讀（前台照 key 找），只改 `zh`／`en`。
+user 2026-11-21 照 SCCD：選單、頁名、固定的小標（專任教師、一年級、必修…）、404 的字。**一個 key 一筆**，`key` 唯讀（前台照 key 找），只改 `zh`／`en`。
 HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到時的原文。新的 key：HTML 標好 `data-label`，再跑一次 `seed-directus.cjs` 就補進後台。
 **頁名＝`nav.<slug>`**：選單、網站地圖、那一頁的頁標題、瀏覽器分頁標題都吃同一個（所以各頁的單例沒有頁名欄位）。
 
 | key | 類型 | 內容 |
 |---|---|---|
-| `key` | String（唯一、唯讀） | 例 `nav.about`、`faculty.type.full_time`、`curriculum.year.1`、`curriculum.required`、`faculty.cv.education`、`contact.email`、`common.image`、`error.lead` |
+| `key` | String（唯一、唯讀） | 例 `nav.about`、`faculty.type.full_time`、`curriculum.year.1`、`curriculum.required`、`faculty.back`、`common.image`、`error.lead` |
 | `zh` / `en` | String | 中文／英文（英文留空＝顯示中文） |
 | `category` | Dropdown（可自填） | 後台整理用（選單與頁名、底列與共用、師資、課程、聯絡、榮譽、404），前台不看 |
 
@@ -63,15 +63,14 @@ user 2026-11-24：「開一個資料夾，存放網頁的 icon」，照 SCCD 的
 
 ## footer（聯絡頁；原本是頁尾）— 單例
 
-前台：`js/modules/ui/footer-cms.js`。抓到後台＝以後台為準，**欄位留空＝那一列不顯示**。
+前台：`js/modules/ui/footer-cms.js`。抓到後台＝以後台為準，**欄位留空＝那一塊不顯示**。
+
+**聯絡資訊＝清單，可以自己加**（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」「每個都有個 url，有寫就可以 jump 到那個 url」）：「聯絡資訊」欄位＝子集合 `footer_sections`，一個清單＝標題＋一筆一筆，樣子同師資詳細頁的清單（標題 Medium、清單之間 xl）。原本是寫死的五格 `email`／`tel`／`fax`／`address_zh`／`address_en`、標題在介面文字 `contact.*`：內容搬成四個清單（電子郵件、電話、傳真、地址），那四個介面文字刪了，舊的五格**藏起來、資料還在**（user 說不要了再刪）。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
-| `email` | String／Input | 電子郵件 |
-| `tel` | String／Input | 電話（中英共用） |
-| `fax` | String／Input | 傳真（中英共用） |
-| `address_zh` | String／Input | 地址（中文） |
-| `address_en` | String／Input | 地址（英文） |
+| `sections` | O2M → `footer_sections` | 聯絡資訊的清單，照拖曳順序；一筆都沒有的清單前台不出 |
+| `email`、`tel`、`fax`、`address_zh`、`address_en` | String | （藏起來了，前台不看）原本的聯絡資訊 |
 | `instagram` | String／Input | Instagram 網址：聯絡頁那個 IG icon 連到這裡，留空＝不出 icon（user 2026-11-24：社群只要這一個 icon） |
 | `youtube` | String／Input | YouTube 網址：聯絡頁 IG 右邊那個 YouTube icon 連到這裡，留空＝不出 icon（user 2026-11-24 加的） |
 | `social` | JSON／Repeater | （藏起來了，前台不看）原本的社群連結，一列一個方框 |
@@ -79,7 +78,16 @@ user 2026-11-24：「開一個資料夾，存放網頁的 icon」，照 SCCD 的
 | `badge` | Image | 標章圖 |
 
 - 網址只接受 `https://`、`mailto:`、`tel:` 開頭，其他會變成無效連結。
-- 欄位標籤（電子郵件／電話／傳真／地址）在介面文字（`contact.*`）；IG icon 的圖在網頁 icon（`site_icons` 的 `ig`）。
+- IG icon 的圖在網頁 icon（`site_icons` 的 `ig`）。
+
+### footer_sections（聯絡資訊的清單；藏起來，從「聯絡」裡面新增）
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `sort` | | 拖曳順序 |
+| `footer` | M2O → `footer`（藏） | 所屬頁 |
+| `title_zh` / `title_en` | String | 標題（例：電子郵件／E-Mail；英文留空＝顯示中文）。是內容、不是介面文字 |
+| `entries` | JSON／Repeater | 一筆＝`text_zh`、`text_en`（英文留空＝顯示中文）、`url`（選填）。**連結有填＝那一筆可以點**：`https://` 開頭（另開新視窗）、`mailto:信箱`、`tel:電話`，直接貼信箱也當 mailto；其他開頭（`javascript:`…）＝不當連結。沒文字的那筆不出 |
 
 ## news（首頁的 news）＋ home_video（首頁影片）— 資料夾「首頁」
 
@@ -119,14 +127,17 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 | `end_date` | Date | 結束日期（選填，跨天才填） |
 | `title_zh` / `title_en` | String | 標題 |
 
-`activities`（`pages/activities.html`）：每則是一個摺疊。收著＝縮圖＋標題＋分類；點開＝時間、地點（沒填就不出那一行）、相簿；點相簿的圖放大到整個畫面。什麼都沒得展開＝那一列不能點。
+`activities`（`pages/activities.html`）：每則是一個摺疊。收著＝縮圖＋標題＋副標；點開＝時間、地點（可以好幾個、沒填就不出）、相簿（影片排在照片前面）；點相簿的圖／影片放大到整個畫面。什麼都沒得展開＝那一列不能點。
+**後台照 SCCD 的活動**（user 2026-11-24）：做了副標、地點可以好幾個、影片連結；SCCD 還有、這裡還沒做的＝說明文字、來賓／講者（人名庫）、相關文件、多段日期（`docs/ROADMAP.md` 第 5 節）。
+**沒有分類、是副標**（user 2026-11-24：「參照 sccd 的設計…不會有什麼分類，我看到有入學什麼的，可以刪掉，這應該是改成副標才對」）：同 SCCD 活動的 `subtitles`、同這站師資／合作企業那種重複列。原本是一格 `category_zh`／`category_en`（招生、講座、參訪…），欄位連裡面的字後台都刪了。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
-| `category_zh` / `category_en` | String | 分類（標題下面那一行，例：講座、參訪、展覽） |
-| `place_zh` / `place_en` | String | 地點（選填） |
+| `subtitles` | JSON／Repeater | 副標：標題下面的字，**一筆＝一行**，可拖曳排序；沒填＝只有標題。子欄位 `text_zh`、`text_en`（英文留空＝顯示中文） |
+| `locations` | JSON／Repeater | 地點（選填，**可以好幾個**；user 2026-11-24 照 SCCD）：一筆＝點開後時間下面的一行。子欄位 `name_zh`、`name_en`。原本是一格 `place_zh`／`place_en`，搬成第一筆、舊欄位刪了 |
 | `image` | Image | 那一列的縮圖 |
 | `album` | Files（多張，junction `activities_album`） | 相簿；可拖曳排序；前台 `<img>` 帶檔案的寬高（一打開摺疊就排好） |
+| `videos` | JSON／Repeater | 影片（選填；user 2026-11-24：「影片要有，因爲要做影片渲染」，照 SCCD 的 `videoLinks`）：一列一支，子欄位 `url`＝YouTube 連結，也可以貼直連的影片檔（.mp4、.m3u8）；只收 http(s)。前台排在相簿的照片**前面**：一格 16:9＝YouTube 的縮圖＋一顆 play（直連的檔沒有縮圖＝灰底），點了在放大畫面播、可以跟照片左右切 |
 
 `admission`（`pages/admission.html`）：外面只有標題＋時間（沒有縮圖、分類）；點開＝說明 → 相簿 → 附件。首頁的 news 可以指到其中一則（`?item=<id>`＝打開那一則）。
 
@@ -140,17 +151,28 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 
 `faculty_page` 單例只有導言 `lead_zh`／`lead_en`（頁標題下面那段）。
 
-前台：`pages/faculty.html`（`item-list-cms.js`）依 `category` 分段，段落順序固定＝專任教師 → 兼任教師 → 業界導師（段名在介面文字 `faculty.type.*`），段內照 `sort`；某一類沒人＝那段不出。
-點進 `faculty-detail.html?id=<id>`（`cms-pages.js`）：照片、名字＋副標、各段履歷（段名在介面文字 `faculty.cv.*`；空的段不出）。
+前台：`pages/faculty.html`（`item-list-cms.js`）依 `category` 分段，段落順序固定＝專任教師 → 兼任教師 → 行政管理（段名在介面文字 `faculty.type.*`＝後台「介面文字」分類「師資」那三筆，改了前台就跟著換），段內照 `sort`；某一類沒人＝那段不出。
+第三段原本是「業界導師」（key `faculty.type.mentor`、類別值 `mentor`），user 2026-11-24 改成行政管理、key 也一起改＝`faculty.type.admin`、類別值 `admin`。類別下拉的選項文字是欄位設定、不會跟著介面文字變：之後只改顯示的名字，下拉要另外改。
+點進 `faculty-detail.html?id=<id>`（`cms-pages.js`）：照片、名字＋副標、下面的清單（學歷、經歷…）。
+**清單可以自己加**（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）：每位老師的「清單」欄位＝子集合 `faculty_sections`，一個清單＝標題＋一筆一筆（年份＋說明），在老師那一頁裡新增、拖曳排序；裡面一筆都沒有的清單前台不出。原本是寫死的六格（`education`／`experience`／`expertise`／`exhibitions`／`awards`／`publications`、標題在介面文字 `faculty.cv.*`）：學歷、經歷搬成每位老師的前兩個清單，其餘四格與那六個介面文字 user 說刪掉＝後台已經刪了。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
 | `sort` | | |
-| `category` | Dropdown | `part_time` 兼任教師／`full_time` 專任教師／`mentor` 業界導師 |
+| `category` | Dropdown | `part_time` 兼任教師／`full_time` 專任教師／`admin` 行政管理 |
 | `photo` | Image | 照片 |
 | `person` | M2O → 人名庫 | 姓名（user 2026-11-21；原本的 `name_zh`／`name_en` 藏起來了） |
 | `subtitles` | JSON／Repeater | 副標：名字下面的字，**一筆＝一行**，可拖曳排序；沒填＝只有名字。子欄位 `text_zh`、`text_en`（例：學程主任、教授） |
-| `education`、`experience`、`expertise`、`exhibitions`、`awards`、`publications` | JSON／Repeater | 學歷／經歷／專長／展覽／獲獎／著作；子欄位 `year`（年份或標題，專長留空）、`text_zh`、`text_en` |
+| `sections` | O2M → `faculty_sections` | 清單（學歷、經歷…可以自己加），照拖曳順序 |
+
+### faculty_sections（師資的清單；藏起來，從老師那一頁裡新增）
+
+| key | 類型／介面 | 內容 |
+|---|---|---|
+| `sort` | | 拖曳順序 |
+| `faculty` | M2O → `faculty`（藏） | 所屬老師；老師刪掉＝清單跟著刪 |
+| `title_zh` / `title_en` | String | 清單標題（例：學歷／Education；英文留空＝顯示中文） |
+| `entries` | JSON／Repeater | 一筆＝`year`（年份或標題，可以不填）、`text_zh`、`text_en`；沒說明的那筆不出 |
 
 ## partners（合作企業名單）＋ partners_page（合作企業頁）— 資料夾「合作企業」
 
@@ -236,18 +258,19 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 | key | 類型／介面 | 內容 |
 |---|---|---|
 | `items` | JSON／Repeater | 規章、表單，一列一筆、可拖曳排序。子欄位 `category_zh`／`category_en`（分類）、`title_zh`／`title_en`（名稱）、`subtitles_zh`／`subtitles_en`（副標，多行文字、**一行＝前台一行**，例 2026.08 修訂）、`url` |
-| `sections` | JSON／Repeater | 文字段落，同下面「段落」 |
+| `sections` | O2M → regulations_sections | 文字段落（使用條款、隱私權政策…）＝**同關於、捐款的段落**（user 2026-11-24：「使用條款就是跟 about 的一樣，也讓後臺可以 custom 這個文字」）：`regulations_sections`（＋`regulations_sections_images`）→ `regulations_subsections`（＋`regulations_subsections_images`），欄位跟下面 about_* 一樣（沒有舊欄位；`setup-directus.cjs pageSections()` 建的），前台抓的欄位也一樣（`TEXT_SECTIONS`）。原本是 JSON 重複列、內文一整段 WYSIWYG，2026-11-24 刪掉、那兩段的內文搬成「說明」（一個 `<p>` 一段） |
 
 ## about（關於）、donate（捐款）— 單例
 
 一頁一筆（user 2026-11-22，照 SCCD）。**頁名不在這裡**＝介面文字 `nav.<slug>`。
-前台：導言換掉 `.page-lead`；有段落就整段換掉（關於＝標題 → 輪播 → 說明 → 小節 → 年表；捐款＝標題 → 內文）。
+前台：導言換掉 `.page-lead`；有段落就整段換掉（標題 → 輪播 → 說明 → 小節 → 年表，關於、捐款一樣）。
+**捐款＝同關於**（user 2026-11-24：「捐款頁面應該比照 about 的去調整」；原本 `donate.sections` 是 JSON 重複列、內文一整段 WYSIWYG，2026-11-24 刪掉、兩段的內文搬成「說明」）：
+`donate.sections` → `donate_sections`（＋`donate_sections_images`）→ `donate_subsections`（＋`donate_subsections_images`），欄位跟下面 about_* 一樣，只是沒有關於那幾個藏起來的舊欄位；前台抓的欄位也一樣（cms-pages.js `TEXT_SECTIONS`）。
 
 | 集合 | key | 類型／介面 | 內容 |
 |---|---|---|---|
 | about／donate | `lead_zh` / `lead_en` | Text／Multiline | 導言（頁標題下面那段） |
-| donate | `sections` | JSON／Repeater | 段落，一段一列、可拖曳排序；子欄位 `title_zh`／`title_en`（段落標題＝左側段落導覽）、`body_zh`／`body_en`（WYSIWYG，同下） |
-| about | `sections` | O2M → about_sections | 段落（在同一個表單裡新增、可拖曳排序；`about_sections` 在後台選單裡藏起來）。**關於的段落要放輪播圖、重複列放不了檔案**，所以是子集合 |
+| about／donate | `sections` | O2M → about_sections／donate_sections | 段落（在同一個表單裡新增、可拖曳排序；`*_sections` 在後台選單裡藏起來）。**段落要放輪播圖、重複列放不了檔案**，所以是子集合 |
 | about_sections | `sort`、`about` | | `about`＝所屬的那一筆 |
 | about_sections | `title_zh` / `title_en` | String | 段落標題（h2＝左側段落導覽） |
 | about_sections | `images` | Files（多張，junction `about_sections_images`） | 段落圖片輪播（標題下面那排；沒放＝不出輪播） |
@@ -264,4 +287,4 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 
 小節前台的排法＝標題 → 圖 → 內文 → 附註，有才排；塊與塊之間（含分段）隔 `--spacing-sm`；沒標題＝第一塊自己隔 `--spacing-md`（同小節標題的上距）。
 
-捐款、規章的段落內文（`sections[].body_*`）還是 WYSIWYG：中英各一份 HTML，前台跟著語言只顯示一份；**塞進去前過 sanitize**（只放行 p／h3／清單／粗體斜體／連結與 `mt-sm`／`mt-md`／`text-xs` 三個 class）。
+**後台沒有 WYSIWYG（rich text）的段落了**（2026-11-24：捐款、規章的條款都改成同關於）：前台讀的全是純文字、一律 escape，原本的 sanitize 與「中英各一份 HTML 跟著語言只顯示一份」（`.cms-rich`／`[data-lang-block]`）一起拿掉了。還留著 WYSIWYG 欄位的只有 `about_sections.body_*`（藏起來的舊欄位、前台不讀）。

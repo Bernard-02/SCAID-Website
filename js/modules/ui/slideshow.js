@@ -65,6 +65,11 @@ export function initSlideshow() {
         else if (Math.abs(pos[i]) === 1) { s.setAttribute('aria-label', pos[i] < 0 ? '上一張' : '下一張'); s.removeAttribute('aria-hidden'); }
         else { s.removeAttribute('aria-label'); s.setAttribute('aria-hidden', 'true'); }   // 其他的不給讀
       });
+      // 糊的那一段＝目前那張以外（同作品頁的放映：正中的永遠不糊、兩邊的整張在糊的那段裡；user 2026-11-24：「這邊的 fade 可以參考作品頁面的那個」，
+      // 原本固定框寬的 22%＝旁邊那張半張清楚半張糊）：從列的外緣到目前那張的邊。跟照片一起滑（page.css @property --slide-cut 補間）；第一次擺＝直接到位
+      if (!was.length) strip.style.transition = 'none';
+      strip.style.setProperty('--slide-cut', `${x[c]}px`);
+      if (!was.length) { void strip.offsetWidth; strip.style.transition = ''; }
       was = pos;
     };
     let timer = 0, hover = false, focus = false;

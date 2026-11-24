@@ -182,20 +182,28 @@
     @apply text-md;   /* 手機比照 PC 用同一階（user 2026-11-22，原本手機 s）：手機多大＝調 variables.css 的手機 md，不另開字級 */
     display: flex;
     flex-direction: column;
-    /* 上下兩塊：選項（nav，自己捲）＋深色模式、語言鈕（.menu-tools，固定在底下；user 2026-11-24）。
+    /* 上下兩塊：選項（nav：主選單＋規章那組自己捲、常見問題那組固定）＋深色模式、語言鈕（.menu-tools，固定在底下；user 2026-11-24）。
        頂＝內容起始線（--top-h）＝捲動框的上緣，線以上什麼都看不到（user 2026-11-24：「往上應該就看不到內容了，那個 box 就只到起始位置那裏」）；
        底：語言鈕 → menu 鈕的距離＝分區的 gap（user 2026-11-21）。底列那一行的高＝骨牌（比名字、play 高）。
        左右內距給兩塊自己（下一條）＝nav 的捲動框吃滿選單寬、選中那項的直條不會被框切到 */
-    padding: var(--top-h) 0 calc(var(--bar-pad) + var(--block-h) + var(--spacing-lg));
+    padding: var(--top-h) 0 calc(var(--bar-pad) + var(--block-h) + var(--spacing-xl));   /* 分區的 gap＝xl（user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」；原本 lg） */
     color: var(--theme-fg);
     transform: translateX(-100%);
     opacity: 0;   /* 進出場＝滑＋fade 一起（user 2026-11-21）：時長／曲線同滑動，兩個才對得上（同首頁動態清單的做法） */
     filter: blur(var(--blur));
     transition: transform var(--dur-medium) var(--ease-wipe), opacity var(--dur-medium) var(--ease-wipe), filter var(--dur-medium) var(--ease-wipe);
   }
+  /* 桌面：選單最下面（EN）的底＝內容區的底線（畫面底往上 --top-h）＝燈箱裡撐滿高度的圖片下緣（user 2026-11-24：「en 到 menu btn 的 gap，是 lightbox 中圖片到 ‹X› 的 gap 嗎」「改跟圖片的一樣」）
+     ＝選單上下對稱。手機那條線貼到底列那一排（390 寬還壓到 1.4px）＝照舊分區的 gap xl */
+  @media (min-width: 768px) { .site-menu { padding-bottom: var(--top-h); } }
   html.menu-open .site-menu { transform: none; opacity: 1; filter: none; }
   .site-menu > * { padding-inline: var(--container-padding); }
-  /* 選項＝捲動框（起始線～深色模式鈕上面隔一段分區的 gap，.menu-tools 的 margin-top）。看不見的那截在框外＝點不到。
+  /* nav＝捲動框（主選單＋規章那組）＋固定的常見問題那組（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」）：
+     吃掉鈕上面剩下的高；組跟組之間＝分區的 gap xl。內距給裡面兩塊自己（捲動框要吃滿選單寬，理由同下） */
+  .site-menu-links { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--spacing-xl); }
+  .site-menu > .site-menu-links { padding-inline: 0; }
+  .site-menu-links > * { padding-inline: var(--container-padding); }
+  /* 選項＝捲動框（起始線～固定的常見問題那組上面隔一段分區的 gap，.site-menu-links 的 gap）。看不見的那截在框外＝點不到。
      框的上下兩端：有東西捲過去的那一邊才淡出（mask）＋糊（下一條），那段長 min(捲過的距離, --f)——不捲的時候第一項、捲到底時最後一項照樣清楚
      （同 logo 的毛玻璃「有被遮擋才會加」）。user 2026-11-24：「上面也要加 blur」「應該是要上下都 blur」「模糊到下面 sticky 的內容應該要有個 gap」。
      --st／--sb＝上／下那段開了幾成（0～1），scroll-driven（scroll(self)）在捲的前／後 --f 裡從 0 長到 1；不能捲＝timeline 不動＝都是 0 */
@@ -206,7 +214,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);   /* 分區的 gap（user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」；原本 lg） */
     -webkit-mask: linear-gradient(transparent, #000 calc(var(--st) * var(--f)), #000 calc(100% - var(--sb) * var(--f)), transparent);
             mask: linear-gradient(transparent, #000 calc(var(--st) * var(--f)), #000 calc(100% - var(--sb) * var(--f)), transparent);
   }
@@ -228,10 +236,11 @@
   @keyframes menu-et { to { --et: 1; } }
   @keyframes menu-eb { from { --eb: 1; } to { --eb: 0; } }
   /* 選項間距（user 2026-11-18 加寬）。.link-list＝內頁的同款可點清單（網站地圖、聯絡頁姊妹系所、入學附件），間距跟選單同一條 */
-  .menu-main, .menu-sub, .link-list { display: flex; flex-direction: column; gap: var(--spacing-xs); }
-  .menu-main + .menu-sub { margin-top: auto; }   /* 次選單兩區一起推到底；區之間＝nav 的 gap（同聯絡 → 語言鈕） */
-  /* 深色模式＋語言鈕一組（user 2026-11-21）：兩顆之間＝選項間距；組跟上面次選單之間才是分區的 gap（nav 的 gap） */
-  .menu-tools { margin-top: var(--spacing-lg); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-xs); }
+  /* 選項間距 sm（user 2026-11-24：「menu 的選單之間的 gap 改成 sm，同步調整 sitemap 的」；原本 xs）——網站地圖、聯絡頁姊妹系所、入學附件（.link-list）同一條 */
+  .menu-main, .menu-sub, .link-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+  .menu-main + .menu-sub { margin-top: auto; }   /* 捲動框裡的規章那組推到框底；主選單到它至少＝分區的 gap */
+  /* 深色模式＋語言鈕一組（user 2026-11-21）：兩顆之間＝選項間距；組跟上面常見問題那組之間才是分區的 gap（xl） */
+  .menu-tools { margin-top: var(--spacing-xl); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); }   /* 兩顆之間＝選項間距（上面那條，sm） */
   .theme-btn { display: flex; align-items: center; min-height: 1lh; }   /* 至少一行字高；icon＝骨牌的高（下一條）比 EN 那行高一點 */
   .theme-btn .icon { font-size: var(--block-h); transition: transform var(--dur-medium) var(--ease-standard); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
   html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝ai 的 night（＝day 轉半圈：實心那半到上面） */
@@ -338,7 +347,7 @@
   .play-btn .icon { font-size: var(--block-h); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
   /* 選單開著：menu 鈕不撐、play 留在原位（user 2026-11-24：「pc 的首頁，在打開 menu 的時候，play 就不需要移動，只需要被模糊即可」；
      原本 menu 鈕撐成選單欄那一格、play 滑到選單右緣，user 2026-11-03）。play 在首頁＝內容，選單開著模糊＋疊白（下面手機那段之後） */
-  .menu-btn { position: relative; justify-content: flex-start; }
+  .menu-btn { position: relative; justify-content: flex-start; transition: var(--transition-fade); }   /* fade：首頁展開動態時跟 play 一起模糊（下面） */
   /* 手機選單＝全螢幕（user 2026-11-22；桌面照舊左邊一欄）：選單吃滿畫面、內容不右推（原地模糊＋疊白，選單直接疊在上面）；
      點選單的空白處＝收選單（chrome.js；原本點右邊內容收，那塊現在被選單蓋住） */
   @media (max-width: 767px) {
@@ -352,6 +361,12 @@
   /* 首頁的 play 鈕＝首頁的內容（手機 user 2026-11-24 起、桌面同一天跟進：「play 就不需要移動，只需要被模糊即可」）：選單開著同 #page-content、動態模糊＋疊 60% 白，
      原地不動；不吃指標＝按下去落在底列本身＝只收選單（chrome.js，同動態） */
   html.menu-open body[data-page="index"] .play-btn { filter: blur(var(--blur)); opacity: 0.4; pointer-events: none; }
+  /* 首頁展開動態＝清單在前、其他是背景（user 2026-11-24：「點擊 news 的時候，讓背景加上 blur，那 menu 跟 play 就沒辦法點擊」；
+     原本照常點得到＝選單疊在糊掉的清單上、play 開 intro）：底列的 menu、play 同上面選單開著時的 play——模糊＋疊 60% 白、不吃指標＝
+     按下去落在底列本身＝點動態以外的地方＝收回去（chrome.js）。跟底列的動態一起：展開就糊、清單滑走了（news-closing 拿掉）才回來。
+     logo 照常（同其他蓋上來的東西）。鍵盤照常按得到：Tab 到 menu 開選單＝選單開著時 menu 鈕照常清楚 */
+  html:is(.news-open, .news-closing):not(.menu-open) body[data-page="index"] .menu-btn,
+  html:is(.news-open, .news-closing) body[data-page="index"] .play-btn { filter: blur(var(--blur)); opacity: 0.4; pointer-events: none; }
 
   /* ── 內頁右圖在 PC 以外（手機、iPad；user 2026-11-13 手機稿、2026-11-23 起 iPad 也是）＝底列右下角那顆鈕（底列第三欄、右緣對齊內距；
      長得跟 menu 鈕一樣＝骨牌，hover／鍵盤聚焦中央圓點，名字不出；user 2026-11-23，原本是畫面右緣中線上幾根 stroke 圍成的圓）。
@@ -553,7 +568,9 @@
     -webkit-mask: url('../website-icons/volume.svg') calc(7.223 * var(--u)) center / calc((var(--bars) * 10.223 - 7.223) * var(--u)) auto no-repeat;
             mask: url('../website-icons/volume.svg') calc(7.223 * var(--u)) center / calc((var(--bars) * 10.223 - 7.223) * var(--u)) auto no-repeat;
   }
-  .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol-bars { width: calc(var(--bars) * 10.223 * var(--u)); margin-left: calc(0.5 * var(--bar-gap)); opacity: 1; filter: none; }   /* 跟靜音鈕一組：間距減半 */
+  /* 喇叭 → 第一根直條＝看起來一個 --bar-gap（user 2026-11-24：「這個 lightbox 打開的 icon 之間的 gap 都統一吧，就是 bar gap」；原本「跟靜音鈕一組」減半）：
+     第一根在它那一格的右端、前面空 7.223 個單位（上面 ::before 的 mask 位置）＝margin 扣掉這段 */
+  .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol-bars { width: calc(var(--bars) * 10.223 * var(--u)); margin-left: calc(var(--bar-gap) - 7.223 * var(--u)); opacity: 1; filter: none; }
   .media-vol { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; -webkit-appearance: none; appearance: none; background: none; cursor: pointer; }
   .media-vol::-webkit-slider-runnable-track { height: 100%; background: none; }
   .media-vol::-moz-range-track { height: 100%; background: none; }

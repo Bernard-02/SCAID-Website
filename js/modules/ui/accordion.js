@@ -34,7 +34,9 @@ function tween(d, closing, easing) {
   d.classList.toggle('is-closing', closing);
   if (!closing) d.open = true;
   const to = (closing ? summary : d).getBoundingClientRect().height;
-  d.style.overflowY = 'clip';   // 只切上下：左右跟展開完一樣（內容淡入的模糊、超出框的東西不會補間時被切、補間完才冒出來）
+  // 只切上下：左右跟展開完一樣（內容淡入的模糊、超出框的東西不會補間時被切、補間完才冒出來）。
+  // 下緣多留 1.5rem＝相簿兩側的模糊往下暈出去的那段（page.css .album --album-up；user 2026-11-24）也一樣；落在列距裡、碰不到下一則。原本 overflowY: clip
+  d.style.clipPath = 'inset(0 -100vw -1.5rem -100vw)';
   // fill forwards：跑完到 onfinish 之間停在終點，不會閃回全高／全實
   /** @type {KeyframeAnimationOptions} */
   const timing = { duration: DUR.medium * 1000, easing, fill: 'forwards' };
@@ -43,7 +45,7 @@ function tween(d, closing, easing) {
   running.set(d, anims);
   anims[0].onfinish = () => {
     if (closing) { d.open = false; d.classList.remove('is-closing'); }
-    d.style.overflowY = '';
+    d.style.clipPath = '';
     anims.forEach(a => a.cancel());
     running.delete(d);
   };

@@ -1,7 +1,7 @@
 /**
  * 縮圖＋標題＋副標的列表（.item-list .item-row）← Directus（欄位與後台建法：docs/Directus-後台欄位.md）。
  * 師資、合作企業共用這一種（user 2026-11-21）：標題 h3、副標＝`subtitles` repeater 一筆一行 p、沒填就只有標題。
- * 頁面上每個 ul.item-list 掛 data-cms="集合" 或 "集合:類別"（師資的專任／兼任／業界導師段落寫死在 HTML，順序不看後台），段內照 sort。
+ * 頁面上每個 ul.item-list 掛 data-cms="集合" 或 "集合:類別"（師資的專任／兼任／行政管理段落寫死在 HTML，順序不看後台），段內照 sort。
  * 抓不到（斷線／集合沒建）或後台還沒任何一筆＝留 HTML 的 MOCK；某一類沒人＝那段整段收掉（段落導覽重做）。
  */
 import { CMS_API_BASE, assetUrl, fetchCmsJson } from '../../config/api.js';

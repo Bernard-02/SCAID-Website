@@ -43,10 +43,11 @@
   --font-weight-medium: 500;
   --font-weight-bold: 700;
 
-  /* 行距綁字級：Tailwind fontSize 用 [size, line-height] tuple → .text-* 自帶該階行距 */
+  /* 行距綁字級：Tailwind fontSize 用 [size, line-height] tuple → .text-* 自帶該階行距。
+     中英分開（user 2026-11-24：「將中英分開不同的行距調整」）：這裡＝中文版，英文版在檔尾 html[lang="en"] 那組（lang.js 換 <html lang>），兩邊各自調 */
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
-  --line-height-s: 1.5;   /* 內文（純文字）：user 2026-11-24「行距可以小一點」，原本 1.7 */
+  --line-height-s: 1.4;   /* 內文（純文字）：user 2026-11-24「行距可以小一點」1.7 → 1.5，同一天中文再改 1.4（英文留 1.5） */
   --line-height-xs: 1.4;
   --line-height-base: 1.5;    /* <body> 預設 */
 
@@ -63,6 +64,10 @@
   --spacing-6xl: 8rem;    /* 128px */
   --spacing-7xl: 10rem;   /* 160px */
   --spacing-8xl: 12rem;   /* 192px */
+  /* 半個行距＝行高比字高多出來的一半（字的上下各一份）：在用到它的那個元素上算（1lh、1em 照那個元素的字級與行距）。
+     圖 ↔ 字的間距要加上它，看起來才跟字 ↔ 字一樣——字 ↔ 字兩邊各有一份、圖 ↔ 字只有字那邊一份
+     （user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」；text-s 中文 1.4 行距 ≈ 3.7px） */
+  --lead: calc((1lh - 1em) / 2);
 
   /* 文字版 logo 的 viewBox 寬、高（圖剛好撐滿 viewBox）：logo 的比例（chrome.css .logo-text）與骨牌大小都從這裡算。
      手機＝images/Logo Text Mobile.svg（user 2026-11-23：窄、英文拆三行＝骨牌放大）；≥768＝images/Logo Text.svg（下面 @media）。
@@ -175,4 +180,12 @@
 html[lang="en"] { --logo-vb-h: 115.02; }
 @media (min-width: 768px) {
   html[lang="en"] { --logo-vb-h: 70.01; }
+}
+/* 英文版的行距（中英分開，user 2026-11-24）：跟上面 :root 那組（中文）一階一階對，要調英文改這裡 */
+html[lang="en"] {
+  --line-height-lg: 1.3;
+  --line-height-md: 1.4;
+  --line-height-s: 1.5;
+  --line-height-xs: 1.4;
+  --line-height-base: 1.5;
 }

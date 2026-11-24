@@ -39,7 +39,7 @@
   html.news-closing #custom-scrollbar-thumb { opacity: 0; filter: blur(var(--blur)); }
   /* 手機＝內頁內文的寬：左右各讓 --rail-w（同 page.css .page-body；user 2026-11-23：「比照其他頁面的內容寬度，不一定要跟 logo 等寬」，原本＝logo 寬、滿版）。
      桌面 --rail-w 是 0、下面那條置中 --col-w */
-  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); margin-inline: var(--rail-w); }
+  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-lg); margin-inline: var(--rail-w); }   /* 列與列之間同 .item-list（lg，user 2026-11-24：所有清單一樣；原本 xl） */
   /* 一則＝蓋黑收直條的一列（user 2026-11-23：hover 整則；點底列的動態展開、定位到那則之後也閃一下＝同一套、直條停一下就淡掉）：
      帶與直條插在 li 裡、照 li 的框擺（item-marquee.js strike／flash，樣子 page.css .item-cover） */
   .home-news-list li { position: relative; }
@@ -61,7 +61,6 @@
      隔一個 gutter 右文字、文字上下對在圖的正中；圖照原比例 contain 在方框的正中（同 page.css .item-thumb img：user 2026-11-24「讓裏面的圖片 center 這個 box」，原本貼左；框不跟著圖變大小）。
      後台沒有圖＝不放圖框（cms-pages.js homeNews；user 2026-11-24）＝那則只有字、不排兩欄。li 裡有連結＝排的是那個 a */
   @media (min-width: 768px) {
-    .home-news-list > ul { gap: var(--spacing-xl); }   /* 列與列之間同 .item-list */
     .home-news-list :is(li:has(> .home-news-box), li > a:has(> .home-news-box)) { display: grid; grid-template-columns: var(--item-thumb-w) minmax(0, 1fr); gap: var(--spacing-gutter); align-items: center; }
     .home-news-box { aspect-ratio: 1; margin-bottom: 0; background: none; }
     .home-news-box img { object-fit: contain; object-position: center; }
