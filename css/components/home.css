@@ -50,8 +50,10 @@
   }
   /* 手機：圖在上、標題在下（user 2026-11-24；原本標題在上）。不加框（user 2026-11-24）。圖框＝同動態的清單列（user 2026-11-25：「手機上這個圖應該是跟activities的一樣調整，
      圖片不要被crop到」；原本滿版 3:1、cover 裁掉上下）：方框、寬 --item-thumb-w（page.css .item-thumb），圖照原比例 contain、貼框底靠左＝緊接著下面的標題，
-     跟標題隔一個 gutter（同動態那列的 grid gap）。後台沒有圖＝不放框（cms-pages.js homeNews），所以不墊灰底 */
-  .home-news-box { width: var(--item-thumb-w); aspect-ratio: 1; margin-bottom: var(--spacing-gutter); }
+     跟標題隔一個 gutter＝那一則（li，有連結＝裡面的 a）排成 grid、用 gap 隔，同動態那列（user 2026-11-25：「能不能讓news的結構跟activities的一樣？…圖片下面是用mb去做的，但activities的是用gap」；
+     原本圖框 margin-bottom）。桌面同一個 grid 再加左右兩欄（下面）。後台沒有圖＝不放框（cms-pages.js homeNews），所以不墊灰底、也不排 grid */
+  .home-news-list :is(li:has(> .home-news-box), li > a:has(> .home-news-box)) { display: grid; gap: var(--spacing-gutter); }
+  .home-news-box { width: var(--item-thumb-w); aspect-ratio: 1; }
   .home-news-box img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: left bottom; }   /* 後台那則的圖（cms-pages.js） */
   /* 字＝同清單列的標題（page.css .item-row h3）：Medium。只有標題（user 2026-11-24 後台拿掉了說明＝摘要） */
   .home-news-list p { font-weight: var(--font-weight-medium); }
@@ -61,8 +63,8 @@
      隔一個 gutter 右文字、文字上下對在圖的正中；圖照原比例 contain 在方框的正中（同 page.css .item-thumb img：user 2026-11-24「讓裏面的圖片 center 這個 box」，原本貼左；框不跟著圖變大小）。
      後台沒有圖＝不放圖框（cms-pages.js homeNews；user 2026-11-24）＝那則只有字、不排兩欄。li 裡有連結＝排的是那個 a */
   @media (min-width: 768px) {
-    .home-news-list :is(li:has(> .home-news-box), li > a:has(> .home-news-box)) { display: grid; grid-template-columns: var(--item-thumb-w) minmax(0, 1fr); gap: var(--spacing-gutter); align-items: center; }
-    .home-news-box { aspect-ratio: 1; margin-bottom: 0; background: none; }
+    .home-news-list :is(li:has(> .home-news-box), li > a:has(> .home-news-box)) { grid-template-columns: var(--item-thumb-w) minmax(0, 1fr); align-items: center; }   /* grid、gap 同手機那條 */
+    .home-news-box { background: none; }
     .home-news-box img { object-fit: contain; object-position: center; }
   }
 }

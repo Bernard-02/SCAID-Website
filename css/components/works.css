@@ -2,10 +2,16 @@
    兩種排法掛在 .works 的 data-mode：放映（slideshow）／總覽（bento），底列中間那組鈕切（.bar-works）。
    放映時每個都跟正中那個一樣大＝撐滿最大框（user 2026-11-24；原本兩邊的照自己的大小、只限最大寬）；總覽撐滿一欄（user 2026-11-23）：
    大小＝自己的寬高（.work 上的 --w／--h，works.js／HTML 寫）照比例縮進最大框、不放大——寫在框上不靠圖：圖的寬高寫 auto 的話，載到之前是 0×0（lazy 也就不載）。
-   影片的寬高＝影片真正的比例（works.js 向 YouTube 要；user 2026-11-24 總覽要 Pinterest 那種錯落，原本一律 16:9）：縮圖帶黑邊，cover 裁掉 */
+   影片的寬高＝影片真正的比例（works.js 向 YouTube 要；user 2026-11-24 總覽要 Pinterest 那種錯落，原本一律 16:9）：縮圖帶黑邊，cover 裁掉。
+   黑邊燒在影片裡的（user 2026-11-25：「是這個圖片本身的黑邊喔」）YouTube 回的比例也是 16:9＝works.js bars() 量縮圖：--w／--h 換成黑邊裡面那塊，
+   圖放大成 1/--fw × 1/--fh、往左上推 --fx／--fy（translate 的 % 照圖自己）＝框裡只剩那塊；沒量到＝原樣 */
 @layer components {
-  .work { aspect-ratio: var(--w) / var(--h); }
-  .work img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .work { aspect-ratio: var(--w) / var(--h); overflow: clip; }
+  /* img 絕對定位（.work 兩種排法都是 absolute）：留在版面流裡的話，aspect-ratio 的框會被它撐高、% 的高也算成圖自己的高＝裁黑邊那支比別人高、裁錯
+     （scaid-3d 2026-11-25 量到；overflow: clip 不算捲動容器、擋不住）；絕對定位的 % 照框算。
+     max-width: none：Tailwind 的 preflight 給 img max-width: 100%＝放大的寬被卡回框寬、只剩往左推那一下＝左右的黑邊裁不掉、圖偏左、右邊留一條黑
+     （user 2026-11-25 貼總覽的截圖：「這個裁掉黑邊也要加上左右的設定」；上下沒事是因為 preflight 沒有 max-height） */
+  .work img { position: absolute; left: 0; top: 0; display: block; width: calc(100% / var(--fw, 1)); max-width: none; height: calc(100% / var(--fh, 1)); translate: calc(var(--fx, 0) * -100%) calc(var(--fy, 0) * -100%); object-fit: cover; }
   /* 點的範圍＝蓋在整個作品上的鈕（放映：兩邊那個＝換、正中的影片＝播；總覽：點了切到放映）；影片中間一顆 play */
   .work-hit { position: absolute; inset: 0; display: grid; place-items: center; width: 100%; padding: 0; color: var(--theme-fg); cursor: pointer; }
   .work-hit:disabled { cursor: default; }
@@ -19,38 +25,44 @@
   /* ── 放映：舞台吃掉頂距下面剩下的高（.works 定高＝畫面扣掉頂、底列，同 .page-body 的 min-height），一屏放得下、不捲。
      h1 只留給報讀（.sr-only，user 2026-11-24：「作品頁的 title 可以拿掉」）＝舞台從 title 那條線（--top-h）起。
      一列（user 2026-11-24：「左右都幫我改成一樣大，然後整個 box 的左右邊緣加上 blur 的效果」；原本正中最大壓最上層、前後兩個縮小貼著舞台兩邊、各自失焦）：
-     每個都撐滿最大框＝舞台的 72cqw × 100cqh 裡照比例、寬高哪邊先碰到就停，圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」），
+     每個都一樣高（2026-11-25 起，見 .work 的 width；原本撐滿最大框＝舞台的 72cqw × 100cqh 裡照比例），圖本身比較小也放大（user 2026-11-23：「中間的這張要保持 full screen，不會是比較小的」），
      從正中往兩邊、隔一個 gutter 接下去（中線的位置＝works.js layoutRow 照每個的寬算 --x）；換一個＝整列滑過去（時長同網站 fade），繞到另一頭的直接跳（.is-jump，同關於的輪播）。
-     超出舞台的切掉（overflow: clip，理由同 page.css .slide-strip）；舞台的左右兩側＝漸進模糊（.slide-blur，同關於的段落輪播，works.js 插）＋透明度淡到邊（mask）＝邊不是一刀切。
-     糊的那一段（--band）＝正中那個最寬（72cqw）時兩邊剩下的＝正中的永遠不會被糊到。mask 也讓舞台變成 backdrop root＝那幾層只糊得到作品。
+     超出舞台的切掉（overflow: clip，理由同 page.css .slide-strip）；舞台的左右兩側＝淡出＋模糊（.slide-blur 一層，works.js 插）＝跟關於的輪播、相簿共用的那一套
+     （page.css「輪播兩側的淡出＋模糊」，mask 也寫在那條；user 2026-11-25：「這個要針對有輪播的都要調整」——照舞台寬的 %：PC 邊緣往內 10%（page.css --edge-w）、手機一半；
+     正中那個最寬佔舞台的 72%（手機）／6 欄（PC，不到一半）＝不會被吃到。原本是 5 層漸進模糊、糊的那段＝正中那個以外）。
      大小用舞台的 cq 單位（container-type: size；總覽不能掛，高會被鎖成 0）。.works 一定要定高：只有 min-height＝舞台的高是 flex 長出來的，
      Chrome 的 cqh 會算成 0＝作品寬高全是 0、只看得到 play（2026-11-23 user 回報；WebKit 沒事，煙霧測試只守這條規則還在）── */
-  .works[data-mode="slideshow"] { display: flex; flex-direction: column; height: calc(100vh - var(--top-h) - var(--bar-h)); }
+  /* 放映不能捲（user 2026-11-25：「手機上的作品頁，應該是不能scroll的（指的是放映的mode）」）：高用 100svh＝手機網址列出來時看得到的高
+     （原本 100vh＝網址列收起來的高＝網址列在的時候整頁多出一截、捲得動；min-height 蓋掉 .page-body 那條同樣用 100vh 的），
+     整頁再鎖住、手機拉到頭不回彈（總覽照常捲）；PC 本來就剛好一屏，鎖住＝滾輪也不動 */
+  .works[data-mode="slideshow"] { display: flex; flex-direction: column; height: calc(100svh - var(--top-h) - var(--bar-h)); min-height: 0; }
+  html:has(.works[data-mode="slideshow"]) { overflow: hidden; overscroll-behavior: none; }
   .works[data-mode="slideshow"] .works-items {
-    touch-action: pan-y;   /* 手機左右拖＝換作品（works.js；user 2026-11-24），上下照常捲 */
+    touch-action: pan-y;   /* 手機左右拖＝換作品（works.js；user 2026-11-24）；上下交給瀏覽器（整頁鎖著＝不動，捏合縮放照常） */
     flex: 1; position: relative; min-height: 12rem; margin-bottom: var(--spacing-md); container-type: size;   /* 下面留一段：直的圖撐滿高時不貼著底列 */
     margin-inline: calc(-1 * var(--rail-w));   /* 手機：舞台＝畫面扣左右內距就好、不讓 rail（user 2026-11-24：「不需要跟全站的寬度一樣」；總覽照舊讓）；桌面 rail＝0 */
     column-gap: var(--spacing-gutter);   /* 作品之間（框本身不是 flex／grid，這個值只給 works.js 讀） */
-    --out: var(--spacing-gutter); --band: calc((100% - 72cqw) / 2);
     overflow: clip;
-    -webkit-mask: linear-gradient(to right, transparent, #000 var(--out), #000 calc(100% - var(--out)), transparent);
-            mask: linear-gradient(to right, transparent, #000 var(--out), #000 calc(100% - var(--out)), transparent);
   }
   .works[data-mode="slideshow"] .work {
     position: absolute; top: 50%; left: calc(50% + var(--x, 0px) + var(--drag, 0px)); transform: translate(-50%, -50%);   /* --drag＝手指拖的距離（works.js，掛在清單上） */
-    width: min(var(--work-max, 72cqw), calc(100cqh * var(--w) / var(--h)));   /* --work-max＝最寬多寬：手機 72cqw、PC 內文 6 欄（下面） */
+    /* 全部一樣高（user 2026-11-25：「如果有做裁黑邊的話，這些thumbnail應該都會是一樣高的」；原本每個照比例撐滿最大框＝寬銀幕的被寬卡住、比較矮）：
+       高＝16:9 撐滿最寬（--work-max：手機 72cqw、PC 內文 6 欄，下面）時的高、最高到舞台高，寬照比例＝寬銀幕的比最寬還寬、4:3 與直的比較窄（同 works.js layoutRow） */
+    width: calc(min(100cqh, var(--work-max, 72cqw) * 9 / 16) * var(--w) / var(--h));
     transition: left var(--dur-fade) var(--ease-standard), width var(--dur-fade) var(--ease-standard);
   }
-  /* PC（md 起）：正中那個撐滿內文的 6 欄（--body-w，variables.css），兩邊的往外排、切在左右內距那條線（＝menu 鈕的左緣）＝舞台＝畫面扣兩邊內距、
-     糊的那一段＝6 欄以外（user 2026-11-24：「pc 的作品，中間的影片是拉長到 col-6 的寬度，然後左右兩邊再往外擴散」→「有點太寬了，左右兩邊的影片切到 menu btn 那邊即可」；
+  /* PC（md 起）：正中那個撐滿內文的 6 欄（--body-w，variables.css），兩邊的往外排、切在左右內距那條線（＝menu 鈕的左緣）＝舞台＝畫面扣兩邊內距
+     （user 2026-11-24：「pc 的作品，中間的影片是拉長到 col-6 的寬度，然後左右兩邊再往外擴散」→「有點太寬了，左右兩邊的影片切到 menu btn 那邊即可」；
      總覽照舊——「grid 的不要調整」） */
   @media (min-width: 768px) {
-    .works[data-mode="slideshow"] .works-items { margin-inline: calc((100% - 100vw) / 2 + var(--container-padding)); --work-max: var(--body-w); --band: calc((100% - var(--body-w)) / 2); }
+    .works[data-mode="slideshow"] .works-items { margin-inline: calc((100% - 100vw) / 2 + var(--container-padding)); --work-max: var(--body-w); }
   }
   .works[data-mode="slideshow"] .work.is-jump { transition: none; }   /* 繞到另一頭、第一次擺：直接到位 */
   .works[data-mode="slideshow"] .works-items.is-dragging .work { transition: none; }   /* 拖著＝直接跟手指；放開才補間（彈回或換） */
   .works[data-mode="slideshow"] .work[data-pos="0"] .work-hit:disabled { pointer-events: none; }   /* 正中的圖片不放大：點了等於沒點 */
-  .works:not([data-mode="slideshow"]) .slide-blur { display: none; }   /* 舞台兩側的漸進模糊只有放映有 */
+  .works:not([data-mode="slideshow"]) .slide-blur { display: none; }   /* 舞台兩側的模糊只有放映有 */
+  /* 模糊那一層只蓋作品那一排（舞台比那一排高）：高＝上面 .work 的高、上下置中＝作品的上下緣是利的、模糊不往上下暈（user 2026-11-25 貼的那段 CSS 註明的） */
+  .works[data-mode="slideshow"] .slide-blur { top: 50%; bottom: auto; height: min(100cqh, var(--work-max, 72cqw) * 9 / 16); transform: translateY(-50%); }
 
   /* ── 總覽（bento）：照比例排成幾欄（masonry），照閱讀順序擺（user 2026-11-23：放映的第 8 個＝總覽的第 8 個）：
      一個一個由左到右放進最矮的那一欄，位置 works.js layoutBento 算（--x／--y／--bw）——原本 CSS 多欄是一欄排滿才換下一欄，順序對不上。
@@ -71,14 +83,17 @@
      鈕＝ai 的 slide show／grid 兩個 icon（user 2026-11-24；原本寫字「放映／總覽」，字留著當報讀名稱），大小、間距同底列左邊的 play 鈕 ── */
   .bar-works { grid-area: 1 / 2; justify-self: center; position: relative; display: flex;   /* relative：背後的毛玻璃（.fs-blur，chrome.css）貼著這一組 */ gap: var(--bar-gap); transition: var(--transition-fade), visibility 0s; }
   body:not([data-page="works"]) .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
-  html.logo-moving .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }   /* 首頁 → 作品頁：logo 移完才淡進來（理由同 chrome.css html.logo-moving .fs-blur） */
-  .bar-works button { display: flex; color: inherit; }
-  .bar-works .icon { font-size: var(--block-h); }
+  html.logo-moving body[data-page="works"] .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }   /* 首頁 → 作品頁：logo 移完才淡進來（理由同 chrome.css html.logo-moving .fs-blur）；只限進作品頁＝離開作品頁（router 也掛 logo-moving）照常淡出 */
+  .bar-works button { display: grid; color: inherit; }
+  .bar-works .icon { font-size: var(--block-h); grid-area: 1 / 1; transition: var(--transition-fade); }   /* 兩張疊在同一格＝切換時交叉淡化（下面） */
   /* 一顆鈕、點了在兩種排法之間切（user 2026-11-25：「我想要將作品的兩個 icon 合并，點了會切換」；原本兩顆、沒選的那顆淡 0.3）：
-     鈕的 data-works-mode＝點了要切過去的那一種（works.js 切完換），只露那一種的圖示與名字（另一種 display: none＝也不算進報讀名稱）；兩張圖一樣寬＝換了鈕不動。
-     hover＝icon 下方一顆圓點（chrome.css，同其他 icon） */
-  .bar-works button[data-works-mode="bento"] :is(.icon-slideshow, [data-label="bar.works.slideshow"]),
-  .bar-works button[data-works-mode="slideshow"] :is(.icon-grid, [data-label="bar.works.bento"]) { display: none; }
+     鈕的 data-works-mode＝點了要切過去的那一種（works.js 切完換），只露那一種的圖示與名字；兩張圖一樣寬、疊在同一格＝換了鈕不動。
+     圖示換的時候＝網站的 fade（另一張淡＋糊掉、這張淡進來；user 2026-11-25：「作品頁面的那兩個icon在做切換的時候需要加上fade」，原本 display: none 直接換）；
+     名字照舊 display: none（不算進報讀名稱）。hover＝icon 下方一顆圓點（chrome.css，同其他 icon） */
+  .bar-works button[data-works-mode="bento"] .icon-slideshow,
+  .bar-works button[data-works-mode="slideshow"] .icon-grid { opacity: 0; filter: blur(var(--blur)); }
+  .bar-works button[data-works-mode="bento"] [data-label="bar.works.slideshow"],
+  .bar-works button[data-works-mode="slideshow"] [data-label="bar.works.bento"] { display: none; }
   /* 選單開著＝當內容處理（同首頁的動態）：模糊＋疊白、不吃指標（點下去落在底列本身＝只收選單，chrome.js） */
   html.menu-open body[data-page="works"] .bar-works { opacity: 0.4; filter: blur(var(--blur)); pointer-events: none; }
   /* 作品頁一律深色：深色模式鈕藏起來（user 2026-11-23；原本停用＋淡 0.3。chrome.js syncTheme 照樣掛 disabled），
