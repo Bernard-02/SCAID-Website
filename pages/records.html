@@ -6,7 +6,7 @@
   <meta name="format-detection" content="telephone=no, email=no, address=no">
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
-  <title>榮譽 - SCAID</title>
+  <title>紀錄 - SCAID</title>
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -15,61 +15,73 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/records.html 也能獨立跑。版型同 about（css/components/page.css）。
-       榮譽（user 2026-11-19）：一筆一個摺疊＝清單列的積木（page.css .item-row：圖＝國旗、標題 text-md＝獎項名稱、副標 text-s＝得獎人；user 2026-11-21），沒有分類的 Section title → 沒有段落導覽。
-       點開＝主辦方、獎別，對齊右邊獎項那一欄，各一行直接寫、不加標籤（同動態的時間／地點）。
-       國旗＝flag-icons 的 SVG（jsDelivr，檔名＝ISO 3166-1 兩碼小寫），彩色、不加框、高＝一行字、對在右邊文字的正中；國家名稱寫在文字欄的 .sr-only（報讀用，跟語言切）。
+       榮譽（user 2026-11-19）：榮譽、報導列在同一串（user 2026-11-25：報導頁拿掉、後台兩個合成一個集合 records：「將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」）。
+       一筆一個摺疊＝動態那種列的變體（「改成跟動態一樣的設計。然後thumbnail改成國旗」「應該是這個list的變體吧，國旗不需要那麽大」）：
+       縮圖＝國旗、小一號（內文欄的 1 欄寬、4:3；動態的縮圖是 1.5 欄的方框），標題 text-md＝獎項名稱／報導標題、副標 text-s＝類型（榮譽／報導，介面文字 records.type.*），文字對在國旗的正中；手機也是圖左字右。
+       沒有分類的 Section title → 沒有段落導覽。點開＝主辦方（榮譽）／媒體（報導）——後台從單位庫／媒體庫選——接著內容（一筆一行直接寫、不加標籤：得獎人、獎別、刊出日期…）＋圖片（相簿，同動態：一排橫捲、點了放大），從國旗的左緣排起。
+       國旗＝flag-icons 的 SVG（jsDelivr，檔名＝ISO 3166-1 兩碼小寫），彩色、不加框；國旗不是封面＝打開了點它照常收合、不放大（details 掛 .record，chrome.js）。國家名稱寫在文字欄的 .sr-only（報讀用，跟語言切）。
+       原本（11-19～24）只有榮譽：國旗是一行字高的小圖（寬 2em）、副標＝得獎人、展開的內容（主辦方、獎別）對齊右邊獎項那一欄。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
-        <h1 data-label="nav.records" data-en="Records">榮譽</h1>
+        <h1 class="sr-only" data-label="nav.records" data-en="Records">紀錄</h1>
 
       <section class="page-section">
         <ul class="item-list mt-0">
           <li><details class="record">
             <summary class="item-row">
-              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/tw.svg" alt="" loading="lazy">
+              <div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/tw.svg" alt="" loading="lazy"></div>
               <div>
                 <span class="sr-only" data-en="Country">國家</span>
                 <h3 data-en="Award name 1">獎項名稱一</h3>
-                <p data-en="Winner">得獎人</p>
+                <p data-label="records.type.award" data-en="Award">榮譽</p>
               </div>
             </summary>
             <div class="fold-body">
               <div class="fold-meta">
                 <p data-en="Organiser">主辦方</p>
+                <p data-en="Winner">得獎人</p>
                 <p data-en="Award category">獎別</p>
+              </div>
+              <div class="album">
+                <button type="button"><img src="https://picsum.photos/seed/scaid-record-1-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-record-1-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
               </div>
             </div>
           </details></li>
           <li><details class="record">
             <summary class="item-row">
-              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/jp.svg" alt="" loading="lazy">
+              <div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/jp.svg" alt="" loading="lazy"></div>
+              <div>
+                <span class="sr-only" data-en="Country">國家</span>
+                <h3 data-en="Article headline 1">報導標題一</h3>
+                <p data-label="records.type.press" data-en="Press">報導</p>
+              </div>
+            </summary>
+            <div class="fold-body">
+              <div class="fold-meta">
+                <p data-en="Media outlet">媒體名稱</p>
+                <p data-en="Date published">刊出日期</p>
+              </div>
+              <div class="album">
+                <button type="button"><img src="https://picsum.photos/seed/scaid-press-1/800/2400" alt="" width="800" height="2400" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+              </div>
+            </div>
+          </details></li>
+          <li><details class="record">
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/de.svg" alt="" loading="lazy"></div>
               <div>
                 <span class="sr-only" data-en="Country">國家</span>
                 <h3 data-en="Award name 2">獎項名稱二</h3>
-                <p data-en="Winner">得獎人</p>
+                <p data-label="records.type.award" data-en="Award">榮譽</p>
               </div>
             </summary>
             <div class="fold-body">
               <div class="fold-meta">
                 <p data-en="Organiser">主辦方</p>
-                <p data-en="Award category">獎別</p>
-              </div>
-            </div>
-          </details></li>
-          <li><details class="record">
-            <summary class="item-row">
-              <img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/de.svg" alt="" loading="lazy">
-              <div>
-                <span class="sr-only" data-en="Country">國家</span>
-                <h3 data-en="Award name 3">獎項名稱三</h3>
                 <p data-en="Winner">得獎人</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="Organiser">主辦方</p>
                 <p data-en="Award category">獎別</p>
               </div>
             </div>

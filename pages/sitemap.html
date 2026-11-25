@@ -15,24 +15,22 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/sitemap.html 也能獨立跑。版型同 about（css/components/page.css）。
-       不分段、全部連結一串（.link-list 同選單間距；hover 蓋黑收直條，item-marquee.js）、text-md、順序同選單（主選單 → 規章與政策 → 常見問題、捐款、聯絡；user 2026-11-25）、不列自己、最後一項「聯絡」（user 2026-11-18；原本開頁尾覆蓋層，2026-11-21 改成聯絡頁）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+       不分段、全部連結一串（.link-list 同選單間距；hover 蓋黑收直條，item-marquee.js）、text-md、順序同選單（主選單 → 規章與政策 → 捐款、聯絡；user 2026-11-25。常見問題頁同一天拿掉了）、不列自己、最後一項「聯絡」（user 2026-11-18；原本開頁尾覆蓋層，2026-11-21 改成聯絡頁）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
-        <h1 data-label="nav.sitemap" data-zh="網站地圖" data-en="Site Map">網站地圖</h1>
+        <h1 class="sr-only" data-label="nav.sitemap" data-zh="網站地圖" data-en="Site Map">網站地圖</h1>
 
-        <ul class="link-list text-md mt-3xl">
+        <ul class="link-list text-md">
           <li><a data-label="nav.about" href="about.html" class="nav-link" data-zh="關於" data-en="About">關於</a></li>
           <li><a data-label="nav.partners" href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
           <li><a data-label="nav.faculty" href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
           <li><a data-label="nav.curriculum" href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
           <li><a data-label="nav.works" href="works.html" class="nav-link" data-zh="作品" data-en="Works">作品</a></li>
           <li><a data-label="nav.activities" href="activities.html" class="nav-link" data-zh="動態" data-en="Activities">動態</a></li>
-          <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="榮譽" data-en="Records">榮譽</a></li>
-          <li><a data-label="nav.press" href="press.html" class="nav-link" data-zh="報導" data-en="Press">報導</a></li>
+          <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="紀錄" data-en="Records">紀錄</a></li>
           <li><a data-label="nav.admission" href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
           <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
-          <li><a data-label="nav.qa" href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
           <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
           <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-zh="聯絡" data-en="Contact">聯絡</a></li>
         </ul>

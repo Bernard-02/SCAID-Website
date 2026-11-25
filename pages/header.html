@@ -25,8 +25,8 @@
   <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->
   <div class="site-menu" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單" data-en-label="Main menu">
     <!-- 可以捲的只有選項（user 2026-11-24：「語言切換跟 mode 是 sticky 的，可以 scroll 的是 menu 選單的部分」）；深色模式＋語言鈕在 nav 外面、固定在底下 -->
-    <!-- nav 裡兩塊：上面捲動框（主選單＋規章那組）、下面固定的常見問題那組（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」）；
-         固定的那組也留在 nav 裡＝報讀照樣是一個導覽區 -->
+    <!-- nav 裡兩塊：上面捲動框（主選單＋捐款、規章那組）、下面固定的聯絡（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」；
+         2026-11-25：常見問題頁拿掉、「捐款移動到規章前面，然後聯絡放在en上面」＝固定的那組只剩聯絡）；固定的那組也留在 nav 裡＝報讀照樣是一個導覽區 -->
     <nav class="site-menu-links">
     <div class="site-menu-nav no-scrollbar">
       <ul class="menu-main">
@@ -36,28 +36,27 @@
         <li><a data-label="nav.curriculum" href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
         <li><a data-label="nav.works" href="works.html" class="nav-link" data-zh="作品" data-en="Works">作品</a></li><!-- user 2026-11-23：課程後面 -->
         <li><a data-label="nav.activities" href="activities.html" class="nav-link" data-zh="動態" data-en="Activities">動態</a></li>
-        <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="榮譽" data-en="Records">榮譽</a></li>
-        <li><a data-label="nav.press" href="press.html" class="nav-link" data-zh="報導" data-en="Press">報導</a></li>
+        <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="紀錄" data-en="Records">紀錄</a></li>
         <li><a data-label="nav.admission" href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
       </ul>
-      <!-- 次選單分兩區：規章、地圖一區在這裡（跟著主選單捲、推到框底），常見問題、捐款、聯絡一區在下面固定（user 2026-11-24 對調；11-21 是常見問題那區在上）；
-           組跟組之間＝分區的 gap（xl，user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」） -->
+      <!-- 次選單分兩區：規章、地圖、捐款一區在這裡（跟著主選單捲、直接接在入學下面＝第二組，user 2026-11-25；原本推到框底），聯絡在下面固定、跟語言鈕同一組（user 2026-11-25：「捐款移動到規章前面，然後聯絡放在en上面」；
+           11-24 是規章、地圖｜常見問題、捐款、聯絡，註解裡的「常見問題那組」就是固定的這一組）；組跟組之間＝分區的 gap（xl，user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」） -->
       <ul class="menu-sub">
         <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
         <li><a data-label="nav.sitemap" href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
+        <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li><!-- user 2026-11-25：「捐款改在地圖之下吧」 -->
       </ul>
     </div>
     <ul class="menu-sub">
-      <li><a data-label="nav.qa" href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
-      <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
       <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-zh="聯絡" data-en="Contact">聯絡</a></li><!-- 原本的 footer 覆蓋層（user 2026-11-21） -->
     </ul>
     </nav>
-    <!-- 深色模式＋語言切換（所有 section 鈕最下方，兩顆之間＝選項間距、不是分區的 gap；user 2026-11-21）：不跟著選項捲（user 2026-11-24）。
+    <!-- 語言切換＋深色模式（選單最下方）：不跟著選項捲（user 2026-11-24）；跟上面的聯絡＝同一組，聯絡 → EN → 深色模式 之間都是選項間距、不是分區的 gap
+         （user 2026-11-25：「聯絡跟en是同一組、sticky」；同一天先「將mode放在en上面吧」、再「mode跟en的位置，兩者交換」——中間深色模式鈕搬到底列右下角過、又搬回來）。
          深色模式鈕＝icon（ai 的 day；深色時轉半圈＝night），開關狀態走 aria-pressed（chrome.js）；語言鈕顯示「要切過去」的語言，文字由 lang.js 填 -->
     <div class="menu-tools">
-      <button type="button" class="theme-btn" aria-pressed="false"><span class="icon icon-theme" aria-hidden="true"></span><span data-label="menu.dark-mode" class="sr-only" data-en="Dark mode">深色模式</span></button>
       <button type="button" class="lang-btn" aria-label="切換為英文">EN</button>
+      <button type="button" class="theme-btn" aria-pressed="false"><span class="icon icon-theme" aria-hidden="true"></span><span data-label="menu.dark-mode" class="sr-only" data-en="Dark mode">深色模式</span></button>
     </div>
   </div>
 
@@ -85,16 +84,27 @@
     <a href="admission.html" class="bar-news">
       <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span>
     </a>
-    <!-- 作品頁的兩種排法（user 2026-11-23）：放映（slideshow）／總覽（bento）。只在作品頁、跟首頁的動態同一格（畫面正中；css/components/works.css），
-         按了由 js/modules/pages/works.js 接；目前那個 aria-pressed -->
-    <div class="bar-works" role="group" aria-label="排法" data-en-label="Layout">
+    <!-- 作品頁的兩種排法（user 2026-11-23）：放映（slideshow）／總覽（bento）。只在作品頁、跟首頁的動態同一格（畫面正中；css/components/works.css）。
+         一顆鈕、點了在兩種之間切（user 2026-11-25：「我想要將作品的兩個 icon 合并，點了會切換」；原本兩顆、目前那個 aria-pressed）：
+         data-works-mode＝點了要切過去的那一種，圖示與名字也是那一種（同語言鈕顯示要切過去的語言；另一種的圖示、名字藏著，works.css），
+         切完 js/modules/pages/works.js 把 data-works-mode 換成另一種 -->
+    <div class="bar-works">
       <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
-      <button type="button" data-works-mode="slideshow" aria-pressed="true"><span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-zh="放映" data-en="Slideshow">放映</span></button>
-      <button type="button" data-works-mode="bento" aria-pressed="false"><span class="icon icon-grid" aria-hidden="true"></span><span data-label="bar.works.bento" class="sr-only" data-zh="總覽" data-en="Overview">總覽</span></button>
+      <button type="button" data-works-mode="bento">
+        <span class="icon icon-grid" aria-hidden="true"></span><span data-label="bar.works.bento" class="sr-only" data-zh="總覽" data-en="Overview">總覽</span>
+        <span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-zh="放映" data-en="Slideshow">放映</span>
+      </button>
     </div>
+    <!-- 首頁展開動態時浮在底列正中的那顆（user 2026-11-25：「會有一個 icon 懸浮在畫面底部，就跟作品的那一頁一樣，但只有一個 icon，暫時先用點來表示 active，
+         一樣背後要加上 blur」）：icon＝website-icons/news.svg（user 同一天給的，取代先用的骨牌＋中央圓點），背後＝作品頁那塊毛玻璃；點了＝收回去（chrome.js）。平常藏著（chrome.css .news-btn） -->
+    <!-- 名字＝裡面看不到的字（跟語言走，lang.js）：底列的鈕都不另掛 aria-label；不用 .bar-label＝hover 不會長出名字 -->
+    <button type="button" class="bar-btn news-btn">
+      <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
+      <span class="icon icon-news" aria-hidden="true"></span><span class="sr-only" data-en="Close">關閉</span>
+    </button>
     <!-- 右圖 object 的開關（PC 以外；user 2026-11-13 手機稿、2026-11-22 改成 object 可以打開、關閉）：右下角、長得跟 menu 鈕一樣（骨牌；user 2026-11-23，
-         原本是內頁右緣中線上幾根 stroke 圍成的圓）。名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；
-         該頁有右圖那一格才標 .has-figure 現身 -->
+         原本是內頁右緣中線上幾根 stroke 圍成的圓；2026-11-25 疊在右下角的深色模式鈕上面、搬到右緣中線過，同一天 user：「圖片在手機上回到右下角」）。
+         名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；該頁有右圖那一格才標 .has-figure 現身 -->
     <button type="button" class="bar-btn figure-btn pc:hidden" aria-haspopup="dialog">
       <span data-label="common.view-image" class="bar-label" data-zh="看圖片" data-en="View image">看圖片</span><span class="bar-rect"></span>
     </button>
@@ -129,7 +139,7 @@
         <!-- 拉桿＝一排直條（樣子照 ai 的 volume、20 根＝一根 5%；.media-vol-bars 畫）；接滑鼠、鍵盤的是蓋在上面看不到的 range：0～20＝亮幾根 -->
         <span class="media-vol-bars"><input type="range" class="media-vol" min="0" max="20" step="1" value="20" aria-label="音量" data-en-label="Volume"></span>
       </div>
-      <button type="button" class="media-btn media-fs" aria-label="全螢幕" data-en-label="Full screen"><span class="icon icon-fullscreen" aria-hidden="true"></span></button>
+      <button type="button" class="media-btn media-fs" aria-label="全螢幕" data-en-label="Full screen"><span class="icon icon-fullscreen" aria-hidden="true"></span><span class="icon icon-shrink" aria-hidden="true"></span></button>
     </div>
     <!-- 手機的右圖 object（chrome.js openObjectDialog 掛 .is-object）：沒有 ‹ X ›，關閉＝打開它的那顆骨牌、留在右下角原位——同 menu 鈕：開著中央圓點常駐、再點一次就關
          （user 2026-11-24：「下面沒有 X，是打開的那個 btn，保持在右下角，跟 menu 一樣的邏輯」）。dialog 開著外面點不到（showModal＝其他地方 inert）→ 在 dialog 裡同一個位置放一顆一樣的 -->
