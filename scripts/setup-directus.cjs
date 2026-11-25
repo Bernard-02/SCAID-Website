@@ -68,6 +68,8 @@ const junction = (parent, field) => ({
     { collection: `${parent}_${field}`, field: `${parent}_id`, related_collection: parent, meta: { one_field: field, junction_field: 'directus_files_id', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } },
   ],
 });
+// 只有某個類型才出現的那一格（榮譽與報導：主辦方只給榮譽、媒體只給報導）：類型不是它＝藏起來（值留著，前台照類型挑哪一格）
+const ONLY = (f, type, why) => ({ ...f, meta: { ...f.meta, conditions: [{ name: why, rule: { category: { _neq: type } }, hidden: true }] } });
 // 二選一的兩格互鎖（照 SCCD）：另一格有值＝這格唯讀；不藏，看得到為什麼不能填
 const LOCK = (other, why) => [{ name: why, rule: { [other]: { _nnull: true } }, readonly: true, hidden: false }];
 // 介面文字的分類（後台整理用，前台只認 key；key 的開頭決定分類，seed-directus.cjs LABEL_CAT）
@@ -77,6 +79,10 @@ const LABEL_CATS = ['選單與頁名', '底列與共用', '師資', '課程', '�
 // 這支只加不改＝已經建好的後台是另外改的：下拉的選項（PATCH /fields/faculty/category）、原本那幾筆的 category、介面文字的 key（faculty.type.admin）
 const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '行政管理', value: 'admin' }];
 const YEARS = [1, 2, 3, 4].map(n => ({ text: `${'一二三四'[n - 1]}年級`, value: n }));
+// 榮譽頁那個集合的類型（user 2026-11-25：榮譽、報導合在一起）：前台當副標顯示，名字在介面文字 records.type.<value>
+const RECORD_TYPES = [{ text: '榮譽', value: 'award' }, { text: '報導', value: 'press' }];
+// 課程的必修／選修＝下拉（user 2026-11-25：「後臺的必選修應該改成dropdown才對，不是checkbox」；原本一格勾選 required，資料搬過來、舊的那格刪了）
+const COURSE_TYPES = [{ text: '必修', value: 'required' }, { text: '選修', value: 'elective' }];
 
 // 單例頁的導言、段落（每頁一個集合，user 2026-11-22 照 SCCD）。段落用重複列；關於的段落要放輪播圖、重複列放不了檔案 → 子集合 about_sections（裡面的小節要放圖 → 再一層子集合 about_subsections）
 const lead = [multi('lead_zh', '導言（中，選填）'), multi('lead_en', '導言（英，選填）', { note: EN_NOTE })];
@@ -124,11 +130,11 @@ const SPEC = {
   },
   organizations: {
     meta: { icon: 'domain', group: 'pool_folder', translations: zh('單位庫'), display_template: '{{name_zh}} {{name_en}}', note: '全站的單位（公司、學校、主辦方）從這裡選（合作企業、榮譽的主辦方）。還有人用就刪不掉' },
-    fields: [...poolName, usedIn('partners', '合作企業', '{{url}}'), usedIn('records', '榮譽（主辦方）', '{{award_zh}}')],
+    fields: [...poolName, usedIn('partners', '合作企業', '{{url}}'), usedIn('records', '榮譽（主辦方）', '{{title_zh}}')],
   },
   media_outlets: {
-    meta: { icon: 'newspaper', group: 'pool_folder', translations: zh('媒體庫'), display_template: '{{name_zh}} {{name_en}}', note: '報導的媒體從這裡選。還有人用就刪不掉' },
-    fields: [...poolName, usedIn('press', '報導', '{{title_zh}}')],
+    meta: { icon: 'newspaper', group: 'pool_folder', translations: zh('媒體庫'), display_template: '{{name_zh}} {{name_en}}', note: '報導的媒體從這裡選（榮譽與報導裡類型＝報導的那幾筆）。還有人用就刪不掉' },
+    fields: [...poolName, usedIn('records', '報導（媒體）', '{{title_zh}}')],
   },
   // 介面文字（user 2026-11-21，照 SCCD ui_labels）：選單、頁名、固定的小標（專任教師、一年級、必修…）。一個 key 一筆，HTML 用 data-label="key" 標；
   // 前台抓不到＝照 HTML 原本的字。key 唯讀（前台照 key 找）；新 key 由 scripts/seed-directus.cjs 從 HTML 補（只補缺的、不蓋已經改過的）
@@ -149,17 +155,13 @@ const SPEC = {
     fields: [
       // 聯絡資訊＝清單，同師資詳細頁的做法（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」「每個都有個 url，有寫就可以 jump 到那個 url」）：
       // 子集合 footer_sections，一個清單＝標題＋一筆一筆（文字＋選填的連結），可以自己加。原本是寫死的五格 email／tel／fax／address_zh／address_en、
-      // 標題在介面文字 contact.*：搬成四個清單，那四個介面文字刪了；舊的五格（下面）藏起來（HIDE）、資料還在，user 說不要了再刪
-      str('email', '電子郵件'), str('tel', '電話（中英共用）'), str('fax', '傳真（中英共用）'), str('address_zh', '地址（中）'), strEn('address_en', '地址（英）'),
+      // 標題在介面文字 contact.*：搬成四個清單，那四個介面文字刪了；舊的五格 2026-11-25 刪了（user：「沒用到的slot可以去掉了」）。
+      // 表單順序＝聯絡頁由上往下：社群（IG、YouTube）→ 聯絡資訊 → 標章（user 2026-11-25：「結構跟順序對不對」）
+      // 社群＝IG、YouTube 各一格網址（user 2026-11-24：「只需要這個 icon 即可，不需要兩個 icon」「我加了一個 yt，幫我放在 ig 的右邊」；原本的 social 重複列 2026-11-25 刪了）
+      url('instagram', 'Instagram 網址', '聯絡頁那個 IG icon 連到這裡（https://）；留空＝不出 icon'),
+      url('youtube', 'YouTube 網址', '聯絡頁 IG 右邊那個 YouTube icon 連到這裡（https://）；留空＝不出 icon'),
       { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('聯絡資訊（電子郵件、電話…可以自己加）'),
         note: '一個清單＝標題＋一筆一筆（文字＋選填的連結），可以自己新增、拖曳排序；裡面一筆都沒有的清單前台不出', options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } },
-      // 社群只有 IG 一個 icon（user 2026-11-24：「只需要這個 icon 即可，不需要兩個 icon」）＝一格網址；原本的 social（一列一個方框）藏起來
-      url('instagram', 'Instagram 網址', '聯絡頁那個 IG icon 連到這裡（https://）；留空＝不出 icon'),
-      // YouTube（user 2026-11-24：「我加了一個 yt，幫我放在 ig 的右邊」）
-      url('youtube', 'YouTube 網址', '聯絡頁 IG 右邊那個 YouTube icon 連到這裡（https://）；留空＝不出 icon'),
-      repeater('social', '社群連結', [['label', '名稱（報讀用，例 Instagram）'], ['url', '網址']], '{{label}}', '可拖曳排序；網址只接受 https://、mailto:、tel:'),
-      // 姊妹系所（user 2026-11-21）：寫全名、前台一行一個；原本子欄位只有 label（縮寫）
-      repeater('links', '姊妹系所連結', [['label_zh', '全名（中，例 媒體傳達設計學系）'], ['label_en', '全名（英）'], ['url', '網址']], '{{label_zh}}', '一列一筆、可拖曳排序；前台一行一個。' + EN_NOTE),
       image('badge', '標章', '圖片替代文字＝檔案標題（在檔案庫改）'),
     ],
   },
@@ -219,7 +221,6 @@ const SPEC = {
     meta: { icon: 'school', group: 'faculty_folder', translations: zh('師資名單'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', note: '列表依「類別」分段；名字從人名庫選；副標跟語言切（英文留空＝英文版顯示中文）' },
     fields: [sort, dropdown('category', '類別', FACULTY_CATS), image('photo', '照片'),
       pick('person', '姓名（人名庫）', 'people'),
-      str('name_zh', '姓名（中）'), str('name_en', '姓名（英）'),   // 舊欄位：名字改從人名庫選（user 2026-11-21），藏起來（HIDE）
       subtitles,   // 原本是單一欄位 affiliation_zh／_en（任職單位）
       // 詳細頁的清單（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）＝子集合 faculty_sections，一個清單＝標題＋一筆一筆。
       // 原本是寫死的六格重複列 education／experience／expertise／exhibitions／awards／publications、標題在介面文字 faculty.cv.*：
@@ -237,7 +238,6 @@ const SPEC = {
   partners: {
     meta: { icon: 'handshake', group: 'partners_folder', translations: zh('合作企業名單'), display_template: '{{organization.name_zh}}', sort_field: 'sort', note: '企業名稱從單位庫選' },
     fields: [sort, image('logo', 'Logo'), pick('organization', '企業（單位庫）', 'organizations'),
-      str('name_zh', '企業名稱（中）'), strEn('name_en', '企業名稱（英）'),   // 舊欄位：改從單位庫選（user 2026-11-21），藏起來（HIDE）
       subtitles,   // 原本是一段 description_zh／_en（合作內容）
       url('url', '企業網站（整列可點、另開新視窗；空＝不可點）')],
   },
@@ -245,15 +245,11 @@ const SPEC = {
   partners_page: { meta: { icon: 'article', singleton: true, group: 'partners_folder', translations: zh('合作企業頁'), note: '頁標題下面那段導言' }, fields: lead },
   courses: {
     meta: { icon: 'menu_book', translations: zh('課程'), display_template: '{{year}} {{name_zh}}', sort_field: 'sort', note: '課程頁依年級分段、同年級照拖曳順序' },
-    fields: [sort, { ...dropdown('year', '年級', YEARS), type: 'integer' }, bool('required', '必修', '必修（不勾＝選修）'),
+    fields: [sort, { ...dropdown('year', '年級', YEARS), type: 'integer' }, { ...dropdown('category', '必修／選修', COURSE_TYPES), schema: { default_value: 'required', is_nullable: false } },
       str('name_zh', '課程名稱（中）'), strEn('name_en', '課程名稱（英）'),
       multi('description_zh', '課程說明（中，課程頁點開那一段）'), multi('description_en', '課程說明（英）', { note: EN_NOTE })],
   },
-  qa: {
-    meta: { icon: 'help', translations: zh('常見問題'), display_template: '{{question_zh}}', sort_field: 'sort', note: '前台依「分類」分段，分類名一樣的會排在同一段' },
-    fields: [sort, str('category_zh', '分類（中）'), strEn('category_en', '分類（英）'),
-      str('question_zh', '問題（中）', {}, 'full'), strEn('question_en', '問題（英）'), multi('answer_zh', '回答（中）'), multi('answer_en', '回答（英）', { note: EN_NOTE })],
-  },
+  // 常見問題 qa（分類、問題、回答）：user 2026-11-25 整頁拿掉、後台的集合也刪了（「QA這一頁可以拿掉了，包含後臺」）
   // 規章與政策（user 2026-11-22：一頁一個單例，照 SCCD；只放連結、不上傳檔案）：上面規章／表單清單、下面條款這種文字段落
   regulations: {
     meta: { icon: 'gavel', singleton: true, translations: zh('規章與政策'), note: '上面是規章、表單（依分類分段、整列外連），下面是使用條款、隱私權政策這種文字段落（段落裡可以加小節，同關於）' },
@@ -264,20 +260,22 @@ const SPEC = {
   // 條款那幾段＝同關於：段落是子集合、段落裡有小節（user 2026-11-24）。原本的 sections 是重複列（JSON，內文一整段 rich text）——同名、要先刪才建得了上面那一格，
   // 正式後台 2026-11-24 把那兩段（使用條款、隱私權政策）搬成新的段落（內文 → 說明）後刪了（同捐款，user：「搬完後刪掉」）
   ...pageSections('regulations', '規章與政策'),
-  // 榮譽（user 2026-11-19）：一筆一個摺疊；收著＝國旗＋獎項＋得獎人，點開＝主辦方、獎別。得獎人照打字（同 SCCD：學生不進人名庫）
+  // 榮譽與報導（user 2026-11-25：「後臺資料庫上，將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」；前台的報導頁同一天拿掉、都列在榮譽頁）：
+  // 一筆一個摺疊；收著＝國旗＋標題＋類型（榮譽／報導，前台當副標，名字在介面文字 records.type.*），點開＝主辦方（榮譽）／媒體（報導）＋內容（一筆一行：得獎人、獎別、刊出日期…）＋圖片。
+  // 主辦方、媒體從庫選（user 同一天：「要，從庫裏面選」；先做成全部打在「內容」裡）：主辦方＝單位庫、只在類型＝榮譽時出現；媒體＝媒體庫、只在類型＝報導時出現。
+  // 原本（user 2026-11-19）只有榮譽：award_*／winner_*／prize_* 各一格——標題搬到 title_*、得獎人與獎別搬成「內容」的一筆一筆，舊的那幾格 2026-11-25 刪了。
+  // 報導原本自己一個集合 press（date、title_*、media、screenshot）：資料搬進這裡（媒體照舊從媒體庫、截圖放進圖片）、集合刪了（user：「這個集合可以刪掉了」）
   records: {
-    meta: { icon: 'emoji_events', translations: zh('榮譽'), display_template: '{{award_zh}}', sort_field: 'sort', note: '主辦方從單位庫選；國旗照國家代碼' },
-    fields: [sort, str('country_code', '國家代碼', { note: 'ISO 3166-1 兩碼小寫（tw／jp／de…），前台照它抓國旗' }),
+    meta: { icon: 'emoji_events', translations: zh('紀錄'), display_template: '{{category}}｜{{title_zh}}', sort_field: 'sort', note: '紀錄頁的清單：榮譽、報導都在這裡，照拖曳順序；點開＝主辦方／媒體＋內容＋圖片。國旗照國家代碼' },
+    fields: [sort, { ...dropdown('category', '類型', RECORD_TYPES), schema: { default_value: 'award' } },
+      str('country_code', '國家代碼', { note: 'ISO 3166-1 兩碼小寫（tw／jp／de…），前台照它抓國旗；沒填＝那一列沒有國旗' }),
       str('country_zh', '國家（中）', { note: '畫面上不顯示，給報讀用' }), strEn('country_en', '國家（英）'),
-      str('award_zh', '獎項名稱（中）', {}, 'full'), strEn('award_en', '獎項名稱（英）'), str('winner_zh', '得獎人（中）'), strEn('winner_en', '得獎人（英）'),
-      pick('organizer', '主辦方（單位庫）', 'organizations'), str('prize_zh', '獎別（中，例 金獎、佳作）'), strEn('prize_en', '獎別（英）')],
+      str('title_zh', '標題（中）：獎項名稱／報導標題', {}, 'full'), strEn('title_en', '標題（英）'),
+      ONLY(pick('organizer', '主辦方（單位庫）', 'organizations'), 'award', '類型不是榮譽'), ONLY(pick('media', '媒體（媒體庫）', 'media_outlets'), 'press', '類型不是報導'),
+      repeater('details', '內容（點開後，一筆一行）', [['text_zh', '內容（中）'], ['text_en', '內容（英）']], '{{text_zh}}', '排在主辦方／媒體下面。例：得獎人、獎別；刊出日期…可拖曳排序；沒填＝不出。' + EN_NOTE),
+      files('album', '圖片', '點開那則的圖片（得獎照片、報導截圖…），一排橫捲、點了放大；可拖曳排序')],
   },
-  // 報導（user 2026-11-21）：一則一列（同入學、沒縮圖），點了放大看報導截圖。媒體從媒體庫選
-  press: {
-    meta: { icon: 'feed', translations: zh('報導'), display_template: '{{title_zh}}', note: '依刊出日期新到舊；點了放大看截圖（沒放截圖＝不能點）' },
-    fields: [date('date', '刊出日期（排序用，前台不顯示）'), str('title_zh', '報導標題（中）', {}, 'full'), strEn('title_en', '報導標題（英）'),
-      pick('media', '媒體（媒體庫）', 'media_outlets'), image('screenshot', '報導截圖（點了放大看）')],
-  },
+  records_album: junction('records', 'album'),
   // 文字頁（user 2026-11-22：每頁一個單例，照 SCCD；原本全部擠在一個「文字頁」pages、捐款找不到）。頁名在「介面文字」nav.<slug>
   about: {
     meta: { icon: 'info', singleton: true, translations: zh('關於'), note: '導言＋段落；段落標題＝左側段落導覽，段落可以放輪播圖' },
@@ -287,7 +285,6 @@ const SPEC = {
     meta: { icon: 'segment', translations: zh('關於的段落'), display_template: '{{title_zh}}', sort_field: 'sort', hidden: true, note: '從「關於」裡面新增' },
     fields: [sort, { field: 'about', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬頁') }, schema: { is_nullable: true } },
       str('title_zh', '段落標題（中）'), strEn('title_en', '段落標題（英）'),
-      rich('body_zh', '內文（中）'), rich('body_en', '內文（英）', { note: EN_NOTE }),   // 舊欄位：改成下面的小節（user 2026-11-23），藏起來（HIDE）
       files('images', '段落圖片（輪播）', '標題下面那排輪播，可拖曳排序；沒放＝不出輪播'),
       // 說明（user 2026-11-23）：段落圖片下面、小節上面那段
       multi('description_zh', '說明（中，選填：段落圖片下面那段）', { note: '純文字：換行照留、空一行＝分段' }), multi('description_en', '說明（英）', { note: EN_NOTE }),
@@ -296,10 +293,7 @@ const SPEC = {
       { field: 'subsections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('小節'), note: '一個小節＝標題、圖片、內文、附註（都可以不填），可拖曳排序',
         options: { template: '{{title_zh}} {{text_zh}}', enableCreate: true, enableSelect: false } } },
       // 年表（user 2026-11-23：沿革要跟老師的詳細頁一樣，年份＋文字一筆一筆加）＝同師資的學歷那種重複列；前台排在小節後面
-      entries('timeline', '年表（年份＋文字，沿革那種）'),
-      repeater('items', '小節', [['title_zh', '小節標題（中，選填）'], ['title_en', '小節標題（英）'], ['text_zh', '內文（中）', 'text'], ['text_en', '內文（英）', 'text']],
-        '{{title_zh}} {{text_zh}}', '一個小節一列、可拖曳排序：標題＋純文字（換行照留、空一行＝分段）；沒標題＝只有內文。' + EN_NOTE),   // 舊欄位：改成上面的子集合（小節要放圖），藏起來（HIDE）
-      multi('note_zh', '附註（中，選填：段落最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],   // 舊欄位：附註改放在小節裡（user 2026-11-23），藏起來（HIDE）
+      entries('timeline', '年表（年份＋文字，沿革那種）')],
     relations: [{ collection: 'about_sections', field: 'about', related_collection: 'about', meta: { one_field: 'sections', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } }],
   },
   about_sections_images: junction('about_sections', 'images'),
@@ -307,7 +301,6 @@ const SPEC = {
     meta: { icon: 'subject', translations: zh('關於的小節'), display_template: '{{title_zh}} {{text_zh}}', sort_field: 'sort', hidden: true, note: '從「關於」的段落裡面新增' },
     fields: [sort, { field: 'section', type: 'integer', meta: { hidden: true, interface: 'select-dropdown-m2o', translations: zh('所屬段落') }, schema: { is_nullable: true } },
       str('title_zh', '小節標題（中，選填）'), strEn('title_en', '小節標題（英）'),
-      image('image', '圖片（選填）', '標題下面、內文上面'),   // 舊欄位：改成下面的 images（user 2026-11-24：可以傳多張），藏起來（HIDE）、原本的圖搬過去
       files('images', '圖片（選填，可以多張）', '標題下面、內文上面；一張＝照原比例放在內文欄正中，多張＝輪播（同段落圖片），可拖曳排序'),
       multi('text_zh', '內文（中）', { note: '純文字：換行照留、空一行＝分段' }), multi('text_en', '內文（英）', { note: EN_NOTE }),
       multi('note_zh', '附註（中，選填：小節最後一行小字）'), multi('note_en', '附註（英）', { note: EN_NOTE })],
@@ -352,21 +345,18 @@ const SPEC = {
   works_images: junction('works', 'images'),
 };
 const WORKS_FOLDER = '作品';   // 作品的圖片欄位上傳到這個資料夾（只是放的地方，前台不看資料夾）
-// 舊欄位只藏不刪（同 SCCD 的做法；之後確定不要再刪）：名字改從庫選；關於的段落內文改成小節（先是 JSON 重複列，再改子集合）、段落的附註改放在小節裡
-const HIDE = [['faculty', 'name_zh'], ['faculty', 'name_en'], ['partners', 'name_zh'], ['partners', 'name_en'], ['about_sections', 'body_zh'], ['about_sections', 'body_en'], ['about_sections', 'items'],
-  ['about_sections', 'note_zh'], ['about_sections', 'note_en'], ['footer', 'social'], ['about_subsections', 'image'],
-  ['footer', 'email'], ['footer', 'tel'], ['footer', 'fax'], ['footer', 'address_zh'], ['footer', 'address_en']];   // 聯絡資訊改成清單（footer_sections，2026-11-24）
 // 已經建好的集合要更新的設定（顯示名稱改吃庫裡的名字；師資、合作企業、庫收進資料夾；頁尾改叫聯絡；作品的說明）
-const META = ['faculty', 'partners', 'footer', 'people', 'organizations', 'media_outlets', 'works', 'donate', 'regulations'];
+const META = ['faculty', 'partners', 'footer', 'people', 'organizations', 'media_outlets', 'works', 'donate', 'regulations', 'records'];
 // 後台側欄的順序＝前台選單（user 2026-11-23）：首頁 → 主選單 → 次選單 → 庫（資料夾）、介面文字；資料夾裡＝頁面（導言）→ 名單。
 // 網站地圖沒有內容；藏起來的（段落、小節、junction）不用排
-const NAV = ['home_folder', 'news', 'home_video', 'about', 'partners_folder', 'partners_page', 'partners', 'faculty_folder', 'faculty_page', 'faculty', 'courses', 'works', 'activities', 'records', 'press',
-  'admission', 'qa', 'donate', 'footer', 'regulations', 'pool_folder', 'people', 'organizations', 'media_outlets', 'ui_labels', 'site_icons'];
+const NAV = ['home_folder', 'news', 'home_video', 'about', 'partners_folder', 'partners_page', 'partners', 'faculty_folder', 'faculty_page', 'faculty', 'courses', 'works', 'activities', 'records',
+  'admission', 'regulations', 'donate', 'footer', 'pool_folder', 'people', 'organizations', 'media_outlets', 'ui_labels', 'site_icons'];
 const ICON_FOLDER = '網頁 icon';   // 網頁 icon 的檔放這個資料夾
 // 網頁 icon 每一筆的「用在哪裡」（後台看的；沒寫＝空白）
 const ICON_NOTES = { play: '播放（底列 play 鈕、作品影片）', back: '返回鈕、上一個', next: '下一個', pause: '暫停', loud: '音量鈕（大聲）', half: '音量鈕（一半以下）',
   silence: '音量鈕（靜音）', fullscreen: '全螢幕', close: '關閉（放影片時）', day: '深色模式鈕（深色時轉半圈＝night）', slideshow: '作品頁的排法：放映', grid: '作品頁的排法：總覽',
-  volume: '音量拉桿那排直條', ig: '聯絡頁的 Instagram', yt: '聯絡頁的 YouTube（IG 右邊）' };
+  volume: '音量拉桿那排直條', ig: '聯絡頁的 Instagram', yt: '聯絡頁的 YouTube（IG 右邊）',
+  news: '首頁展開動態時底部正中那顆（點了收回去）', shrink: '全螢幕中的全螢幕鈕（離開全螢幕）', share: '外部連結的清單列 hover 收完那一顆', doc: '入學附件名字左邊那顆' };
 // 後台清單的預設檢視（照 SCCD）：介面文字照分類排＝同一類聚在一起；網頁 icon 看得到縮圖
 const PRESETS = {
   ui_labels: { tabular: { sort: ['category', 'sort'], fields: ['category', 'key', 'zh', 'en'] } },
@@ -377,13 +367,14 @@ const PRESETS = {
 const FOOTER_MOCK = {
   sections: [['電子郵件', 'E-Mail', 'scaid@g2.usc.edu.tw', '', 'mailto:scaid@g2.usc.edu.tw'], ['電話', 'Tel', '02 0000 0000（示意）', '02 0000 0000 (placeholder)', ''],
     ['傳真', 'Fax', '02 0000 0000（示意）', '02 0000 0000 (placeholder)', ''], ['地址', 'Address', '地址（示意）', 'Address (placeholder)', '']]
-    .map(([title_zh, title_en, text_zh, text_en, url], i) => ({ sort: i + 1, title_zh, title_en, entries: [{ text_zh, text_en, url }] })),
-  instagram: 'https://www.instagram.com/',
-  youtube: 'https://www.youtube.com/',
-  links: [['設計學院', 'College of Design', 'https://www.scdesign.usc.edu.tw/'], ['媒體傳達設計學系', 'Department of Communications Design', 'https://sccd.usc.edu.tw/'],
+    .map(([title_zh, title_en, text_zh, text_en, url], i) => ({ sort: i + 1, title_zh, title_en, entries: [{ text_zh, text_en, url }] }))
+    // 單位（設計學院、姊妹系所…）＝沒有標題的那一個清單（原本另一格 links，2026-11-25 刪了）
+    .concat({ sort: 5, title_zh: null, title_en: null, entries: [['設計學院', 'College of Design', 'https://www.scdesign.usc.edu.tw/'], ['媒體傳達設計學系', 'Department of Communications Design', 'https://sccd.usc.edu.tw/'],
     ['服裝設計學系', 'Department of Fashion Design', 'https://scfd.usc.edu.tw/'], ['工業產品設計學系', 'Department of Industrial Design', 'https://scid.usc.edu.tw/'],
     ['建築設計學系', 'Department of Architecture', 'https://www.arch.usc.edu.tw/'], ['建築職人學程', 'SCAC Program', 'https://www.arch.usc.edu.tw/'],
-    ['實踐大學', 'Shih Chien University', 'https://www.usc.edu.tw/']].map(([label_zh, label_en, url]) => ({ label_zh, label_en, url })),
+    ['實踐大學', 'Shih Chien University', 'https://www.usc.edu.tw/']].map(([text_zh, text_en, url]) => ({ text_zh, text_en, url })) }),
+  instagram: 'https://www.instagram.com/',
+  youtube: 'https://www.youtube.com/',
 };
 
 async function ensureCollection(name, s) {
@@ -411,10 +402,6 @@ async function ensureOrder() {
     if (cur && cur.sort !== i + 1) { console.log(`  ~ ${name} 排第 ${i + 1}`); await api('PATCH', `/collections/${name}`, { meta: { sort: i + 1 } }); }
   }
 }
-async function hideField(name, field) {
-  const f = await get(`/fields/${name}/${field}`);
-  if (f && !f.meta?.hidden) { console.log(`  ~ 藏起舊欄位 ${name}.${field}`); await api('PATCH', `/fields/${name}/${field}`, { meta: { hidden: true } }); }
-}
 async function ensureRelation(r) {
   if (await get(`/relations/${r.collection}/${r.field}`)) return;
   console.log(`  + 關聯 ${r.collection}.${r.field} → ${r.related_collection}`); await api('POST', '/relations', r);
@@ -427,9 +414,9 @@ async function ensureFolder(name, collection, field) {
   if (cur && cur.meta?.options?.folder !== f.id) { console.log(`  ~ ${collection}.${field} 上傳到「${name}」`); await api('PATCH', `/fields/${collection}/${field}`, { meta: { options: { ...cur.meta?.options, folder: f.id } } }); }
   return f;
 }
-// 網頁 icon：CSS 用到的 website-icons/*.svg（icon.css 的 --icon、chrome.css 的 mask）＝要放進後台的那幾個；後台還沒有的 key 才上傳（換過圖的不蓋）
+// 網頁 icon：CSS 用到的 website-icons/*.svg（icon.css 的 --icon、chrome.css 的 mask、page.css 的 share／doc…）＝要放進後台的那幾個；後台還沒有的 key 才上傳（換過圖的不蓋）
 async function ensureIcons(folder) {
-  const css = ['css/components/icon.css', 'css/components/chrome.css'].map(f => fs.readFileSync(f, 'utf8')).join('\n');
+  const css = ['css/components/icon.css', 'css/components/chrome.css', 'css/components/page.css'].map(f => fs.readFileSync(f, 'utf8')).join('\n');
   const keys = [...new Set([...css.matchAll(/website-icons\/([\w-]+)\.svg/g)].map(m => m[1]))].filter(k => fs.existsSync(`website-icons/${k}.svg`));
   const have = new Set(((await get('/items/site_icons?fields=key&limit=-1')) || []).map(i => i.key));
   for (const [i, key] of keys.entries()) {
@@ -471,7 +458,6 @@ async function ensurePublicRead() {
   console.log(`Directus ${BASE}${DRY ? '（dry run，不會改任何東西）' : ''}`);
   for (const [name, s] of Object.entries(SPEC)) await ensureCollection(name, s);
   for (const name of META) await ensureMeta(name);
-  for (const [name, field] of HIDE) await hideField(name, field);
   console.log('側欄順序（照前台選單）');
   await ensureOrder();
   console.log('Public 讀取權');
@@ -485,6 +471,6 @@ async function ensurePublicRead() {
   // footer 單例：還是空的才塞示意值（已經有人填過就不碰）
   // 「空的」＝什麼都還沒有（原本看 email 那一格，2026-11-24 那格刪了——還看它的話每跑一次都會把示意值蓋回去）
   const f = DRY ? null : await get('/items/footer');
-  if (!DRY && f && !f.instagram && !f.youtube && !f.links?.length && !f.sections?.length) { console.log('+ footer 塞 contact.html 的示意值'); await api('PATCH', '/items/footer', FOOTER_MOCK); }
+  if (!DRY && f && !f.instagram && !f.youtube && !f.sections?.length) { console.log('+ footer 塞 contact.html 的示意值'); await api('PATCH', '/items/footer', FOOTER_MOCK); }
   console.log('完成');
 })().catch(e => { console.error(e.message); process.exit(1); });

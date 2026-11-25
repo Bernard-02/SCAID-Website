@@ -103,11 +103,10 @@ const partners = () => pub(findAll(read('partners'), cls('item-row')).map(row =>
 // 課程：每個年級一段（介面文字 curriculum.year.N）；一門課一個摺疊＝課名＋必修／選修，點開＝說明
 const courses = () => sections(read('curriculum')).flatMap(sec => pub(findAll(sec, tag('details')).map(d => {
   const sum = find(d, tag('summary'));
-  return { year: Number((titleOf(sec)?.attrs['data-label'] || '').split('.').pop()), required: find(sum, tag('p'))?.attrs['data-label'] === 'curriculum.required',
+  return { year: Number((titleOf(sec)?.attrs['data-label'] || '').split('.').pop()), category: find(sum, tag('p'))?.attrs['data-label'] === 'curriculum.required' ? 'required' : 'elective',
     ...zhEn(find(sum, tag('h3')), 'name'), ...zhEn(find(find(d, cls('fold-body')), tag('p')), 'description') };
 })));
-const qa = () => pub(sections(read('qa')).flatMap(sec => findAll(sec, tag('details')).map(d => ({
-  ...zhEn(titleOf(sec), 'category'), ...zhEn(find(d, tag('summary')), 'question'), ...zhEn(kids(d, tag('p'))[0], 'answer') }))));
+// 常見問題頁 user 2026-11-25 拿掉了（含後台的 qa 集合）＝不解析、不寫
 // 規章與政策（單例）：有清單的段（學程規章、表單下載）一條一列（重複列 items，副標一行一個）＋沒清單的段（使用條款…）＝同關於的段落（子集合 regulations_sections，user 2026-11-24）
 function regulations() {
   const items = sections(read('regulations')).filter(s => find(s, cls('item-list'))).flatMap(sec => findAll(sec, cls('item-row')).map(row => {
@@ -116,11 +115,14 @@ function regulations() {
   }));
   return { items, sections: textSingle('regulations').sections };
 }
-// 榮譽：國旗檔名＝國家代碼；主辦方進單位庫
+// 榮譽與報導（user 2026-11-25 合成一個集合）：國旗檔名＝國家代碼；類型看副標的 data-label（records.type.<award|press>）；
+// 點開的第一行＝主辦方（榮譽，進單位庫）／媒體（報導，進媒體庫）——user：「要，從庫裏面選」；其他每一行＝內容的一筆；圖在後台上傳
 const records = () => pub(findAll(read('records'), tag('details')).map(d => {
-  const sum = find(d, tag('summary')), box = kids(sum).at(-1), [org, prize] = kids(find(d, cls('fold-meta')), tag('p'));
-  return { country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null, ...zhEn(find(box, cls('sr-only')), 'country'),
-    ...zhEn(find(box, tag('h3')), 'award'), ...zhEn(kids(box, tag('p'))[0], 'winner'), organizer: pool('organizations', org), ...zhEn(prize, 'prize') };
+  const sum = find(d, tag('summary')), box = kids(sum).at(-1), [who, ...rest] = kids(find(d, cls('fold-meta')), tag('p'));
+  const press = (kids(box, tag('p'))[0]?.attrs['data-label'] || '').endsWith('.press');
+  return { category: press ? 'press' : 'award', country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null, ...zhEn(find(box, cls('sr-only')), 'country'),
+    ...zhEn(find(box, tag('h3')), 'title'), [press ? 'media' : 'organizer']: pool(press ? 'media_outlets' : 'organizations', who),
+    details: rest.map(p => ({ text_zh: text(p), text_en: p.attrs['data-en'] ?? text(p) })) };
 }));
 // 首頁的 news（user 2026-11-24：原本叫 home_news；2026-11-23 跟動態頁拆開）：首頁展開那串一則一個 li（p＝標題；裡面兩個 span.block＝標題＋說明），照順序。
 // 點了去哪 HTML 示意沒有：寫進後台時，標題跟入學頁的某一則一樣＝連到那一則（下面主程式；同動態／入學「標題一樣＝同一則」）
@@ -128,8 +130,7 @@ const homeNews = () => findAll(find(parse('index.html'), cls('home-news-list')),
   const p = find(li, tag('p')), [t, s] = kids(p, tag('span'));
   return { sort: i + 1, ...(t ? { ...zhEn(t, 'title'), ...zhEn(s, 'summary') } : zhEn(p, 'title')) };
 });
-// 報導：媒體進媒體庫；截圖之後在後台上傳（沒截圖前台那列不能點）
-const press = () => findAll(read('press'), cls('item-row')).map(row => ({ ...zhEn(find(row, tag('h3')), 'title'), media: pool('media_outlets', find(row, tag('p'))) }));
+// 報導頁 2026-11-25 拿掉了（pages/press.html 沒了）、後台的 press 集合也刪了：報導併進上面的 records
 // 關於的段落內文＝小節（user 2026-11-23：標題＋純文字、可以一直加，不要一整段 rich text；子集合 about_subsections）：
 // 一個 .subsection＝一個小節（包在 .subsections 裡，user 2026-11-24 改成一塊一塊、塊之間 gap）：h3＝標題，p／li 一行一行接上去（mt-sm＝空一行＝分段）；
 // text-xs＝那個小節的附註（段落自己的附註同一天拿掉）；ul.timeline＝段落的年表（沿革）；段落裡直接放的 p（小節外面）＝說明（description，空一行＝分段）。
@@ -186,7 +187,7 @@ const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
 
 (async () => {
   console.log(`Directus ${BASE}${DRY ? '（dry run，只印不寫）' : ''}`);
-  const content = { activities: activities(), admission: admission(), news: homeNews(), faculty: faculty(), partners: partners(), courses: courses(), qa: qa(), records: records(), press: press() };
+  const content = { activities: activities(), admission: admission(), news: homeNews(), faculty: faculty(), partners: partners(), courses: courses(), records: records() };
   for (const [col, rows] of Object.entries(content)) if (!rows.length) throw new Error(`${col}：HTML 解析出 0 筆，標記大概改了，先修 seed 的解析`);
 
   // 內容集合還是空的才塞 → 庫也只補那幾個集合要用到的名字（不然後台改過名字、HTML 還是舊的，會多一個沒人用的）
