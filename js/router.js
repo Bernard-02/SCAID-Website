@@ -114,6 +114,9 @@ async function loadPage(route, search = '', fromUserNav = false) {
     // 首頁（logo 在畫面正中）→ 內頁（user 2026-11-21）：logo 先上移到頂、移完內容才淡入。首頁那一屏是空的 → 不等它淡出，
     // 關掉過場直接藏起來、抓到就換內容（data-page 一換 logo 開始上移），page-leaving 留到 logo 移完才拿掉
     const logoFirst = document.body.dataset.page === 'index' && route.page !== 'index' && !root.classList.contains('news-open') && !prefersReducedMotion();
+    // 作品頁 → 內頁（user 2026-11-25：「在作品去別的頁面時，應該像首頁一樣，先是完整長度，再做縮窄」）：作品頁沒有右圖＝logo 是系名的完整長度，
+    // 右圖的模型逛過別頁就已經載好＝一換頁 logo 就直接跳成 object 名字的長度。同首頁那套：logo 停在原樣、右圖先不出場，DUR.slow 後才一起變（logo 不移，內容照常淡入、不等它）
+    const fromWorks = document.body.dataset.page === 'works' && route.page !== 'works' && route.page !== 'index' && !prefersReducedMotion();
     if (logoFirst) main.style.transition = 'none';
     root.classList.add('page-leaving');
     const [res] = await Promise.all([fetching, wait(prefersReducedMotion() || logoFirst ? 0 : DUR.fade * 1000), strokeFirst]);
@@ -134,8 +137,8 @@ async function loadPage(route, search = '', fromUserNav = false) {
     main.className = newMain.className || '';
     // 首頁 → 內頁（user 2026-11-23）：沒有名字的 stroke 版整個先上移，移完才換成 object 名字的長度、右圖才出場
     // （上移的途中掛 html.logo-moving：logo.js want 停在原樣、object.js visible＝先不出場只抓模型；移完再叫兩邊對一次）
-    if (logoFirst) root.classList.add('logo-moving');
-    const moved = logoFirst ? wait(DUR.slow * 1000).then(() => { root.classList.remove('logo-moving'); syncObject(); logoPage(); }) : null;
+    if (logoFirst || fromWorks) root.classList.add('logo-moving');
+    const moved = logoFirst || fromWorks ? wait(DUR.slow * 1000).then(() => { root.classList.remove('logo-moving'); syncObject(); logoPage(); }) : null;
     document.body.dataset.page = route.page;
     current = { page: route.page, search };
     logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（從首頁來＝移完才換，見上）
@@ -146,7 +149,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
       void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
       main.style.transition = '';
     }
-    await Promise.all([cmsReady, moved]);   // logoFirst：logo 上移（chrome.css .site-logo）移完內容才淡入
+    await Promise.all([cmsReady, logoFirst ? moved : null]);   // logoFirst：logo 上移（chrome.css .site-logo）移完內容才淡入；從作品頁來的不等
     if (isStale()) return;
     root.classList.remove('page-leaving');   // 淡入
   } catch (err) {

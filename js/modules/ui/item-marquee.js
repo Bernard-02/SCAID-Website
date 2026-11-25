@@ -149,8 +149,8 @@ const PAGE_LINK = 'a.item-row[href]:not([target="_blank"])';
 const EXT_LINK = 'a.item-row[href][target="_blank"]';
 /** 收完的是 icon 的列：[class, 寬 ÷ 高（高＝骨牌 --block-h，同全站 icon）]；不是＝null（圓點） @param {Element} row @returns {[string, number] | null} */
 const iconOf = (row) => (row.matches(PAGE_LINK) ? ['item-chevron', 32.793 / 70] : row.matches(EXT_LINK) ? ['item-share', 46.14 / 69.96] : null);
-// chevron 的進出＝網站的 fade（淡＋糊、--dur-fade、--ease-standard；user 2026-11-25：「chevron 出現改 fade 好了」）。糊的量讀 --blur（用到才量，cssPx 在下面）
-const SHOWN = { opacity: 1, filter: 'blur(0px)' }, faded = () => ({ opacity: 0, filter: `blur(${cssPx('var(--blur)')}px)` });
+// 收完的那一顆（圓點、chevron、share）的進出＝只淡、不糊（--dur-fade、--ease-standard（user 2026-11-25：「hover之後出現的item不需要加blur，fade就好了」；原本淡＋糊＝網站的 fade））
+const SHOWN = { opacity: 1 }, faded = () => ({ opacity: 0 });
 /** CSS 長度算成 px（--dot-size、--block-h 是 calc()、讀變數拿不到算好的值 → 拿一個掛著它的元素量）。
  * class 用 .item-cover（絕對定位＝不動版面）：下面的 MutationObserver 才認得是自己插的、不會又觸發重量（重量 → 重排圓點 → 再量，停不下來） */
 const cssPx = (/** @type {string} */ v) => { const p = document.createElement('i'); p.className = 'item-cover'; p.style.width = v; document.body.append(p); const w = p.getBoundingClientRect().width; p.remove(); return w; };
@@ -165,6 +165,8 @@ const strokes = (row) => {
   const o = hostOf(row).getBoundingClientRect(), right = (row.matches(FILE) ? /** @type {Element} */ (row.closest('details')).getBoundingClientRect().right : o.right) - o.left;
   const rs = row.matches(EDGE)
     ? [{ x: right - w, y: (Math.min(...all.map(b => b.y)) + Math.max(...all.map(b => b.y + b.h))) / 2 - h / 2 }]
+    // 底列的動態：字的上方、對在看得到那段字的正中、離字頂 DOT_GAP（user 2026-11-25：「hover news marquee的時候，點設定在上方」；原本在字尾後面）
+    : row.matches('.bar-news') ? all.slice(0, 1).map(b => ({ x: (b.x + b.end) / 2 - d / 2, y: b.y - gap - d }))
     : groups.map(g => { const b = g[g.length - 1]; return { x: b.end + gap, y: b.y + b.h / 2 - d / 2 }; });
   return rs.map(r => { const s = band({ ...r, w, h }); s.classList.add(...cls.split(' ')); s.dataset.phase = 'stroke'; return s; });
 };
@@ -245,7 +247,7 @@ function fadeOut(row, run) {
   /** @returns {Keyframe} */
   const end = () => (run.leave ? gone : SHOWN);
   /** 現在的樣子（淡到一半游標回來，從這裡接） @param {HTMLElement} s @returns {Keyframe} */
-  const now = (s) => { const cs = getComputedStyle(s); return { opacity: cs.opacity, filter: cs.filter === 'none' ? 'blur(0px)' : cs.filter }; };
+  const now = (s) => ({ opacity: getComputedStyle(s).opacity });
   run.settled = false;
   run.anims = run.bands.map(s => s.animate([SHOWN, end()], { duration: dur, easing: soft, fill: 'forwards' }));
   run.aim = () => run.anims.forEach((a, k) => {
@@ -305,8 +307,10 @@ export function flash(row) {
 const rising = (row) => document.documentElement.classList.contains('news-rising') && !!row.closest('.home-news-list');
 /** 選單的選項在捲動框兩端糊掉的那段裡（chrome.css .site-menu-nav li：照位置糊）＝不能 hover（user 2026-11-25：「menu的選項如果在模糊區的話，就不能hover它」）。
  * 鍵盤聚焦照常（瀏覽器會把它捲進來）。ponytail: 只在游標進去那一下看——停在上面把它捲清楚了，要再進出一次才有 hover。
- * 也不能點（chrome.js；user 2026-11-25：「模糊的那個選項也不能點」）、游標是一般的箭頭（下面 pointerover；「cursor也是default的才對」） @param {Element} row */
-export const fogged = (row) => { const li = row.closest('.site-menu-nav li'); return !!li && parseFloat(getComputedStyle(li).filter.slice(5)) > 0; };   // 'blur(1.2px)' → 1.2；'none' → NaN
+ * 也不能點（chrome.js；user 2026-11-25：「模糊的那個選項也不能點」）、游標是一般的箭頭（下面 pointerover；「cursor也是default的才對」）。
+ * 糊到 1px 以上才算：捲動框只比選項少幾 px 時，最後一項的糊只有零點幾 px＝看起來是清楚的、卻被擋掉（user 同一天：「捐款」要先往下捲才點得到，
+ * 「沒有出現blur，但實際上應該是可以直接點擊的才對」；原本 > 0 就算） @param {Element} row */
+export const fogged = (row) => { const li = row.closest('.site-menu-nav li'); return !!li && parseFloat(getComputedStyle(li).filter.slice(5)) >= 1; };   // 'blur(1.2px)' → 1.2；'none' → NaN
 /** 升完：游標停在那一則上（升的途中進去、沒有再進出一次＝pointerover 不會再來）＝照 hover 的規矩補做（chrome.js） @param {Element} row */
 export function hoverIfOver(row) { if (row.matches(':hover')) strike(/** @type {HTMLElement} */ (row), wipe); }
 

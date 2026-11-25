@@ -80,10 +80,11 @@
     </div>
     <!-- MOCK 首頁的動態（跟 index.html 清單同一份示意、同一個順序；後台 cms-pages.js loadBarNews 換掉 .bar-news-copy 裡的 span 再叫 fitBar）：
          一次只顯示一則（user 2026-11-23：拿掉＋、只剩跑馬燈；原本好幾則排成一排一直跑）——放得下停 3 秒、放不下跑一趟馬燈，跑完 fade 換下一則（chrome.js runNews）。
-         永遠在畫面正中、寬＝--col-w＝logo 寬。首頁：點了原地展開清單、定位到看到的那則（chrome.js 攔）；內頁：整塊淡掉 -->
-    <a href="admission.html" class="bar-news">
+         永遠在畫面正中、寬＝--col-w＝logo 寬。首頁：點了原地展開清單、定位到看到的那則（chrome.js 攔）；內頁：整塊淡掉。
+         是鈕、不是連結（user 2026-11-25：「hover這個news為什麽是admission呢？應該是news才對，兩者不要搞混了」；原本 a href="admission.html"＝沒 JS 的備援、hover 顯示入學的網址） -->
+    <button type="button" class="bar-news">
       <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span>
-    </a>
+    </button>
     <!-- 作品頁的兩種排法（user 2026-11-23）：放映（slideshow）／總覽（bento）。只在作品頁、跟首頁的動態同一格（畫面正中；css/components/works.css）。
          一顆鈕、點了在兩種之間切（user 2026-11-25：「我想要將作品的兩個 icon 合并，點了會切換」；原本兩顆、目前那個 aria-pressed）：
          data-works-mode＝點了要切過去的那一種，圖示與名字也是那一種（同語言鈕顯示要切過去的語言；另一種的圖示、名字藏著，works.css），
@@ -95,13 +96,6 @@
         <span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-zh="放映" data-en="Slideshow">放映</span>
       </button>
     </div>
-    <!-- 首頁展開動態時浮在底列正中的那顆（user 2026-11-25：「會有一個 icon 懸浮在畫面底部，就跟作品的那一頁一樣，但只有一個 icon，暫時先用點來表示 active，
-         一樣背後要加上 blur」）：icon＝website-icons/news.svg（user 同一天給的，取代先用的骨牌＋中央圓點），背後＝作品頁那塊毛玻璃；點了＝收回去（chrome.js）。平常藏著（chrome.css .news-btn） -->
-    <!-- 名字＝裡面看不到的字（跟語言走，lang.js）：底列的鈕都不另掛 aria-label；不用 .bar-label＝hover 不會長出名字 -->
-    <button type="button" class="bar-btn news-btn">
-      <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
-      <span class="icon icon-news" aria-hidden="true"></span><span class="sr-only" data-en="Close">關閉</span>
-    </button>
     <!-- 右圖 object 的開關（PC 以外；user 2026-11-13 手機稿、2026-11-22 改成 object 可以打開、關閉）：右下角、長得跟 menu 鈕一樣（骨牌；user 2026-11-23，
          原本是內頁右緣中線上幾根 stroke 圍成的圓；2026-11-25 疊在右下角的深色模式鈕上面、搬到右緣中線過，同一天 user：「圖片在手機上回到右下角」）。
          名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；該頁有右圖那一格才標 .has-figure 現身 -->
@@ -109,6 +103,14 @@
       <span data-label="common.view-image" class="bar-label" data-zh="看圖片" data-en="View image">看圖片</span><span class="bar-rect"></span>
     </button>
   </div>
+  <!-- 不放在底列裡（user 2026-11-25：「這個news在手機上，應該是z index在play上面」）：展開時底列降到清單底下（chrome.css），這顆要留在清單上面＝自己一層 -->
+  <!-- 首頁展開動態時浮在底列正中的那顆（user 2026-11-25：「會有一個 icon 懸浮在畫面底部，就跟作品的那一頁一樣，但只有一個 icon，暫時先用點來表示 active，
+       一樣背後要加上 blur」）：icon＝website-icons/news.svg（user 同一天給的，取代先用的骨牌＋中央圓點），背後＝作品頁那塊毛玻璃；點了＝收回去（chrome.js）。平常藏著（chrome.css .news-btn） -->
+  <!-- 名字＝裡面看不到的字（跟語言走，lang.js）：底列的鈕都不另掛 aria-label；不用 .bar-label＝hover 不會長出名字 -->
+  <button type="button" class="bar-btn news-btn">
+    <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
+    <span class="icon icon-news" aria-hidden="true"></span><span class="sr-only" data-en="Close">關閉</span>
+  </button>
 
   <!-- 放大 dialog（lightbox）：相簿／封面／報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片（user 2026-11-23 併進來，原本自己一個滿版黑底的 dialog）都開在這裡。
        原生 <dialog>、透明：後面的內容模糊＋疊白、底列收起來，logo 照常；內容的頂對齊各頁 title 那條線、下面留一樣多（user 2026-11-23）。

@@ -18,8 +18,10 @@ import { prefersReducedMotion } from './reduce-motion.js';
 /** 正在跑的那一組：[高度, ...內容的淡入淡出] @type {WeakMap<HTMLDetailsElement, Animation[]>} */
 const running = new WeakMap();
 
-/** 把一則補間到開／收 @param {HTMLDetailsElement} d @param {boolean} closing @param {string} easing */
-function tween(d, closing, easing) {
+/** 把一則補間到開／收。snap＝高度每一幀取整數 px（被一起收的那幾則：點的那一列靠捲動補回原地，捲動只能整數 px——
+ * 高度縮掉帶小數的量的話每一幀差半像素、那一列跟著抖；user 2026-11-25 手機回報「下一個打開的會出現抖動」）
+ * @param {HTMLDetailsElement} d @param {boolean} closing @param {string} easing @param {boolean} [snap] */
+function tween(d, closing, easing, snap = false) {
   const summary = /** @type {HTMLElement} */ (d.querySelector(':scope > summary'));
   const body = [...d.children].filter(c => c !== summary);
   const prev = running.get(d);
@@ -31,21 +33,29 @@ function tween(d, closing, easing) {
   const blur = `blur(${getComputedStyle(d).getPropertyValue('--blur').trim() || '0px'})`;
   const fromF = body.map(c => (prev ? getComputedStyle(c).filter : closing ? 'none' : blur));
   prev?.forEach(a => a.cancel());
+  d.style.height = '';   // 上一組 snap 留下的（下面量終點要量自然的高）
   d.classList.toggle('is-closing', closing);
   if (!closing) d.open = true;
   const to = (closing ? summary : d).getBoundingClientRect().height;
   // 只切上下：左右跟展開完一樣（內容淡入的模糊、超出框的東西不會補間時被切、補間完才冒出來）。
-  // 下緣多留 1.5rem＝相簿兩側的模糊往下暈出去的那段（page.css .album --album-up；user 2026-11-24）也一樣；落在列距裡、碰不到下一則。原本 overflowY: clip
-  d.style.clipPath = 'inset(0 -100vw -1.5rem -100vw)';
+  // （11-24～25 下緣多留過 1.5rem＝相簿兩側的模糊往下暈出去的那段；2026-11-25 相簿的模糊不往上下暈了＝拿掉。）原本 overflowY: clip
+  d.style.clipPath = 'inset(0 -100vw)';
   // fill forwards：跑完到 onfinish 之間停在終點，不會閃回全高／全實
   /** @type {KeyframeAnimationOptions} */
   const timing = { duration: DUR.medium * 1000, easing, fill: 'forwards' };
-  const anims = [d.animate({ height: [`${from}px`, `${to}px`] }, timing),
+  // snap：高度不交給補間，這一組的第一個只當時鐘（同時長、同曲線），每一幀照它的進度寫整數的高
+  const anims = [d.animate(snap ? [] : { height: [`${from}px`, `${to}px`] }, timing),
     ...body.map((c, i) => c.animate({ opacity: [fromO[i], closing ? '0' : '1'], filter: [fromF[i], closing ? blur : 'none'] }, timing))];
   running.set(d, anims);
+  if (snap) (function step() {
+    if (running.get(d) !== anims) return;
+    d.style.height = `${from + Math.round((to - from) * (anims[0].effect?.getComputedTiming().progress ?? 1))}px`;   // 起點不捨（第一幀不跳），縮掉的量取整數
+    requestAnimationFrame(step);   // 比點的那一列的補捲動（initAccordion 的 hold）先排＝同一幀裡先改高、再量、再捲
+  })();
   anims[0].onfinish = () => {
     if (closing) { d.open = false; d.classList.remove('is-closing'); }
     d.style.clipPath = '';
+    d.style.height = '';
     anims.forEach(a => a.cancel());
     running.delete(d);
   };
@@ -67,7 +77,7 @@ export function initAccordion() {
     const stay = () => window.scrollBy({ top: summary.getBoundingClientRect().top - y0, behavior: 'instant' });
     if (prefersReducedMotion()) { for (const o of others) /** @type {HTMLDetailsElement} */ (o).open = false; stay(); return; }   // 這一則的開合留給原生
     e.preventDefault();   // 開合自己來（鍵盤 Enter／空白鍵也是走 click）
-    for (const o of others) tween(/** @type {HTMLDetailsElement} */ (o), true, easing);
+    for (const o of others) tween(/** @type {HTMLDetailsElement} */ (o), true, easing, true);
     tween(d, closing, easing);
     if (others.length) requestAnimationFrame(function hold() { stay(); if (running.has(d)) requestAnimationFrame(hold); });
   });

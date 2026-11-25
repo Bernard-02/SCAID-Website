@@ -45,12 +45,15 @@ async function toggle() {
   try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}
   const html = document.documentElement, still = prefersReducedMotion(), wait = () => new Promise(r => setTimeout(r, DUR.fast * 1000));
   if (!still) { html.classList.add('strokes-out'); await wait(); }
+  html.classList.add('lang-swap');   // 底列的動態這次也跟著整個畫面淡（chrome.css）
   await fadeSwap(() => {
     applyLang();
     // 分頁標題（報讀一進頁先念它）跟著換：內頁＝「頁標題 - SCAID」（ui-labels.js、師資詳細頁設的），首頁的標題中英並列、不動
     const h1 = document.querySelector('#page-content h1')?.textContent?.trim();
     if (h1 && / - SCAID$/.test(document.title)) document.title = `${h1} - SCAID`;
+    document.dispatchEvent(new Event('scaid:lang'));   // 底列的動態從頭跑（chrome.js restartNews）
   });
+  html.classList.remove('lang-swap');
   if (!still) { html.classList.replace('strokes-out', 'strokes-in'); await wait(); html.classList.remove('strokes-in'); }
 }
 

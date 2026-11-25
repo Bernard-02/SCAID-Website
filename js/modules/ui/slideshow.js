@@ -1,14 +1,13 @@
 /**
  * 段落圖片輪播（css/components/page.css .slideshow；user 2026-11-18 about 起）：
- * 一列、每張一樣高（＝框高）、寬照圖的比例（不裁；user 2026-11-23：「照片應該以後台的 size 為主，不要 crop」「要一樣大的高度」），
+ * 一列、每張一樣高（＝框高）、寬照圖的比例（不裁、不變形；user 2026-11-23：「照片應該以後台的 size 為主，不要 crop」「要一樣大的高度」；
+ * 2026-11-25 試過把旁邊的橫向擠扁、同一天拿掉：「about要去掉原本的那個扁的邏輯，一般設計即可」），
  * 目前那張在正中、其他隔一個 gutter 接在兩邊，超出框的切掉；點左右那張就換到中間（環狀），整列滑過去。
  * 這裡照每張的寬算位置（left／width），寫 data-pos（跟中間的距離：報讀、測試用）；過場是 CSS。
- * 框的左右兩側＝模糊：這裡插 .slide-blur 的那一層（樣式 page.css；user 2026-11-23，取代 11-21 的「左右兩張各自失焦」；
- * 2026-11-25 從 5 層越外面越糊改成一層、整段同一個量＝平的），
- * 而且邊緣本身也糊（user 2026-11-23：「blur 是包含整個 box 的邊緣要有，不只是往內加上 blur」）：照片和那幾層包進 .slide-strip，
- * 左右各往框外多伸一段、透明度漸層淡掉（page.css）＝框的邊線落在半透明、糊開的地方，不是一刀切。
+ * 框的左右兩側＝淡出＋模糊（user 2026-11-23 起；樣子全在 page.css「輪播兩側的淡出＋模糊」＝user 2026-11-25 貼的那段 CSS，跟相簿、作品頁放映共用）：
+ * 這裡只插 .slide-blur 的那一層、把照片和它包進 .slide-strip。
  * 自動播放（user 2026-11-21）：每 AUTOPLAY_MS 換下一張；滑鼠在上面／鍵盤聚焦在裡面＝暫停（WCAG 2.2.2），點了從頭計時；減少動態＝不自動播。
- * 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem、最寬的那張也放得進內文欄＝min(16rem, 欄寬 ÷ 最寬那張的比例)；手機欄寬只算 72%＝兩邊露出旁邊那張。
+ * 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem、最寬的那張也放得進「兩側淡掉的那段以內」（下面 CLEAR）。
  * 元素都在 main 裡、換頁整個換掉 → 掛在它們身上的 listener 不用收；計時器、window 的 resize 要收（registerPageCleanup）。
  */
 import { prefersReducedMotion } from './reduce-motion.js';
@@ -16,6 +15,9 @@ import { registerPageCleanup } from './page-cleanup.js';
 import { setLabel } from './lang.js';
 
 const AUTOPLAY_MS = 4000;
+// 最寬的那張最多佔框寬幾成＝旁邊那張露得出來、看得出點得到（PC 68%＝兩邊各留 16%：定的時候兩側淡掉的那段就是 16%，
+// 同一天晚上那段縮成 10%、這個沒跟著放寬；手機 72%，同作品頁手機的放映，user 2026-11-25）。只有一張＝兩側不淡＝整個框
+const CLEAR = { pc: 0.68, phone: 0.72 };
 
 /** 圖的寬高比：載好了看圖本身，還沒＝HTML 的 width／height（後台給的），都沒有＝3:2 @param {HTMLElement} s */
 const ratio = (s) => {
@@ -36,8 +38,8 @@ export function initSlideshow() {
     const blur = document.createElement('span');
     blur.className = 'slide-blur';
     blur.setAttribute('aria-hidden', 'true');
-    blur.innerHTML = '<i></i>';   // 一層＝平的、整段同一個模糊量（user 2026-11-25；page.css .slide-strip .slide-blur > i）
-    const strip = document.createElement('div');   // 照片＋模糊那幾層：左右伸出框外、邊緣淡掉（page.css .slide-strip）
+    blur.innerHTML = '<i></i>';   // 一層（page.css .slide-blur > i）
+    const strip = document.createElement('div');   // 照片＋模糊那一層：兩側淡出、超出的切掉（page.css .slide-strip）
     strip.className = 'slide-strip';
     strip.append(...slides, blur);
     root.append(strip);
@@ -46,14 +48,13 @@ export function initSlideshow() {
     const render = () => {
       const pos = slides.map((_, i) => (((i - active) % n) + n + half) % n - half);   // 跟中間的距離，環狀
       const cs = getComputedStyle(root), gap = parseFloat(cs.columnGap) || 0, r = slides.map(ratio);
-      // 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem（CSS max-height），而且最寬的那張也放得進內文欄；
-      // 手機只放得進欄寬的 72%（同作品頁手機的放映）＝兩邊露出旁邊那張、看得出點得到（user 2026-11-25）
-      const fit = root.clientWidth * (matchMedia('(min-width: 768px)').matches ? 1 : 0.72);
+      // 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem（CSS max-height），而且最寬的那張也放得進框寬的 CLEAR 那幾成
+      const fit = root.clientWidth * (n < 2 ? 1 : matchMedia('(min-width: 768px)').matches ? CLEAR.pc : CLEAR.phone);
       const H = Math.min(parseFloat(cs.maxHeight) || Infinity, fit / Math.max(...r));
       root.style.height = `${H}px`;
       const w = r.map(k => H * k), x = slides.map(() => 0), at = (/** @type {number} */ p) => pos.indexOf(p);
       const c = at(0);
-      x[c] = (strip.clientWidth - w[c]) / 2;                                                 // 目前那張在正中（列左右伸出去一樣多＝正中還是框的正中）
+      x[c] = (strip.clientWidth - w[c]) / 2;                                                 // 目前那張在正中
       for (let p = 1; at(p) >= 0; p++) x[at(p)] = x[at(p - 1)] + w[at(p - 1)] + gap;         // 右邊一張接一張
       for (let p = -1; at(p) >= 0; p--) x[at(p)] = x[at(p + 1)] - gap - w[at(p)];            // 左邊
       slides.forEach((s, i) => {
@@ -68,7 +69,6 @@ export function initSlideshow() {
         else if (Math.abs(pos[i]) === 1) { setLabel(s, pos[i] < 0 ? '上一張' : '下一張', pos[i] < 0 ? 'Previous image' : 'Next image'); s.removeAttribute('aria-hidden'); }
         else { setLabel(s); s.setAttribute('aria-hidden', 'true'); }   // 其他的不給讀
       });
-      // 兩側糊的那一段多寬＝CSS 自己算（框寬的一成，page.css --edge-blur；user 2026-11-25）——原本這裡量「到目前那張的邊」寫 --slide-cut
       was = pos;
     };
     let timer = 0, hover = false, focus = false;

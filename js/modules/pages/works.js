@@ -24,6 +24,48 @@ import { setLabel } from '../ui/lang.js';
 // 有寫＝用這個檔、不抓後台。2026-11-24 換回後台（user：「改讀後臺吧」；那串 SCCD 畢製清單貼進後台了），當時的 data/ 刪了、要再用從 git 拿回來
 const TEST_JSON = '';
 
+// 放映自動換下一個的間隔（user 2026-11-25：「作品那一頁的slideshow可以設定每4s換下一個嗎」；同關於的段落輪播 slideshow.js）
+const AUTOPLAY_MS = 4000;
+// 縮圖的黑邊：一列（行）平均比這個暗（0–255）＝黑邊（JPEG 的雜訊讓黑邊不是純 0）
+const DARK = 24;
+
+/** 縮圖本身燒進去的黑邊（user 2026-11-25：「拿thumbnail的時候，去掉thumbnail黑邊」「是這個圖片本身的黑邊喔」）：寬銀幕的片子做成 16:9 帶黑邊上傳＝
+ *  YouTube 回的比例是 16:9、縮圖也帶著黑邊；4:3 的縮圖（sddefault／hqdefault）上下、直的影片左右也是。縮圖縮小畫進畫布（i.ytimg.com 有給 CORS＝讀得到像素），
+ *  從上下（左右）往內數整列（行）都快全黑的；兩邊差不多寬才算黑邊（片子都置中；只有一邊暗的夜景不裁），再多切一列蓋掉交界那條糊的。
+ *  左右裁不裁得掉還要靠 works.css `.work img` 的 max-width: none（user 2026-11-25：「這個裁掉黑邊也要加上左右的設定」——量得到、但圖放大的寬被卡回去）。
+ *  回傳黑邊裡面那塊佔整張的比例 [左, 上, 寬, 高]；沒有黑邊、讀不到＝null @param {HTMLImageElement} img @returns {number[] | null} */
+function bars(img) {
+  const cw = Math.min(320, img.naturalWidth), ch = Math.round(cw * img.naturalHeight / (img.naturalWidth || 1));
+  if (!cw || !ch) return null;
+  const c = document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  /** @type {Uint8ClampedArray} */
+  let d;
+  try { g?.drawImage(img, 0, 0, cw, ch); d = /** @type {CanvasRenderingContext2D} */ (g).getImageData(0, 0, cw, ch).data; } catch { return null; }   // 沒 CORS＝畫布被污染、讀不到
+  /** 從第 from 個像素起、每隔 step 個、共 n 個的平均亮度（0–255） @param {number} from @param {number} n @param {number} step */
+  const lum = (from, n, step) => { let s = 0; for (let k = 0; k < n; k++) { const i = (from + k * step) * 4; s += d[i] + d[i + 1] + d[i + 2]; } return s / n / 3; };
+  const dark = (/** @type {number} */ from, /** @type {number} */ n, /** @type {number} */ step) => lum(from, n, step) < DARK;
+  const sym = (/** @type {number} */ a, /** @type {number} */ z, /** @type {number} */ n) => a > 0 && z > 0 && Math.abs(a - z) <= Math.max(2, n * 0.02);
+  let t = 0, b = ch, l = 0, r = cw;
+  while (t < b && dark(t * cw, cw, 1)) t++;
+  while (b > t && dark((b - 1) * cw, cw, 1)) b--;
+  // 黑邊裡有字幕（user 2026-11-25 的截圖：下面那條黑邊裡一行白字）：那幾列的平均被字拉亮＝那一邊數到一半就停、上下不一樣厚＝原本整個不裁。
+  // 另一邊是乾淨的黑邊（T 列，而且邊界是硬的＝裡面那一列一下子亮 40 以上——暗場是慢慢亮起來的），這一邊那 T 列每一列都有六成以上的點是暗的
+  // ＝當成一樣厚的黑邊（字幕跟著裁掉）。拿真的清單 241 支試過：只多裁到有字幕的那一支
+  if (t && b < ch && !sym(t, ch - b, ch)) {
+    const T = Math.max(t, ch - b), top = t === T;   // top＝上面那條是乾淨的
+    const edge = top ? lum(T * cw, cw, 1) - lum((T - 1) * cw, cw, 1) : lum((ch - T - 1) * cw, cw, 1) - lum((ch - T) * cw, cw, 1);
+    const mostly = (/** @type {number} */ from) => { let n = 0; for (let k = 0; k < cw; k++) { const i = (from + k) * 4; if (d[i] + d[i + 1] + d[i + 2] < 40 * 3) n++; } return n >= cw * 0.6; };
+    if (edge >= 40 && T * 2 < ch * 0.75 && Array.from({ length: T }, (_, k) => (top ? ch - 1 - k : k) * cw).every(mostly)) { t = T; b = ch - T; }
+  }
+  while (l < r && dark(l + t * cw, b - t, cw)) l++;   // 行只看上下黑邊之間那段
+  while (r > l && dark(r - 1 + t * cw, b - t, cw)) r--;
+  const [y0, y1] = sym(t, ch - b, ch) ? [t + 1, b - 1] : [0, ch], [x0, x1] = sym(l, cw - r, cw) ? [l + 1, r - 1] : [0, cw];
+  if ((!x0 && !y0) || x1 - x0 < cw / 4 || y1 - y0 < ch / 4) return null;   // 沒黑邊；剩不到四分之一＝整張很暗、不是黑邊
+  return [x0 / cw, y0 / ch, (x1 - x0) / cw, (y1 - y0) / ch];
+}
+
 /** 播放清單網址 → 清單 id（?list=） @param {unknown} url */
 const listId = (url) => String(url || '').match(/[?&]list=([\w-]+)/)?.[1];
 
@@ -46,7 +88,8 @@ async function playlist(id) {
       if (!(token = d.nextPageToken)) break;
     }
     // 影片真正的比例（寬銀幕、4:3…；user 2026-11-24：總覽要 Pinterest 那種錯落——原本一律當 16:9，排出來像格子）：
-    // videos.list 的 player 帶 maxWidth 才回 embedWidth／embedHeight，照影片本身的比例。縮圖是 16:9 帶黑邊，works.css 用 cover 裁掉。抓不到＝當 16:9
+    // videos.list 的 player 帶 maxWidth 才回 embedWidth／embedHeight，照影片本身的比例。縮圖是 16:9 帶黑邊，works.css 用 cover 裁掉
+    // （黑邊燒在影片裡的，這裡回的也是 16:9＝縮圖載好再量，bars()）。抓不到＝當 16:9
     const ids = items.map(it => it.snippet?.resourceId?.videoId).filter(Boolean);
     /** @type {Record<string, number[]>} */
     const size = {};
@@ -100,7 +143,7 @@ async function fromJson() {
 
 /** 一個作品（兩種排法同一份標記，works.css 照排法、data-pos 擺）：大小＝--w／--h（沒寫寬高的檔當 16:9）；點的範圍＝蓋在上面的那顆鈕 @param {Work} it */
 const tile = (it) => `<div class="work" data-kind="${it.kind}"${it.vid ? ` data-vid="${esc(it.vid)}"` : ''} style="--w:${+it.w || 1600};--h:${+it.h || 900}">`
-  + `<img src="${esc(it.src)}" alt="${esc(it.title)}"${it.w && it.h ? ` width="${it.w}" height="${it.h}"` : ''} loading="lazy">`
+  + `<img src="${esc(it.src)}" alt="${esc(it.title)}"${it.w && it.h ? ` width="${it.w}" height="${it.h}"` : ''}${it.kind === 'video' ? ' crossorigin="anonymous"' : ''} loading="lazy">`   // 影片的縮圖要讀像素量黑邊（bars）
   + `<button type="button" class="work-hit">${it.kind === 'video' ? '<span class="icon icon-play" aria-hidden="true"></span>' : ''}</button></div>`;
 
 /** 打亂（Fisher–Yates；user：每次進來都不一樣） @template T @param {T[]} a */
@@ -130,7 +173,8 @@ export function initWorks() {
     list.style.setProperty('--bw', `${colW}px`);
     list.style.height = `${Math.max(0, Math.max(...tops) - gap)}px`;
   };
-  /** 放映＝一列（user 2026-11-24：「左右都幫我改成一樣大」）：每個都撐滿最大框（最寬＝PC 內文 6 欄、手機舞台的 72%，× 舞台高，照比例，同 works.css 的 width），
+  /** 放映＝一列（user 2026-11-24：「左右都幫我改成一樣大」）：全部一樣高（user 2026-11-25）＝16:9 撐滿最寬（PC 內文 6 欄、手機舞台的 72%）時的高、最高到舞台高，
+   *  寬照比例（同 works.css 的 width；寬銀幕的比最寬還寬），
    *  從正中往兩邊、隔一個 gutter（column-gap）接下去：--x＝中線離舞台正中多遠。第一次擺、繞到另一頭的（一次跳超過一格）直接到位、不滑過整列 */
   const relOf = new WeakMap();
   const layoutRow = () => {
@@ -139,7 +183,8 @@ export function initWorks() {
     const H = list.clientHeight, gap = parseFloat(getComputedStyle(list).columnGap) || 0;
     // 最寬多寬（同 works.css --work-max）：PC＝內文 6 欄（.works 本身的寬；舞台拉到整個畫面寬，user 2026-11-24）、手機＝舞台的 72%
     const maxW = matchMedia('(min-width: 768px)').matches ? root.clientWidth : 0.72 * list.clientWidth;
-    const size = (/** @type {HTMLElement} */ w) => Math.min(maxW, H * (Number(w.style.getPropertyValue('--w')) || 1600) / (Number(w.style.getPropertyValue('--h')) || 900));
+    const rowH = Math.min(H, maxW * 9 / 16);
+    const size = (/** @type {HTMLElement} */ w) => rowH * (Number(w.style.getPropertyValue('--w')) || 1600) / (Number(w.style.getPropertyValue('--h')) || 900);
     const at = new Map(), jump = [];
     ws.forEach((w, i) => {
       const rel = (((i - active) % n) + n + half) % n - half, was = relOf.get(w);
@@ -179,14 +224,14 @@ export function initWorks() {
     });
     // 底列那顆鈕（一顆、點了切換；user 2026-11-25）：換成「要切過去的那一種」＝圖示、名字跟著換（works.css）
     document.querySelectorAll('.bar-works [data-works-mode]').forEach(b => { /** @type {HTMLElement} */ (b).dataset.worksMode = bento ? 'slideshow' : 'bento'; });
-    // 放映時舞台兩側的漸進模糊（同關於的段落輪播 slideshow.js；works.css）：內容整批換掉（打亂、後台）之後都會叫 render → 這裡補回來
-    if (!list.querySelector(':scope > .slide-blur')) list.insertAdjacentHTML('beforeend', `<div class="slide-blur" aria-hidden="true">${[0, 1, 2, 3, 4].map(i => `<i style="--i:${i}"></i>`).join('')}</div>`);
+    // 放映時舞台兩側的模糊那一層（同關於的段落輪播 slideshow.js；樣子 page.css「輪播兩側的淡出＋模糊」）：內容整批換掉（打亂、後台）之後都會叫 render → 這裡補回來
+    if (!list.querySelector(':scope > .slide-blur')) list.insertAdjacentHTML('beforeend', '<div class="slide-blur" aria-hidden="true"><i></i></div>');
     layoutBento();
     layoutRow();
   };
   const stopVideo = () => list.querySelectorAll('.work-frame').forEach(f => f.remove());
   /** @param {number} step */
-  const go = (step) => { const n = works().length; if (n < 2) return; stopVideo(); active = (active + step + n) % n; render(); };
+  const go = (step) => { const n = works().length; if (n < 2) return; stopVideo(); active = (active + step + n) % n; render(); restart(); };
   /** 正中的影片就地播：YouTube 的 embed（nocookie）、自動播、可以全螢幕 @param {HTMLElement} w */
   const play = (w) => {
     stopVideo();
@@ -222,6 +267,7 @@ export function initWorks() {
       else window.scrollTo({ top: 0, behavior: 'instant' });
       void list.offsetWidth;   // 新位置先定下來（不補間），下一幀才淡入
       requestAnimationFrame(() => { root.classList.remove('is-switching'); switching = 0; });
+      restart();
     }, prefersReducedMotion() ? 0 : DUR.fade * 1000);
   };
   registerPageCleanup(() => clearTimeout(switching));
@@ -255,6 +301,34 @@ export function initWorks() {
   list.addEventListener('pointerup', release);
   list.addEventListener('pointercancel', release);
 
+  // 放映每 AUTOPLAY_MS 自動換下一個（user 2026-11-25）：游標在正中那個上、鍵盤聚焦在裡面、正中的影片在播、拖著、選單或 dialog 開著＝這一下先不換（WCAG 2.2.2）；
+  // 換了（點、方向鍵、拖、換排法、後台換好）從頭計時；減少動態＝不自動
+  let timer = 0;
+  function restart() {
+    clearInterval(timer);
+    if (!prefersReducedMotion()) timer = window.setInterval(() => {
+      if (root.dataset.mode !== 'slideshow' || drag || list.querySelector('.work-frame, .work[data-pos="0"]:hover, :focus-visible')
+        || document.documentElement.classList.contains('menu-open') || document.querySelector('dialog[open]')) return;
+      go(1);
+    }, AUTOPLAY_MS);
+  }
+  registerPageCleanup(() => clearInterval(timer));
+
+  // 影片縮圖的黑邊（bars）：載好就量，有＝作品的比例換成黑邊裡面那塊、圖放大裁到那塊（works.css --fx／--fy／--fw／--fh），下一幀一次重排
+  let relayout = 0;
+  /** @param {HTMLImageElement} img */
+  const trim = (img) => {
+    const w = img.closest('.work'), f = bars(img);
+    if (!(w instanceof HTMLElement) || !f) return;
+    const [fx, fy, fw, fh] = f;
+    Object.entries({ '--fx': fx, '--fy': fy, '--fw': fw, '--fh': fh, '--w': img.naturalWidth * fw, '--h': img.naturalHeight * fh }).forEach(([k, v]) => w.style.setProperty(k, String(v)));
+    relayout ||= requestAnimationFrame(() => { relayout = 0; layoutBento(); layoutRow(); });
+  };
+  const watchBars = () => list.querySelectorAll('.work[data-kind="video"] img').forEach(img => {
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.complete && img.naturalWidth) trim(img); else img.addEventListener('load', () => trim(img), { once: true });
+  });
+
   list.addEventListener('click', (e) => {
     if (dragged) { dragged = false; return; }   // 剛拖完放開的那一下
     const hit = e.target instanceof Element ? e.target.closest('.work-hit') : null, w = hit?.closest('.work');
@@ -284,11 +358,15 @@ export function initWorks() {
 
   list.replaceChildren(...shuffle([...list.children]));   // 示意也打亂
   render();
+  watchBars();
+  restart();
   return fromJson().then(items => items || fromCms()).then(items => {
     if (!items || !list.isConnected) return;
     stopVideo();
     list.innerHTML = shuffle(items).map(tile).join('');
     active = 0;
     render();
+    watchBars();
+    restart();
   });
 }
