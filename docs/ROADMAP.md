@@ -22,7 +22,7 @@
 - **右圖**：3D object 已做（`object.js`，模型用同一種 stroke 的疏密排，定時換）；模型是暫用的（見第 3 節）。
 - **背景**：做過一版（炭筆＋中空板），**2026-11-23 先關掉**（`main.js DECOR = false`）；筆觸在試驗場 artifact 繼續試（見第 3 節）。
 - **icon**：user 11-24 給的那套（`docs/SCAID icon.ai` → `scripts/build-icons.cjs`），沒用到的 SVG 都刪了；後台可以換（`site_icons`）。
-- **版本控制**：最後一次 commit 是 2026-11-23（`24f75b3`）。**11-24 好幾個對話的改動都還沒 commit**（約百個檔：Directus 11、icon、選單、清單、作品頁、404…）。
+- **版本控制**：11-24 的改動都 commit、push 了（`30a914b`，2026-11-24 深夜；那次 user 說不等測試，隔天 11-25 補跑全站檢查）。
 
 ## 1. 結構
 
@@ -40,8 +40,8 @@
 - [ ] **報導** `press`：一則一列（標題＋媒體），點了放大看截圖，不展開。
 - [ ] **入學** `admission`：一則一個摺疊（標題＋時間、沒縮圖）；展開＝說明、相簿、附件。首頁的 news 可以連到某一則（到了先做 hover 再打開）。
 - [ ] **常見問題** `qa`：依分類分段，一題一個摺疊（同課程的排法）。
-- [ ] **捐款** `donate`：導言＋用途、方式兩段。
-- [ ] **規章與政策** `regulations`：規章＋使用條款＋隱私權政策併成一頁，分段；一則一列、整列外連。
+- [ ] **捐款** `donate`：導言＋分段，段落同關於（輪播、說明、小節、年表；2026-11-24）。示意是用途、方式兩段。
+- [ ] **規章與政策** `regulations`：規章、表單（分段，一則一列、整列外連）＋使用條款、隱私權政策（段落同關於，2026-11-24）併成一頁。
 - [ ] **網站地圖** `sitemap`：連結一串。
 - [ ] **聯絡** `contact`：社群（IG、YouTube 兩個 icon）、聯絡資訊（清單＝同教師詳細頁：標題＋一筆一筆、後台可以自己加，每一筆可以填連結）、姊妹系所（連結清單）、標章。不分段。
 - [ ] **404**：簡單版：畫面正中一個字（未知／unknown）、左下角語言鈕，沒有選單、沒有右圖。
@@ -68,7 +68,7 @@
 
 ## 4. 細節調整
 
-- [ ] **英文的行距**（user 2026-11-24）：現在中英共用 `--line-height-lg／md／s／xs`（1.3／1.4／1.5／1.4），英文（JetBrains Mono）另外調＝`variables.css` 加 `html[lang="en"]` 覆寫（同英文版 logo 的 `--logo-vb-h` 那樣）。
+- [x] **英文的行距**（user 2026-11-24）：中英分開了＝`variables.css` `:root` 那組是中文、檔尾 `html[lang="en"]` 那組是英文，四階各自調（現在只有 text-s 不同：中文 1.4、英文 1.5）。數值要再調直接改那兩組。
 - [ ] **中文字形**：既、概、者、神、飯這類「部件是舊寫法」的字要不要也改從 J 版切（`build-fonts.py USE_J`）。
 - [ ] Firefox：選單兩端不淡不糊（不支援 scroll-driven）、intro 影片（`.m3u8`）播不了（要支援＝照 SCCD 加 hls.js）。要不要處理待定。
 - [ ] 其他看到再補。
@@ -82,7 +82,7 @@
 |---|---|---|
 | 首頁展開清單、底列 | `news`（入學那則用 `admission_item` 連到 `admission`） | 已接 |
 | intro 影片 | `home_video`（單例） | 已接（暫用 SCCD 的影片） |
-| 關於、捐款 | `about`（段落 `about_sections`、小節 `about_subsections`）、`donate` | 已接 |
+| 關於、捐款 | `about`（段落 `about_sections`、小節 `about_subsections`）、`donate`（同一套：`donate_sections`、`donate_subsections`） | 已接 |
 | 合作企業 | `partners`＋`partners_page`＋單位庫 | 已接 |
 | 師資、教師詳細頁 | `faculty`＋`faculty_page`＋人名庫 | 已接 |
 | 課程 | `courses` | 已接 |
@@ -92,7 +92,7 @@
 | 報導 | `press`＋媒體庫 | 已接 |
 | 入學 | `admission` | 已接 |
 | 常見問題 | `qa` | 已接 |
-| 規章與政策 | `regulations` | 已接 |
+| 規章與政策 | `regulations`（規章、表單＝重複列 `items`；條款＝同關於的段落 `regulations_sections`、`regulations_subsections`） | 已接 |
 | 聯絡 | `footer`（含 Instagram、YouTube 網址） | 已接（IG、YT 網址是佔位） |
 | 選單、頁名、固定小標… | `ui_labels` | 已接 |
 | 網頁的 icon | `site_icons`（檔在檔案庫「網頁 icon」資料夾） | 已接 |
@@ -118,7 +118,7 @@
 - [ ] `robots.txt`、`sitemap.xml`：現在都沒有。
 - [ ] og:image、各頁自己的 description：現在只有首頁有 description，全站沒有 og:image。
 - [ ] 示意內容清乾淨：各頁 HTML 註解標「內容為 MOCK 示意」的那幾份、人名日期後面的「（示意）」「(placeholder)」、公司名「示意○○公司」（`CLAUDE.md` 規範 11）。
-- [ ] 桌面 Chrome 手動檢查不能左右捲（煙霧測試跑 WebKit，重現不了）。
+- [x] 桌面 Chrome 不能左右捲（煙霧測試跑 WebKit，重現不了）：2026-11-25 用 Edge（同 Chromium）自動掃過每一頁、選單開了再收，都沒有多出可捲的寬度。版型大改後要再掃一次。
 - [ ] 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。
 - [ ] 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做。
 
@@ -134,4 +134,4 @@
 
 ## 隨時
 
-- [ ] 每做完一批就 commit（`scripts/.directus-token` 已在 `.gitignore`）。**現在就欠一批：11-24 的改動。**
+- [ ] 每做完一批就 commit（`scripts/.directus-token` 已在 `.gitignore`）。

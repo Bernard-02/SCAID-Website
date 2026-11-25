@@ -22,9 +22,10 @@
      看起來的距離還含行距：試過用 text-box 把標題的行距切掉，user 2026-11-21 拿回——要調就直接調 spacing 的值 */
   .page-section h3 { margin-top: var(--spacing-md); margin-bottom: var(--spacing-sm); }
   /* 關於的小節（cms-pages.js subsection；user 2026-11-24：「年級這邊應該是用 gap 來調整，且 gap 跟 list 的調整一致」）：一個小節一塊 .subsection、
-     整串包在 .subsections，塊與塊之間＝容器的 gap、同清單列（.item-list：標題到清單 xl、列與列之間 xl）——原本攤在段落裡、靠 h3 的上距 md 隔開。
+     整串包在 .subsections，塊與塊之間＝容器的 gap、同清單列（.item-list：標題到清單 xl、列與列之間 lg）——原本攤在段落裡、靠 h3 的上距 md 隔開。
+     清單列 2026-11-24 改成 lg 那次這裡漏了、還留在 xl，11-25 跟上（師資詳細頁、聯絡頁的清單之間也是這一條）。
      塊的第一個東西（標題，沒標題時是圖／輪播）不再自己留上距 */
-  .subsections { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-xl); }
+  .subsections { margin-top: var(--spacing-xl); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--spacing-lg); }
   /* 小節裡的圖上下多留 md（user 2026-11-24：「輪播的上下 padding 應該要更多」；原本跟標題隔 xs（標題的 margin-bottom）、跟下面的內文隔 sm（內文的 mt-sm））：
      一張圖＝這裡；多張＝輪播，照輪播自己的（下面 .slideshow：從上下暈出去的模糊外緣再隔 md）。跟標題、內文的 margin 疊在一起取大的 */
   /* 圖 → 下面的內文 xl、標題 → 圖 md（user 2026-11-24：「我想要圖片到那個段落文字是 xl，但 title 到圖片可以是 md」；
@@ -129,7 +130,7 @@
   .footer-social a { display: flex; }
   .footer-social .icon { font-size: var(--block-h); }
   /* 聯絡資訊＝清單，同師資詳細頁（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」）：標記就是那邊的
-     .subsections > .subsection > h3 + ul（contact.html 另掛 .subsections、text-s；footer-cms.js）＝清單之間 xl、標題 Medium、筆與筆之間 sm 都吃同一組規則。
+     .subsections > .subsection > h3 + ul（contact.html 另掛 .subsections、text-s；footer-cms.js）＝清單之間 lg、標題 Medium、筆與筆之間 sm 都吃同一組規則。
      這裡只補：整塊的上距交給 .footer-body 的 gap（.subsections 自己的 xl 不要）、撐滿內文欄（同下面的連結清單）、
      標題到第一筆 sm（那條掛在 .page-section h3，聯絡頁沒有 .page-section）。原本是 dl：一列＝標籤＋值、列與列之間 md */
   .footer-contact { margin-top: 0; align-self: stretch; }
@@ -143,7 +144,7 @@
   /* 師資詳細頁的照片：寬同列表縮圖，下面接名字＋副標（user 2026-11-21：上下排） */
   .profile-photo { width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-md); }
   /* 學歷／經歷…一筆一筆：筆與筆之間 sm（上面年表那條；user 2026-11-23 原本不空、看不出是一筆一筆 → 標題到第一筆的距離 xs → 2026-11-24 sm）。
-     一組（標題＋那幾筆）＝一塊 .subsection、包在 .subsections（上面關於的小節那幾條）：組與組之間＝gap xl、同動態的清單列
+     一組（標題＋那幾筆）＝一塊 .subsection、包在 .subsections（上面關於的小節那幾條）：組與組之間＝gap lg、同動態的清單列（清單列 2026-11-24 改 lg，這裡 11-25 跟上）
      （user 2026-11-24：「所有的 list 的 gap 都調整跟 activities 的一樣」；原本組之間＝h3 的上距 md） */
 
   @media (hover: hover) {

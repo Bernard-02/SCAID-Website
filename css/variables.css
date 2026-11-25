@@ -84,7 +84,7 @@
   /* ===== Layout ===== */
   --spacing-gutter: 1rem;      /* .site-grid gap（Tailwind gap-gutter） */
   --container-padding: 1rem;    /* .site-container 左右：照 Apple iOS 的 layout margin（user 2026-11-22）＝一般 iPhone 16、大尺寸 20（下面 ≥414） */
-  --top-h: calc(2 * var(--block-h));   /* 各頁內容（h1）的起始線＝#page-content padding-top、選單第一項（往上捲過它就淡出、模糊，chrome.css .menu-blur）：手機＝logo（頂到最頂、stroke 版一行＝骨牌高）的兩倍（user 2026-11-24，原本 6rem）；桌面在下面 */
+  --top-h: calc(2 * var(--block-h));   /* 各頁內容（h1）的起始線＝#page-content padding-top、選單第一項（往上捲過它就淡出、模糊，chrome.css .site-menu-nav 的 mask 與選項的 filter）：手機＝logo（頂到最頂、stroke 版一行＝骨牌高）的兩倍（user 2026-11-24，原本 6rem）；桌面在下面 */
   --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */

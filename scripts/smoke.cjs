@@ -154,8 +154,8 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   // 中文字距照 logo 的中文（user 2026-11-21）：字寬燒在字體裡＝每個中文字 1.005em（原本 0.8em＋0.205em）、J 補的字一樣；英數（JetBrains Mono）不變 0.6em
   {
     const w = await m.evaluate(() => { const s = document.createElement('span'); s.style.cssText = 'position:absolute;white-space:nowrap;font-size:100px;visibility:hidden'; document.body.append(s);
-      const out = ['學學學學', '為教，。', 'AI20'].map(t => { s.textContent = t; return s.getBoundingClientRect().width / t.length; }); s.remove(); return out; });
-    assert(Math.abs(w[0] - 100.5) < 0.2 && Math.abs(w[1] - 100.5) < 0.2 && Math.abs(w[2] - 60) < 0.2, `中文字距：每字 1.005em、英數 0.6em（${w.map(x => x.toFixed(2))}）`);
+      const out = ['學學學學', '為教，。', 'AI20'].map(t => { s.textContent = t; return s.getBoundingClientRect().width / t.length; }); s.remove(); return [...out, [...document.fonts].some(f => /JetBrains Mono/.test(f.family) && f.status === 'loaded') ? 1 : 0]; });   // 第 4 個＝JetBrains Mono 有沒有載到（fonts.check 在整份字體 CSS 沒抓到時也回 true，不能用）
+    assert(Math.abs(w[0] - 100.5) < 0.2 && Math.abs(w[1] - 100.5) < 0.2 && Math.abs(w[2] - 60) < 0.2, `中文字距：每字 1.005em、英數 0.6em（${w.slice(0, 3).map(x => x.toFixed(2))}${w[3] ? '' : '；JetBrains Mono 沒載到＝Google Fonts 連不上，英數量到的是備援字體，不是站的問題'}）`);
   }
   assert(await m.$('link[rel="icon"][href*="favicon.svg"]') !== null, 'favicon link');
   { const pt = parseFloat(await css(m, '#page-content', 'paddingTop')), bh = (await rect(m, '.menu-btn .bar-rect')).height;   // 骨牌高＝logo 一行（stroke 版）的高
@@ -505,7 +505,7 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
     return { top: q('.footer-contact').marginTop, gap: bs[1].top - bs[0].bottom, xl: parseFloat(q('.subsections').rowGap), h3w: q('.footer-contact h3').fontWeight, same: q('.footer-contact h3').fontSize === q('.footer-contact li').fontSize,
       s: q('.footer-contact li').fontSize === getComputedStyle(/** @type {Element} */ (document.querySelector('.page-body'))).fontSize, mb: q('.footer-contact h3').marginBottom, ul: q('.footer-contact h3 + ul').rowGap, sm: `${rem}px` }; });
   assert(conCss.top === '0px' && Math.abs(conCss.gap - conCss.xl) < 0.5 && conCss.xl > 0 && conCss.h3w === '500' && conCss.same && conCss.s && conCss.mb === conCss.sm && conCss.ul === conCss.sm,
-    `聯絡頁：聯絡資訊的樣子同師資詳細頁的清單——清單之間 xl、標題 Medium、字級＝內文（s）、標題到第一筆與筆之間 sm（${JSON.stringify(conCss)}）`);
+    `聯絡頁：聯絡資訊的樣子同師資詳細頁的清單——清單之間 lg（同 .subsections）、標題 Medium、字級＝內文（s）、標題到第一筆與筆之間 sm（${JSON.stringify(conCss)}）`);
   assert(await css(m, '.footer-badge', 'display') === 'none', '聯絡頁後台：空欄位收掉');
   assert(await m.$$eval('.footer-social a', a => a.length === 2 && a.map(x => [x.getAttribute('aria-label'), x.getAttribute('href'), x.target].join('|')).join(',') === 'Instagram|https://example.com/ig|_blank,YouTube|https://example.com/yt|_blank')
     && (await rect(m, '.footer-social .icon-yt')).left > (await rect(m, '.footer-social .icon-ig')).left
@@ -823,10 +823,10 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   // Subsection title → 內文＝sm（16px），掛在標題的 margin-bottom（user 2026-11-24：「subsection 下面的 mb 改成 sm 大小」；11-21 定的是 xs）；條列裡的項目標題不算，照舊
   assert(await d.$$eval('main .page-section h3', hs => hs.length > 0 && hs.every(h => getComputedStyle(h).marginBottom === '16px'
     && Math.abs(h.nextElementSibling.getBoundingClientRect().top - h.getBoundingClientRect().bottom - 16) < 0.5)), '小節標題下面隔 sm（16px）');
-  // 小節一塊一塊、塊與塊之間＝容器的 gap，同清單列 xl（user 2026-11-24：「年級這邊應該是用 gap 來調整，且 gap 跟 list 的調整一致」）；段落標題到第一塊也是 xl
+  // 小節一塊一塊、塊與塊之間＝容器的 gap，同清單列（user 2026-11-24：「年級這邊應該是用 gap 來調整，且 gap 跟 list 的調整一致」）＝lg（32px；清單列同一天從 xl 改 lg，這裡 11-25 跟上）；段落標題到第一塊 xl（同標題到清單）
   assert(await d.$$eval('main .subsections', bs => bs.length === 2 && bs.every(b => { const s = getComputedStyle(b), k = [...b.children], r = (/** @type {Element} */ e) => e.getBoundingClientRect();
-    return s.rowGap === '48px' && s.marginTop === '48px' && k.length > 1 && k.every((x, i) => !i || Math.abs(r(x).top - r(k[i - 1]).bottom - 48) < 0.5) && getComputedStyle(/** @type {Element} */ (k[0].firstElementChild)).marginTop === '0px'; })),
-    '關於的小節：塊與塊之間＝gap xl（48px，同清單列）、段落標題到第一塊也是 xl');
+    return s.rowGap === '32px' && s.marginTop === '48px' && k.length > 1 && k.every((x, i) => !i || Math.abs(r(x).top - r(k[i - 1]).bottom - 32) < 0.5) && getComputedStyle(/** @type {Element} */ (k[0].firstElementChild)).marginTop === '0px'; })),
+    '關於的小節：塊與塊之間＝gap lg（32px，同清單列）、段落標題到第一塊 xl');
   // 標題那塊（h1＋導言）到第一段＝3xl（桌面 96px）、段跟段之間照舊 2xl（64px）（user 2026-11-24：「這個 title 的區塊到下面的內容，gap 改成 3xl」「分開好了，不要合在一起」）
   assert(await d.$$eval('main .page-body > .page-section', ss => ss.length > 1 && getComputedStyle(ss[0]).marginTop === '96px' && ss.slice(1).every(s => getComputedStyle(s).marginTop === '64px')),
     '標題那塊到第一段 3xl（96px）、段跟段之間 2xl（64px）');
@@ -1403,9 +1403,9 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
       year: y.top < t.top && Math.abs(t.top - y.bottom) < 0.5 && Math.abs(t.left - y.left) < 0.5, gap: li[1].getBoundingClientRect().top - li[0].getBoundingClientRect().bottom, title: li[0].getBoundingClientRect().top - q('.page-section h3').getBoundingClientRect().bottom };
   });
   assert(prof.h1 === '21.6px' && prof.h1w === '500' && prof.sub === 2 && Math.abs(prof.photoGap - prof.md) < 0.5 && prof.h3 === '18.4px' && prof.h3w === '500' && prof.li === '18.4px' && prof.liw === '400' && prof.year && prof.ulGap === `${prof.sm}px` && Math.abs(prof.gap - prof.sm) < 0.5 && Math.abs(prof.title - prof.sm) < 0.5 && prof.hdr === `${prof.sm},${prof.sm}`
-    && prof.blocks === 2 && Math.abs(prof.blockGap - 48) < 0.5   // 示意只留學歷、經歷兩個清單（user 2026-11-24：其餘刪掉、之後在後台自己加）
+    && prof.blocks === 2 && Math.abs(prof.blockGap - 32) < 0.5   // 清單之間 lg（同清單列，2026-11-25 跟著清單列從 xl 改）。示意只留學歷、經歷兩個清單（user 2026-11-24：其餘刪掉、之後在後台自己加）
     && await d.$$eval('.page-section h3', hs => hs.map(h => h.textContent).join() === '學歷,經歷' && hs.every(h => !h.hasAttribute('data-label'))),   // 標題是內容、不是介面文字
-    `師資詳細頁：照片在上、名字副標同列表、清單（學歷、經歷）＝Subsection title＋年份一行說明一行、清單之間 xl、標題不標 data-label（${JSON.stringify(prof)}）`);
+    `師資詳細頁：照片在上、名字副標同列表、清單（學歷、經歷）＝Subsection title＋年份一行說明一行、清單之間 lg、標題不標 data-label（${JSON.stringify(prof)}）`);
   const menuL = (await rect(d, '.menu-btn .bar-rect')).left;   // 詳細頁沒有導覽矩形（user 2026-11-18）→ 對齊線拿 menu 鈕矩形左緣（導覽矩形本來就對齊它）
   assert(Math.abs(bkr.left - menuL) < 1 && Math.abs(bkr.top - ph.top) < 1, `返回鈕左上角：對齊 menu 鈕矩形、照片上緣（${bkr.left},${bkr.top} vs ${menuL},${ph.top}）`);
   await d.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
@@ -2170,7 +2170,7 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
     await c.goto(base + '/pages/about.html');
     await c.waitForFunction(() => document.querySelectorAll('main .page-section').length === 1 && document.querySelector('main h1')?.textContent === '關於我們');
     // 關於的段落（user 2026-11-23）＝標題 → 輪播 → 說明（隔 md）→ 小節（子集合、照 sort；標題 h3 → 圖 → 內文 → 附註，有才排）：換行照留、空一行＝分段、塊之間 sm、
-    // 小節一塊一個 .subsection、包在 .subsections，塊之間＝gap xl（user 2026-11-24，同清單列）、沒標題＝第一塊（圖／輪播）貼塊頂；附註 text-xs；段落自己沒有附註了；
+    // 小節一塊一個 .subsection、包在 .subsections，塊之間＝gap lg（同清單列，user 2026-11-24；11-25 跟著清單列從 xl 改）、沒標題＝第一塊（圖／輪播）貼塊頂；附註 text-xs；段落自己沒有附註了；
     // 小節圖限高（page.css，600×400 的圖在 6 欄寬會超過）；英文空退中文；
     // 最後是年表（沿革）＝同師資詳細頁的學歷：年份一行、說明一行、沒年份只有說明、沒說明的那筆不出，筆與筆之間 sm（ul 的 gap，user 2026-11-24）
     const subs = () => c.evaluate(() => [...document.querySelectorAll('main .page-section > :not(h2, .slideshow, .subsections), main .subsection > :not(.slideshow)')]
@@ -2183,8 +2183,8 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
         // 輪播（段落的、小節多張的）：class、裡面的圖照 sort；小節標題下面的輪播跟標題隔 xs（同一張圖）
         shows: [...document.querySelectorAll('main :is(.page-section, .subsection) > .slideshow[data-ready]')].map(s => `${s.className}:${[...s.querySelectorAll('img')].map(i => i.src.split('/').pop()).join('+')}`).join('|'),
         showGap: (h => h && /** @type {Element} */ (h.nextElementSibling).getBoundingClientRect().top - h.getBoundingClientRect().bottom)([...document.querySelectorAll('main .subsection > h3')].find(x => x.textContent === '多圖')),
-        // 塊之間＝gap 48（桌面 xl）、沒標題那塊（第 2 塊）的輪播離塊頂＝上下暈出去的模糊那段（--up 24）
-        blocks: blocks.length === 3 && blocks.every((b, i) => !i || Math.abs(r(b).top - r(blocks[i - 1]).bottom - 48) < 0.5) && Math.abs(r(/** @type {Element} */ (blocks[1].firstElementChild)).top - r(blocks[1]).top - 24) < 0.5,
+        // 塊之間＝gap 32（桌面 lg）、沒標題那塊（第 2 塊）的輪播離塊頂＝上下暈出去的模糊那段（--up 24）
+        blocks: blocks.length === 3 && blocks.every((b, i) => !i || Math.abs(r(b).top - r(blocks[i - 1]).bottom - 32) < 0.5) && Math.abs(r(/** @type {Element} */ (blocks[1].firstElementChild)).top - r(blocks[1]).top - 24) < 0.5,
         img: { max: cs.maxHeight, fit: cs.objectFit, h: img.getBoundingClientRect().height,
           // 標題 → 圖 md（24）、圖 → 下面的內文 xl（48）（user 2026-11-24：「我想要圖片到那個段落文字是 xl，但 title 到圖片可以是 md」，一張圖同輪播）
           gaps: [r(img).top - r(/** @type {Element} */ (img.previousElementSibling)).bottom, r(/** @type {Element} */ (img.nextElementSibling)).top - r(img).bottom].map(Math.round).join() },
@@ -2193,7 +2193,7 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
     });
     const aboutZh = await subs(), tail = '|P.whitespace-pre-line mt-sm:第二段<b>|P.whitespace-pre-line mt-sm text-xs:小節附註|P.whitespace-pre-line mt-sm:沒標題的小節|H3.:多圖|UL.timeline mt-xl:2026';
     assert(about.shows === 'slideshow:img1|slideshow:sub2+sub3|slideshow:sub4+sub5' && Math.abs(about.showGap - 24) < 0.5 && about.blocks,
-      `接後台：小節的圖多張＝輪播、照 sort，跟標題隔 md（user 2026-11-24：「title 到圖片可以是 md」）、沒標題＝離塊頂 24，塊之間 gap xl（${about.shows}、${about.showGap}、${about.blocks}）`);
+      `接後台：小節的圖多張＝輪播、照 sort，跟標題隔 md（user 2026-11-24：「title 到圖片可以是 md」）、沒標題＝離塊頂 24，塊之間 gap lg（${about.shows}、${about.showGap}、${about.blocks}）`);
     assert(about.menu === '關於我們' && about.title === '關於我們 - SCAID' && about.lead === '後台導言' && about.slides === 1 && about.dots === 1 && about.tlGap
       && about.img.max !== 'none' && about.img.fit === 'contain' && Math.abs(about.img.h - parseFloat(about.img.max)) < 1 && about.img.gaps === '24,48'
       && aboutZh === 'P.whitespace-pre-line mt-md:段落說明\n第二行|P.whitespace-pre-line mt-sm:說明第二段|H3.:小標|IMG.:sub1|P.whitespace-pre-line mt-sm:第一行\n第二行' + tail + '成立沒年份',
