@@ -29,7 +29,7 @@ module.exports = {
 
       // 英文走 JetBrains Mono、中文字落到 Glow Sans TC Compressed（自架切片，fonts/glow-sans-tc-compressed/）；全站一個堆疊，不分中英元件
       fontFamily: {
-        'sans': ['JetBrains Mono', 'Glow Sans TC Compressed', 'monospace'],
+        'sans': ['var(--font-latin)', 'Glow Sans TC Compressed', 'monospace'],   // --font-latin：中文版＝英數下移對齊中文字底的那份、英文版＝原本的 JetBrains Mono（variables.css）
       },
 
       // 4 階字級：[字級, 行距] tuple → .text-* 自帶該階 line-height（xl 以上 user 2026-11-21 先刪，要用再開）

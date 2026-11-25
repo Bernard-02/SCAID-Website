@@ -5,6 +5,10 @@
    ======================================== */
 
 :root {
+  /* 英數的字體（tailwind font-sans 的第一個）：中文版＝字形往下移、英數的底對齊中文字的底的那份（user 2026-11-25：「中文裏面出現的英文，baseline要以中文的爲主」；
+     scripts/shift-latin.py、typography.css 的 'JetBrains Mono ZH'）；英文版（檔尾 html[lang="en"]）＝原本那份 */
+  --font-latin: 'JetBrains Mono ZH';
+
   /* ===== Colors：介面色（黑白＋灰階；網站內容是彩色的，不轉灰階，user 2026-11-19） ===== */
   --color-black: #000000;
   --color-white: #FFFFFF;
@@ -185,6 +189,7 @@ html[lang="en"] { --logo-vb-h: 115.02; }
 }
 /* 英文版的行距（中英分開，user 2026-11-24）：跟上面 :root 那組（中文）一階一階對，要調英文改這裡 */
 html[lang="en"] {
+  --font-latin: 'JetBrains Mono';   /* 英文版沒有中文可對齊＝原本的基準線（:root 那條的說明） */
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
   --line-height-s: 1.4;   /* 同 xs 那一階（user 2026-11-25：「英文的 s 文字的 line height 我想改成 xs」「改成 1.4」；原本 1.5。中文照舊 1.5） */
