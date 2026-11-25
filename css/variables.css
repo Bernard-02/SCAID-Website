@@ -37,17 +37,19 @@
   --font-size-s: 0.875rem;    /* 14px；表單元件另保 16px 免 iOS focus 放大（typography.css） */
   --font-size-xs: 0.8rem;     /* 12.8px */
 
-  /* 字重唯一來源（Google Fonts link 載 400..700）。title＝Medium、內文＝Regular（user 2026-11-21）；粗體只剩 b／strong 與入學附件。
-     中文字體只切了這三個字重：要加／換字重＝這裡＋ scripts/build-fonts.py WEIGHTS 重切（沒有字檔的字重會掉到別的字重，不會假粗） */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
+  /* 字重唯一來源。title＝Medium、內文＝Regular（user 2026-11-21）；粗體只剩 b／strong 與入學附件。
+     英文（JetBrains Mono，可變字重 300–700，typography.css）regular 300、medium 480（user 2026-11-25：「英文的regular字重可以幫我改成300嗎？然後medium的改成450」→「英文的500調整成480即可」；原本 400／500）。
+     中文字體只切了 400／500／700 三個字檔：要 300 的拿 400、要 480 的拿 500（瀏覽器挑最接近的字檔：比 400 細的往下找、沒有就往上；400～500 之間先往上找到 500）
+     ＝中文看起來跟原本一樣。中文要加／換字重＝scripts/build-fonts.py WEIGHTS 重切（沒有字檔的字重會掉到別的字重，不會假粗） */
+  --font-weight-regular: 300;
+  --font-weight-medium: 480;
   --font-weight-bold: 700;
 
   /* 行距綁字級：Tailwind fontSize 用 [size, line-height] tuple → .text-* 自帶該階行距。
      中英分開（user 2026-11-24：「將中英分開不同的行距調整」）：這裡＝中文版，英文版在檔尾 html[lang="en"] 那組（lang.js 換 <html lang>），兩邊各自調 */
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
-  --line-height-s: 1.4;   /* 內文（純文字）：user 2026-11-24「行距可以小一點」1.7 → 1.5，同一天中文再改 1.4（英文留 1.5） */
+  --line-height-s: 1.5;   /* 內文（純文字）：user 2026-11-24「行距可以小一點」1.7 → 1.5，同一天中文再改 1.4；2026-11-25「段落文字的 line height 中文，改 1.5」（現在跟英文一樣） */
   --line-height-xs: 1.4;
   --line-height-base: 1.5;    /* <body> 預設 */
 
@@ -66,7 +68,7 @@
   --spacing-8xl: 12rem;   /* 192px */
   /* 半個行距＝行高比字高多出來的一半（字的上下各一份）：在用到它的那個元素上算（1lh、1em 照那個元素的字級與行距）。
      圖 ↔ 字的間距要加上它，看起來才跟字 ↔ 字一樣——字 ↔ 字兩邊各有一份、圖 ↔ 字只有字那邊一份
-     （user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」；text-s 中文 1.4 行距 ≈ 3.7px） */
+     （user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」；text-s 1.5 行距 ≈ 4.6px） */
   --lead: calc((1lh - 1em) / 2);
 
   /* 文字版 logo 的 viewBox 寬、高（圖剛好撐滿 viewBox）：logo 的比例（chrome.css .logo-text）與骨牌大小都從這裡算。
@@ -77,7 +79,7 @@
   --logo-vb-h: 160.88;
   --logo-stroke-vb-h: 70;   /* stroke 版（內頁那版、沒字）的高＝一個骨牌高（原本 images/Logo Stroke*.svg 的 viewBox 高；2026-11-24 圖刪了，logo.js 照長度畫）；寬同上（兩版的骨牌才疊得齊） */
   /* logo 兩端那顆骨牌（Logo Text.svg：骨牌高 70）：底列 menu 鈕同大（user 2026-11-18）。
-     所有 hover／選中的圓點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18） */
+     所有 hover／選中的圓點、摺疊的空心點＝骨牌的圓孔（直徑 20/70 高），不跟文字字級走（user 2026-11-18；2026-11-25 hover 從直條改回圓點） */
   --block-h: calc(var(--logo-w) * 70 / var(--logo-vb-w));
   --dot-size: calc(var(--block-h) * 20 / 70);
 
@@ -185,7 +187,7 @@ html[lang="en"] { --logo-vb-h: 115.02; }
 html[lang="en"] {
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
-  --line-height-s: 1.5;
+  --line-height-s: 1.4;   /* 同 xs 那一階（user 2026-11-25：「英文的 s 文字的 line height 我想改成 xs」「改成 1.4」；原本 1.5。中文照舊 1.5） */
   --line-height-xs: 1.4;
   --line-height-base: 1.5;
 }

@@ -1,5 +1,5 @@
 /* 首頁（index.html）：未展開＝一屏只有畫面正中央的 logo（同全站鎖定版）；點底列的動態 → html.news-open：logo 上移到頂，
-   清單在畫面中間展開、頁面可捲，定位到點下去時看到的那則、閃一下＝hover 的蓋黑收直條（user 2026-11-23；原本點的是底列右端的＋，展開後變－）；
+   清單在畫面中間展開、頁面可捲，定位到點下去時看到的那則、閃一下＝hover 的蓋黑收圓點（user 2026-11-23；原本點的是底列右端的＋，展開後變－）；
    點動態以外的地方＝收回去。切 class 在 chrome.js（setNews／openNewsAt） */
 
 @layer components {
@@ -38,24 +38,24 @@
   /* 捲軸跟著清單淡掉（user 2026-11-23：「news 離開的時候，scrollbar 的消失也是 fade out 才對」；原本清單滑完、頁面變短才直接收掉） */
   html.news-closing #custom-scrollbar-thumb { opacity: 0; filter: blur(var(--blur)); }
   /* 手機＝內頁內文的寬：左右各讓 --rail-w（同 page.css .page-body；user 2026-11-23：「比照其他頁面的內容寬度，不一定要跟 logo 等寬」，原本＝logo 寬、滿版）。
-     桌面 --rail-w 是 0、下面那條置中 --col-w */
-  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-lg); margin-inline: var(--rail-w); }   /* 列與列之間同 .item-list（lg，user 2026-11-24：所有清單一樣；原本 xl） */
-  /* 一則＝蓋黑收直條的一列（user 2026-11-23：hover 整則；點底列的動態展開、定位到那則之後也閃一下＝同一套、直條停一下就淡掉）：
-     帶與直條插在 li 裡、照 li 的框擺（item-marquee.js strike／flash，樣子 page.css .item-cover） */
+     桌面 --rail-w 是 0、下面那條置中、寬＝logo 直條那一段 */
+  .home-news-list > ul { display: flex; flex-direction: column; gap: var(--spacing-xl); margin-inline: var(--rail-w); }   /* 列與列之間同 .item-list（xl，user 2026-11-25：「同類型的一起改」；11-24 是 lg） */
+  /* 一則＝蓋黑收圓點的一列（user 2026-11-23：hover 整則；點底列的動態展開、定位到那則之後也閃一下＝同一套、圓點停一下就切掉；2026-11-25 直條換成圓點）：
+     帶與圓點插在 li 裡、照 li 的框擺（item-marquee.js strike／flash，樣子 page.css .item-cover）；圓點在一則的最右緣、對在標題的正中 */
   .home-news-list li { position: relative; }
   @media (min-width: 768px) {
-    .home-news-list > ul { width: var(--col-w); margin: 0 auto; }
+    /* 寬＝logo 第一根直條的左緣到最後一根的右緣（user 2026-11-25：「pc的news，我想要寬度調整成logo的第一根到最後一根的width」；原本＝--col-w＝連兩端骨牌的整個 logo 寬）：
+       展開時 logo 停在系名那 17 根的 stroke 版，直條那一段＝logo 寬扣兩端各「骨牌 45＋間隙 20」個 viewBox 單位（logo.js BLOCK／GAP、DEPT） */
+    .home-news-list > ul { width: calc(var(--col-w) * (var(--logo-vb-w) - 130) / var(--logo-vb-w)); margin: 0 auto; }
   }
-  .home-news-box {   /* 手機：圖在上、標題在下（user 2026-11-24；原本標題在上）。不加框（user 2026-11-24） */
-    aspect-ratio: 3 / 1;
-    margin-bottom: var(--spacing-sm);
-    background: var(--light-gray);
-    overflow: hidden;
-  }
-  .home-news-box img { display: block; width: 100%; height: 100%; object-fit: cover; }   /* 後台那則的圖（cms-pages.js）；沒圖＝灰底 */
+  /* 手機：圖在上、標題在下（user 2026-11-24；原本標題在上）。不加框（user 2026-11-24）。圖框＝同動態的清單列（user 2026-11-25：「手機上這個圖應該是跟activities的一樣調整，
+     圖片不要被crop到」；原本滿版 3:1、cover 裁掉上下）：方框、寬 --item-thumb-w（page.css .item-thumb），圖照原比例 contain、貼框底靠左＝緊接著下面的標題，
+     跟標題隔一個 gutter（同動態那列的 grid gap）。後台沒有圖＝不放框（cms-pages.js homeNews），所以不墊灰底 */
+  .home-news-box { width: var(--item-thumb-w); aspect-ratio: 1; margin-bottom: var(--spacing-gutter); }
+  .home-news-box img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: left bottom; }   /* 後台那則的圖（cms-pages.js） */
   /* 字＝同清單列的標題（page.css .item-row h3）：Medium。只有標題（user 2026-11-24 後台拿掉了說明＝摘要） */
   .home-news-list p { font-weight: var(--font-weight-medium); }
-  .home-news-list p { padding-right: calc((var(--spacing-gutter) + 0.5rem) / 2); }   /* 右邊讓出 hover 直條的位置（直條在一則的最右緣，item-marquee.js EDGE；同 page.css --row-pad） */
+  .home-news-list p { padding-right: calc(var(--dot-size) + var(--spacing-gutter)); }   /* ＝page.css --dot-pad（user 2026-11-25：字到圓點要隔開） */   /* 右邊讓出 hover 圓點的位置（圓點在一則的最右緣，item-marquee.js EDGE；同 page.css --row-pad） */
   /* PC＝同內頁的清單列（user 2026-11-24：「首頁的 news 應該跟其他頁面的 list 長得一樣」）：左縮圖＝內頁清單的縮圖一樣大（--item-thumb-w；
      user 2026-11-24：「圖片應該是 list 的那個大小，但要縮短文字的 box 寬度」＝清單總寬照舊 --col-w、文字那欄跟著窄），
      隔一個 gutter 右文字、文字上下對在圖的正中；圖照原比例 contain 在方框的正中（同 page.css .item-thumb img：user 2026-11-24「讓裏面的圖片 center 這個 box」，原本貼左；框不跟著圖變大小）。

@@ -25,7 +25,9 @@
   html.menu-open.news-open { --shift: 0px; }
   /* 作品頁也不右推（user 2026-11-24：「在作品頁面打開 menu 時就不需要做位移」）：放映／總覽留在原地，只模糊＋疊白 */
   html.menu-open body[data-page="works"] { --shift: 0px; }
-  html:is(.menu-open, .menu-closing) { overflow: hidden; }
+  /* 放大 dialog 開著也鎖（user 2026-11-25：「後面的操作應該要 freeze 掉」）：showModal 只擋得住點跟聚焦，滾輪、觸控、方向鍵／空白鍵照樣捲得動後面那一頁。
+     滾輪另外由 chrome.js 接去換圖 */
+  html:is(.menu-open, .menu-closing, :has(#figure-dialog[open])) { overflow: hidden; }
   /* 選單開著右邊內容不吃指標（user 2026-11-21）：不能 hover、點了事件穿到 body → 第一下只收選單（chrome.js pointerdown），點到連結也不會換頁。
      首頁底列的動態也是（user 2026-11-21：動態當內容處理，同其他頁）——點下去落在底列本身，chrome.js 一樣當成點內容；內頁它本來就藏著 */
   html.menu-open :is(#page-content, .bar-news) { pointer-events: none; }
@@ -182,10 +184,10 @@
     @apply text-md;   /* 手機比照 PC 用同一階（user 2026-11-22，原本手機 s）：手機多大＝調 variables.css 的手機 md，不另開字級 */
     display: flex;
     flex-direction: column;
-    /* 上下兩塊：選項（nav：主選單＋規章那組自己捲、常見問題那組固定）＋深色模式、語言鈕（.menu-tools，固定在底下；user 2026-11-24）。
+    /* 上下兩塊：選項（nav：主選單＋捐款、規章那組自己捲、聯絡固定）＋深色模式、語言鈕（.menu-tools，固定在底下；user 2026-11-24）。
        頂＝內容起始線（--top-h）＝捲動框的上緣，線以上什麼都看不到（user 2026-11-24：「往上應該就看不到內容了，那個 box 就只到起始位置那裏」）；
        底：語言鈕 → menu 鈕的距離＝分區的 gap（user 2026-11-21）。底列那一行的高＝骨牌（比名字、play 高）。
-       左右內距給兩塊自己（下一條）＝nav 的捲動框吃滿選單寬、選中那項的直條不會被框切到 */
+       左右內距給兩塊自己（下一條）＝nav 的捲動框吃滿選單寬、選中那項的圓點不會被框切到 */
     padding: var(--top-h) 0 calc(var(--bar-pad) + var(--block-h) + var(--spacing-xl));   /* 分區的 gap＝xl（user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」；原本 lg） */
     color: var(--theme-fg);
     transform: translateX(-100%);
@@ -198,7 +200,7 @@
   @media (min-width: 768px) { .site-menu { padding-bottom: var(--top-h); } }
   html.menu-open .site-menu { transform: none; opacity: 1; filter: none; }
   .site-menu > * { padding-inline: var(--container-padding); }
-  /* nav＝捲動框（主選單＋規章那組）＋固定的常見問題那組（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」）：
+  /* nav＝捲動框（主選單＋規章那組）＋固定的常見問題那組（常見問題頁 user 2026-11-25 拿掉了＝這組剩捐款、聯絡，下面註解照舊叫它這個名字）（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」）：
      吃掉鈕上面剩下的高；組跟組之間＝分區的 gap xl。內距給裡面兩塊自己（捲動框要吃滿選單寬，理由同下） */
   .site-menu-links { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--spacing-xl); }
   .site-menu > .site-menu-links { padding-inline: 0; }
@@ -238,44 +240,44 @@
   /* 選項間距（user 2026-11-18 加寬）。.link-list＝內頁的同款可點清單（網站地圖、聯絡頁姊妹系所、入學附件），間距跟選單同一條 */
   /* 選項間距 sm（user 2026-11-24：「menu 的選單之間的 gap 改成 sm，同步調整 sitemap 的」；原本 xs）——網站地圖、聯絡頁姊妹系所、入學附件（.link-list）同一條 */
   .menu-main, .menu-sub, .link-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
-  .menu-main + .menu-sub { margin-top: auto; }   /* 捲動框裡的規章那組推到框底；主選單到它至少＝分區的 gap */
-  /* 深色模式＋語言鈕一組（user 2026-11-21）：兩顆之間＝選項間距；組跟上面常見問題那組之間才是分區的 gap（xl） */
-  .menu-tools { margin-top: var(--spacing-xl); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); }   /* 兩顆之間＝選項間距（上面那條，sm） */
+  /* 捲動框裡的捐款那組直接接在入學下面＝第二組、隔分區的 gap（user 2026-11-25：「捐款那組是要放在入學下面，是第二組」；原本 margin-top: auto 推到框底） */
+  /* 語言鈕＋深色模式：跟上面固定的聯絡同一組，聯絡 → EN → 深色模式 之間都是選項間距 sm（user 2026-11-25：「聯絡跟en是同一組、sticky」，
+     順序先「將mode放在en上面吧」、再「兩者交換」；原本深色模式＋語言鈕自己一組、跟上面那組之間 xl） */
+  .menu-tools { margin-top: var(--spacing-sm); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); }
   .theme-btn { display: flex; align-items: center; min-height: 1lh; }   /* 至少一行字高；icon＝骨牌的高（下一條）比 EN 那行高一點 */
-  .theme-btn .icon { font-size: var(--block-h); transition: transform var(--dur-medium) var(--ease-standard); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
+  .theme-btn .icon { font-size: var(--block-h); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
   html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝ai 的 night（＝day 轉半圈：實心那半到上面） */
-  /* hover 的圓點全站拿掉了：選單（user 2026-11-22）、內頁的連結清單、聯絡頁的連結（user 2026-11-23）都改成蓋黑收直條（item-marquee.js strike）。
-     這條只剩給選單選中那項的常駐直條當底（下面 .site-menu 那兩條改成直條的樣子）；relative＝hover 的帶與直條對它定位 */
+  /* hover＝黑白對調（實心那半變空、空的那半變實心）＝另一個模式的樣子（user 2026-11-25：「hover mode btn時，是上下顛倒方塊」→「應該是白的變黑的，黑的變白的才對，不是旋轉」）：
+     圖形對稱＝轉半圈的結果就是對調 → 照舊用 rotate、但 icon 不掛 transform 的 transition＝直接換、看不到轉（切換深色模式那一下也是，本來就是整個畫面交叉淡化）。
+     不加遮罩、不出圓點（「hover它們時不需要加上那個遮罩」）。鍵盤聚焦同 hover、觸控不換 */
+  @media (hover: hover) {
+    .theme-btn:hover .icon { transform: rotate(180deg); }
+    html[data-theme="dark"] .theme-btn:hover .icon { transform: rotate(360deg); }
+  }
+  html:not(.input-touch) .theme-btn:focus-visible .icon { transform: rotate(180deg); }
+  html:not(.input-touch)[data-theme="dark"] .theme-btn:focus-visible .icon { transform: rotate(360deg); }
+  /* hover＝蓋黑收圓點（item-marquee.js strike）：選單的選項、語言鈕（404 左下角那顆也是；深色模式鈕 2026-11-25 起改成上下顛倒、不加遮罩，下面），內頁的連結清單（網站地圖、入學附件）、聯絡頁的連結。
+     user 2026-11-22 定的是蓋黑收直條；2026-11-25：「hover效果從stroke改成出現點，menu的也是」「hover時的那個動態要留下」＝帶照舊蓋上、收到字尾，
+     最後出來的那根直條換成一顆圓點（更早就是圓點，user 2026-11-18）。relative＝hover 的帶與圓點對它定位 */
   .nav-link, .lang-btn, .theme-btn, .footer-body a { position: relative; }
-  .nav-link::after {
+  /* 選中的那一項＝那顆圓點常駐（同打開的手風琴圓點是實心的），hover 它不重做：大小＝骨牌的圓孔（--dot-size，不跟字級走）、接在最後一個字後面隔 0.5em
+     （＝item-marquee.js DOT_GAP）。不給 left／top＝靜態位置：接在最後一個字後面、折行＝最後一行（user 2026-11-24 回報過照整個連結的框擺的問題：
+     英文 Regulations & Policies 在 PC 選單折兩行，落在兩行中間、壓到第一行的字尾）；靜態位置的頂＝那一行的頂，往下半個（行高 − 圓點）＝對在那一行的正中 */
+  .site-menu .nav-link.active::after {
     content: '';
     position: absolute;
-    left: 100%;
-    top: 50%;
     width: var(--dot-size);
     aspect-ratio: 1;
-    margin-left: 0.5em;
+    margin: calc((1lh - var(--dot-size)) / 2) 0 0 0.5em;
     border-radius: 50%;
     background: currentColor;
-    transform: translateY(-50%);
-    opacity: 0;
-    filter: blur(var(--blur));
-    transition: var(--transition-fade);   /* hover 出來的圓點也是 fade＋模糊（user 2026-11-21；原本瞬間出） */
-  }
-  /* 選單的選項 hover＝跟清單一樣蓋黑收直條（user 2026-11-22；item-marquee.js strike，hover 著才在、離開拿掉），不出圓點。
-     選中的那一項＝收完的那根直條常駐（同打開的手風琴直條留著）：字尾後面隔一根直條寬、寬 0.4em、高＝字高（同 strike 收完的直條），hover 它不重做。
-     不給 left／top＝靜態位置：接在最後一個字後面、折行＝最後一行（同 strike 的直條 item-marquee.js bar）；靜態位置的頂＝那一行的頂，往下半個行距＝對在字的正中。
-     原本 left 100%／top 50% 照整個連結的框擺：英文折兩行（Regulations & Policies，PC 選單寬 18rem）時落在兩行中間、壓到第一行的字尾（user 2026-11-24 回報） */
-  .site-menu .nav-link.active::after {
-    left: auto; top: auto; transform: none; margin-top: calc((1lh - 1em) / 2);
-    width: 0.4em; height: 1em; aspect-ratio: auto; margin-left: 0.4em; border-radius: 0; opacity: 1; filter: none;
     clip-path: inset(0px);   /* 換語言時切出去／切進來（下面 strokes-out／in）：none 跟 inset 不能補間 */
   }
-  /* 中文的選項（都是中文字結尾）：扣掉最後一個字右邊燒在字體裡的字距（0.205em＝scripts/build-fonts.py TRACKING）＝跟 hover 收完的直條同一個位置（item-marquee.js TRACK；user 2026-11-23） */
-  html:not([lang="en"]) .site-menu .nav-link.active::after { margin-left: calc(0.4em - 0.205em); }
-  /* 換語言（lang.js）：留著的直條先從左往右切出去 → 換字（整個畫面 fade）→ 照新的字從左到右切進來（同直條的出場／進場：DUR.fast、wipe；
-     user 2026-11-24：「切換成英文的時候，應該要看英文的寬度，再做一次 stroke 的進出場」）。選中那項的常駐直條＋hover、開著的摺疊留著的直條
-     （item-marquee.js 收完的 data-phase stroke；還在跑的那幾段是 Web Animations、蓋過這兩條）。換字時 strokes-out 還掛著＝新畫面那張也沒有直條 */
+  /* 中文的選項（都是中文字結尾）：扣掉最後一個字右邊燒在字體裡的字距（0.205em＝scripts/build-fonts.py TRACKING）＝跟 hover 收完的圓點同一個位置（item-marquee.js TRACK；user 2026-11-23） */
+  html:not([lang="en"]) .site-menu .nav-link.active::after { margin-left: calc(0.5em - 0.205em); }
+  /* 換語言（lang.js）：留著的圓點先從左往右切出去 → 換字（整個畫面 fade）→ 照新的字從左到右切進來（同圓點的出場／進場：DUR.fast、wipe；
+     user 2026-11-24 直條那時定的：「切換成英文的時候，應該要看英文的寬度，再做一次 stroke 的進出場」）。選中那項的常駐圓點＋hover 著留著的那一顆
+     （item-marquee.js 收完的 data-phase stroke；還在跑的那幾段是 Web Animations、蓋過這兩條）。換字時 strokes-out 還掛著＝新畫面那張也沒有圓點 */
   html.strokes-out .site-menu .nav-link.active::after,
   html.strokes-out .item-cover[data-phase="stroke"] { clip-path: inset(0px 0px 0px 100%); transition: clip-path var(--dur-fast) var(--ease-wipe); }
   html.strokes-in .site-menu .nav-link.active::after,
@@ -351,7 +353,9 @@
   /* 手機選單＝全螢幕（user 2026-11-22；桌面照舊左邊一欄）：選單吃滿畫面、內容不右推（原地模糊＋疊白，選單直接疊在上面）；
      點選單的空白處＝收選單（chrome.js；原本點右邊內容收，那塊現在被選單蓋住） */
   @media (max-width: 767px) {
-    .site-menu { width: 100%; }
+    /* 手機的選單字級 lg（user 2026-11-25：「手機上 menu 的大小改成 lg」；全螢幕的選單＝字可以大一階。桌面照舊 md；
+       11-22 定的是手機跟 PC 同一階 md——這裡是 user 點名的例外） */
+    .site-menu { width: 100%; @apply text-lg; }
     html.menu-open { --shift: 0px; }
     /* 首頁正中的 logo、play 鈕也是首頁的內容（user 2026-11-24：原本清楚地疊在全螢幕的選項上）→ 選單開著同 #page-content、動態模糊＋疊 60% 白；
        play 不吃指標＝按下去落在底列本身＝只收選單（chrome.js，同動態）。logo 到頂了（展開動態）＝同別頁照常清楚。logo 原本的位移過場要一起寫 */
@@ -367,8 +371,20 @@
      logo 照常（同其他蓋上來的東西）。鍵盤照常按得到：Tab 到 menu 開選單＝選單開著時 menu 鈕照常清楚 */
   html:is(.news-open, .news-closing):not(.menu-open) body[data-page="index"] .menu-btn,
   html:is(.news-open, .news-closing) body[data-page="index"] .play-btn { filter: blur(var(--blur)); opacity: 0.4; pointer-events: none; }
+  /* 首頁展開動態：底列正中浮一顆骨牌、中央圓點常駐＝active（user 2026-11-25：「會有一個 icon 懸浮在畫面底部，就跟作品的那一頁一樣，但只有一個 icon，
+     暫時先用點來表示 active，一樣背後要加上 blur」；背後＝作品頁那塊 .fs-blur，下面）。點了＝收回去（chrome.js；同 menu 鈕：開著圓點常駐、再點就關）。
+     跟底列的動態同一格：動態淡完它才淡進來（--news-wait＝同 logo、清單，home.css），收合／選單開／換頁＝馬上淡掉、淡完才 hidden。
+     淡的是骨牌跟毛玻璃每一層自己、不掛在鈕上（鈕會變 backdrop root＝毛玻璃糊不到底下的清單；同 .figure-ctrl） */
+  .news-btn { grid-area: 1 / 2; justify-self: center; position: relative; visibility: hidden; transition: visibility 0s var(--dur-fade); }
+  /* icon＝news.svg（user 2026-11-25 給的；先做的是骨牌＋中央圓點常駐＝暫代 active）：大小同其他 icon＝骨牌的高；hover＝下方一顆圓點（icon hover 那條） */
+  .news-btn .icon { font-size: var(--block-h); opacity: 0; filter: blur(var(--blur)); transition: var(--transition-fade); }
+  .news-btn .fs-blur > i { opacity: 0; }
+  html.news-open:not(.menu-open, .page-leaving) body[data-page="index"] .news-btn { visibility: visible; transition: visibility 0s var(--news-wait); }
+  html.news-open:not(.menu-open, .page-leaving) body[data-page="index"] .news-btn .icon { opacity: 1; filter: none; transition-delay: var(--news-wait); }
+  html.news-open:not(.menu-open, .page-leaving) body[data-page="index"] .news-btn .fs-blur > i { opacity: 1; transition-delay: var(--news-wait); }
+  html.news-open:not(.menu-open, .page-leaving) body[data-page="index"] .news-btn .fs-blur::after { opacity: 0.6; transition-delay: var(--news-wait); }
 
-  /* ── 內頁右圖在 PC 以外（手機、iPad；user 2026-11-13 手機稿、2026-11-23 起 iPad 也是）＝底列右下角那顆鈕（底列第三欄、右緣對齊內距；
+  /* ── 內頁右圖在 PC 以外（手機、iPad；user 2026-11-13 手機稿、2026-11-23 起 iPad 也是）＝底列右下角那顆鈕（底列第三欄、右緣對齊內距；2026-11-25 搬到右緣中線過、同一天搬回來；
      長得跟 menu 鈕一樣＝骨牌，hover／鍵盤聚焦中央圓點，名字不出；user 2026-11-23，原本是畫面右緣中線上幾根 stroke 圍成的圓）。
      點了開 .figure-dialog 放大（PC 的右圖在 main 裡，page.css .page-figure；HTML 掛 pc:hidden）；有右圖那一格的頁 chrome.js syncFigure 才標 .has-figure。
      進出場走網站 transition：沒圖／選單開／換頁淡出，淡完才 hidden ── */
@@ -423,8 +439,8 @@
      顏色改由它自己的 color 過場淡過去（同時長、同曲線＝跟畫面一起變）。color 的過場只在切換那段掛：平常 hover 換色要馬上換（下面 :hover） */
   .bar-news { view-transition-name: bar-news; }
   html:active-view-transition .bar-news { transition: color var(--dur-fade) var(--ease-standard); }
-  /* hover＝蓋黑收直條（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」；原本字色變 0.75）：帶與直條插在軌道裡、照軌道的框擺
-     （item-marquee.js hostOf；展開時跟著軌道一起淡掉）。放得下＝帶蓋那則的字、直條在字尾後面；放不下（跑馬燈）＝帶到欄的右緣、直條在欄外 */
+  /* hover＝蓋黑收圓點（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」；原本字色變 0.75；2026-11-25 直條換成圓點）：帶與圓點插在軌道裡、照軌道的框擺
+     （item-marquee.js hostOf；展開時跟著軌道一起淡掉）。放得下＝帶蓋那則的字、圓點在字尾後面；放不下（跑馬燈）＝帶到欄的右緣、圓點在欄外 */
   .bar-news-track {
     position: relative;
     flex: 1 1 0;
@@ -434,7 +450,7 @@
     transition: var(--transition-fade);
   }
   /* 每則疊在同一格、一次只亮一則（chrome.js 掛 .is-current）；藏著的 visibility hidden＝報讀只念看得到的那則。
-     放不下的字在這層切掉、兩端不淡（user 2026-11-23：「news 的左右 fade 拿掉」；原本兩端各淡 2em）——不在軌道切：hover 的直條在欄外。
+     放不下的字在這層切掉、兩端不淡（user 2026-11-23：「news 的左右 fade 拿掉」；原本兩端各淡 2em）——不在軌道切：hover 的圓點在欄外。
      欄寬固定＝這一格的寬（minmax(0, 1fr)）：自動的欄會被最長的那則撐寬，放得下的那則就置中到撐寬的欄裡＝偏右、被切掉（user 2026-11-23 手機回報） */
   .bar-news-copy { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; }
   .bar-news-copy > span {
@@ -452,15 +468,20 @@
   html:is(.news-open, .news-closing) .bar-news-track { opacity: 0; filter: blur(var(--blur)); }
 
   /* ── 放大 dialog（lightbox：相簿、封面、報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片；user 2026-11-13 起）：蓋滿畫面、透明。
-     內容的頂＝各頁 title 那條線（--top-h）、下面也留 --top-h（user 2026-11-23：「頂點對齊每個頁面的 title 的位置，然後上下對齊」；原本在 logo 區與底列區之間置中）、左右置中。
+     內容的框＝作品頁放映的舞台那一段：頂＝各頁 title 那條線（--top-h）、底＝底列上方再留 md，內容在這一段的正中、左右置中（user 2026-11-25，下面 --fig-h；
+     11-23 是下面也留 --top-h：「頂點對齊每個頁面的 title 的位置，然後上下對齊」；原本在 logo 區與底列區之間置中）。
      背後＝內容模糊＋疊 60% 白（同選單開著那組：--blur、opacity 0.4；user 2026-11-21，原本白底整個蓋掉）、底列收起來（控制列在底列那條線的正中，下面 .figure-nav），
      logo 照常清楚：所以不是 dialog 自己 backdrop-filter（top layer 會連 logo 一起糊），而是 dialog 開著時糊 logo 以外的內容與殼（下面 :has 那兩條）。
      在放影片＝關燈（整頁換深色，同作品頁；chrome.js lights）；首頁的 logo 這時移到頂（home.css）。
      inset 0 撐滿＝跟著實際可視範圍，不靠 ::backdrop 補；fade in 走 keyframes、fade out 由 chrome.js 加 .is-closing 淡完才關。
      ⚠️ display 只能寫在 [open]：寫在 .figure-dialog 會蓋掉瀏覽器「沒開＝display none」 ── */
   .figure-dialog {
-    --fig-w: calc(100vw - 2 * var(--container-padding));   /* 內容最大的框：寬扣兩邊內距、高扣上下各一個 --top-h */
-    --fig-h: calc(100svh - 2 * var(--top-h));
+    /* 內容最大的框＝作品頁放映的舞台那一段（user 2026-11-25：「lightbox 的圖片對齊位置跟打開的狀態，都要跟作品一樣，上下的 padding 一致」，
+       問過：只改上下、寬照舊）：寬扣兩邊內距；上＝title 那條線（--top-h）、下＝底列上方再留 md（works.css .works-items 的 margin-bottom）
+       ＝撐滿高的圖不貼著 ‹ X ›。原本上下各扣一個 --top-h、在畫面正中 */
+    --fig-w: calc(100vw - 2 * var(--container-padding));
+    --fig-bottom: calc(var(--bar-h) + var(--spacing-md));
+    --fig-h: calc(100svh - var(--top-h) - var(--fig-bottom));
     inset: 0;
     width: auto;
     height: auto;
@@ -481,12 +502,13 @@
   .figure-dialog.is-closing { opacity: 0; filter: blur(var(--blur)); }
   /* 內容＋控制列（全螢幕的那一塊，header.html）：撐滿 dialog，內容貼著 --top-h 那條線、左右置中 */
   /* --vid-w＝影片的寬（下面影片那條、右邊那組控制列對齊它的右緣都吃這個）；寫在 .figure-stage＝全螢幕換了 --fig-w／--fig-h 它跟著算 */
-  .figure-stage { --vid-w: min(var(--fig-w), var(--fig-h) * 16 / 9); position: relative; height: 100%; display: flex; align-items: flex-start; justify-content: center; padding: var(--top-h) var(--container-padding); transition: var(--transition-fade); }
-  /* 影片、圖片：上下置中＝畫面正中（user 2026-11-24：手機直放時影片比框矮，貼著 title 線、下面空一大塊；圖片同一天：「一樣，這個圖片應該是要對齊中間，不是頂部」
-     ＝照 SCCD 的 media lightbox 圖片擺法：在中間、照比例縮進可用範圍、小圖不放大，page.css .figure-dialog-body > img）。撐滿框高的＝跟貼著線一樣 */
+  .figure-stage { --vid-w: min(var(--fig-w), var(--fig-h) * 16 / 9); position: relative; height: 100%; display: flex; align-items: flex-start; justify-content: center; padding: var(--top-h) var(--container-padding) var(--fig-bottom); transition: var(--transition-fade); }
+  /* 影片、圖片：在框（上面 --fig-h 那一段）的正中＝同作品頁放映正中那個（user 2026-11-25；11-24 是畫面正中：手機直放時影片比框矮，貼著 title 線、下面空一大塊；
+     圖片同一天：「一樣，這個圖片應該是要對齊中間，不是頂部」）。圖片照比例撐滿框、小圖也放大（page.css .figure-dialog-body > img；11-24 照 SCCD 小圖不放大） */
   .figure-stage:has(> .figure-dialog-body > :is(iframe, video, img, canvas)) { align-items: center; }   /* canvas＝手機的右圖 object（user 2026-11-24：「這個也要在畫面中間」） */
+  .figure-dialog.is-object { --fig-bottom: var(--top-h); }   /* 手機的右圖 object 照舊在畫面正中（上下各一個 --top-h）：它沒有 ‹ X › 那一排 */
   /* 手機的右圖 object（.is-object，chrome.js openObjectDialog；user 2026-11-24）：沒有 ‹ X ›（整組控制列不出）；
-     關閉＝右下角那顆骨牌，在底列 .figure-btn 的位置（右＝內距、底＝--bar-pad、高＝那一行），中央圓點常駐＝同 menu 鈕開著 */
+     關閉＝打開它的那顆骨牌，在底列 .figure-btn 的位置（右＝內距、底＝--bar-pad、高＝那一行），中央圓點常駐＝同 menu 鈕開著 */
   .figure-obj-close { display: none; }
   .figure-dialog.is-object .figure-ctrl { display: none; }
   .figure-dialog.is-object .figure-obj-close { @apply text-md; display: inline-flex; align-items: center; position: absolute; right: var(--container-padding); bottom: var(--bar-pad); height: max(1.5em, var(--block-h)); }
@@ -518,8 +540,9 @@
      跟著鈕一起淡（.is-idle）：淡的是每一層自己的 opacity。平常（不是全螢幕）不出 */
   .fs-blur { display: none; }
   .figure-stage:fullscreen .figure-ctrl { z-index: 1; }
-  /* 作品頁底列的鈕（menu、放映／總覽）也是這塊（user 2026-11-24：免得直接疊在作品上）；選單開著＝內容已經糊＋疊白，收掉 */
-  :is(.figure-stage:fullscreen, body[data-page="works"] .site-bar) .fs-blur { --f: var(--spacing-lg); --w: calc(var(--f) * 1.5); display: block; position: absolute; inset: calc(-1 * var(--f)); z-index: -1; pointer-events: none; }
+  /* 作品頁底列的鈕（menu、放映／總覽）也是這塊（user 2026-11-24：免得直接疊在作品上）；選單開著＝內容已經糊＋疊白，收掉。
+     首頁展開動態的那顆（.news-btn，user 2026-11-25）也是：平常跟著鈕 visibility hidden、每一層的 opacity 在上面 .news-btn 那段 */
+  :is(.figure-stage:fullscreen, body[data-page="works"] .site-bar, .news-btn) .fs-blur { --f: var(--spacing-lg); --w: calc(var(--f) * 1.5); display: block; position: absolute; inset: calc(-1 * var(--f)); z-index: -1; pointer-events: none; }
   .fs-blur > i, .fs-blur::after { transition: opacity var(--dur-fade) var(--ease-standard); }
   :is(.figure-stage:fullscreen, body[data-page="works"] .site-bar) .fs-blur::after { opacity: 0.6; }
   html.menu-open .site-bar .fs-blur > i, html.menu-open .site-bar .fs-blur::after { opacity: 0; }
@@ -540,6 +563,9 @@
   .figure-ctrl .icon { font-size: var(--block-h); }   /* 同底列 play 鈕＝menu 鈕骨牌的高 */
   .figure-dialog:not(.has-video) .media-btn, .figure-dialog.no-fs .media-fs, .figure-dialog.no-vol .media-vol-bars, .figure-dialog:not(.has-nav) :is(.figure-prev, .figure-next) { display: none; }
   .figure-dialog:not(.is-paused) .media-play .icon-play, .figure-dialog.is-paused .media-play .icon-pause { display: none; }
+  /* 全螢幕鈕：進了全螢幕換成 shrink（user 2026-11-25：「我加了一個 shrink 的 svg，在點擊 full screen 之後要切換成這個」），出來換回 full screen；
+     兩張一樣寬＝換了鈕不動。報讀名稱跟著換（chrome.js fullscreenchange） */
+  .figure-stage:not(:fullscreen) .media-fs .icon-shrink, .figure-stage:fullscreen .media-fs .icon-fullscreen { display: none; }
   /* 音量鈕的三張疊在同一格、靠左（icon 照自己的寬之後，user 2026-11-24）：鈕寬＝最寬那張、三張的左緣都是喇叭的左緣＝換圖時喇叭跟後面的拉桿都不動
      （拖拉桿跨過 4／5 根時不會在游標底下跳）。藏起來的用 visibility 才佔得住寬 */
   .figure-media .media-mute { display: grid; align-items: center; justify-items: start; }
@@ -568,9 +594,10 @@
     -webkit-mask: url('../website-icons/volume.svg') calc(7.223 * var(--u)) center / calc((var(--bars) * 10.223 - 7.223) * var(--u)) auto no-repeat;
             mask: url('../website-icons/volume.svg') calc(7.223 * var(--u)) center / calc((var(--bars) * 10.223 - 7.223) * var(--u)) auto no-repeat;
   }
-  /* 喇叭 → 第一根直條＝看起來一個 --bar-gap（user 2026-11-24：「這個 lightbox 打開的 icon 之間的 gap 都統一吧，就是 bar gap」；原本「跟靜音鈕一組」減半）：
+  /* 喇叭 → 第一根直條＝看起來半個 --bar-gap（user 2026-11-25：「音量跟bar之間只需要是這個gap的一半」＝同一組、比鈕跟鈕之間近；
+     11-24 一度統一成一個 bar gap：「這個 lightbox 打開的 icon 之間的 gap 都統一吧」）。最後一根 → 全螢幕照舊一個 bar gap（.figure-ctrl 的 gap）。
      第一根在它那一格的右端、前面空 7.223 個單位（上面 ::before 的 mask 位置）＝margin 扣掉這段 */
-  .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol-bars { width: calc(var(--bars) * 10.223 * var(--u)); margin-left: calc(var(--bar-gap) - 7.223 * var(--u)); opacity: 1; filter: none; }
+  .media-vol-wrap:is(:hover, :has(:focus-visible)) .media-vol-bars { width: calc(var(--bars) * 10.223 * var(--u)); margin-left: calc(var(--bar-gap) / 2 - 7.223 * var(--u)); opacity: 1; filter: none; }
   .media-vol { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; -webkit-appearance: none; appearance: none; background: none; cursor: pointer; }
   .media-vol::-webkit-slider-runnable-track { height: 100%; background: none; }
   .media-vol::-moz-range-track { height: 100%; background: none; }
@@ -585,9 +612,35 @@
   .figure-dialog:not(.is-paused) .media-play:not(:focus-visible) { opacity: 0; filter: blur(var(--blur)); }
   @media (hover: hover) { .figure-dialog:not(.is-paused) :is(.figure-dialog-body:hover + .media-play, .media-play:hover) { opacity: 1; filter: none; } }
   .figure-dialog .figure-stage:fullscreen.is-idle .media-play { opacity: 0; filter: blur(var(--blur)); }
+  /* YouTube 的影片不出這顆（user 2026-11-25：「如果是 yt 的影片，感覺就不需要再渲染 play pause，除非是我們自己的影片，像首頁那樣」）：
+     它停著的時候正中有自己的播放鈕、點影片本身就是播放／暫停＝兩顆疊在一起。直連的影片檔（<video>，首頁的 intro）沒有別的地方可以按＝照舊。
+     空白鍵、全螢幕時點影片照樣播放／暫停（chrome.js mediaAct），音量、全螢幕那組也照舊 */
+  .figure-stage:has(> .figure-dialog-body > iframe) > .media-play { display: none; }
   .figure-ctrl button:disabled { opacity: 0.5; cursor: default; }
-  @media (hover: hover) { .figure-ctrl button:not(:disabled):hover { opacity: 0.6; } }
-  /* 作品頁的上一個／下一個＝淡出 → 換 → 淡入（user 2026-11-24：「作品頁面中的影片跟圖片切換，要用 fade in out」；chrome.js stepFigure 掛 .is-swapping）。
+  /* hover icon＝icon 下方出一顆圓點（user 2026-11-25：「hover icon時會在icon的下方加上圓點，而不是改變不透明度」「hover它們時不需要加上那個遮罩」）：
+     放大 dialog 的控制列（‹ X ›、音量、全螢幕）、詳細頁的返回鈕、作品頁的排法鈕、首頁的 play、聯絡頁的社群。原本控制列、返回鈕 hover 變淡 0.6、
+     排法鈕從 0.3 亮到 1、社群蓋黑收圓點（item-marquee.js）。圓點＝骨牌的圓孔（--dot-size）、水平置中、離 icon 底 xs——icon 一律＝骨牌的高、在鈕的正中，
+     所以從鈕的中線往下半個骨牌高（返回鈕有 padding 也對）；現／隱＝網站 fade（同 menu 鈕骨牌中央的圓點）。鍵盤聚焦同 hover、觸控不出（點完 :hover 會黏著）。
+     深色模式鈕不在這裡＝hover 上下顛倒（上面 .theme-btn）。**詳細頁的返回鈕也不出**（user 2026-11-25：「返回 icon 的 hover 不需要有底部的圓點」；同一天稍早有）＝hover 沒有變化 */
+  :is(.figure-ctrl button, .bar-works button, .play-btn, .news-btn, .footer-social a) { position: relative; }
+  :is(.figure-ctrl button, .bar-works button, .play-btn, .news-btn, .footer-social a)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: calc(50% + var(--block-h) / 2 + var(--spacing-xs));
+    width: var(--dot-size);
+    aspect-ratio: 1;
+    margin-left: calc(var(--dot-size) / -2);
+    border-radius: 50%;
+    background: currentColor;
+    pointer-events: none;
+    opacity: 0;
+    filter: blur(var(--blur));
+    transition: var(--transition-fade);
+  }
+  @media (hover: hover) { :is(.figure-ctrl button:not(:disabled), .bar-works button, .play-btn, .news-btn, .footer-social a):hover::after { opacity: 1; filter: none; } }
+  html:not(.input-touch) :is(.figure-ctrl button, .bar-works button, .play-btn, .news-btn, .footer-social a):focus-visible::after { opacity: 1; filter: none; }
+  /* 上一個／下一個＝淡出 → 換 → 淡入（每一頁的 lightbox，user 2026-11-25：「lightbox 換圖的轉場用 fade 的吧」；11-24 只有作品頁；chrome.js stepFigure 掛 .is-swapping）。
      淡的是內容、正中的播放鈕、右邊那組（影片↔圖片時它會出現／不見；淡的是鈕自己，同 .is-idle 那條：掛在 .figure-media 上毛玻璃會糊不到影片）；‹ X › 不動 */
   .figure-dialog-body { transition: var(--transition-fade); }
   .figure-dialog.is-swapping :is(.figure-dialog-body, .media-play, .figure-media > :not(.fs-blur)) { opacity: 0; filter: blur(var(--blur)); }

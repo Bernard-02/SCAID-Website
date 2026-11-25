@@ -72,15 +72,16 @@
   .bar-works { grid-area: 1 / 2; justify-self: center; position: relative; display: flex;   /* relative：背後的毛玻璃（.fs-blur，chrome.css）貼著這一組 */ gap: var(--bar-gap); transition: var(--transition-fade), visibility 0s; }
   body:not([data-page="works"]) .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   html.logo-moving .bar-works { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }   /* 首頁 → 作品頁：logo 移完才淡進來（理由同 chrome.css html.logo-moving .fs-blur） */
-  .bar-works button { display: flex; color: inherit; opacity: 0.3; transition: var(--transition-fade); }
+  .bar-works button { display: flex; color: inherit; }
   .bar-works .icon { font-size: var(--block-h); }
-  .bar-works button[aria-pressed="true"] { opacity: 1; }
-  @media (hover: hover) {
-    .bar-works button:hover { opacity: 1; }
-  }
+  /* 一顆鈕、點了在兩種排法之間切（user 2026-11-25：「我想要將作品的兩個 icon 合并，點了會切換」；原本兩顆、沒選的那顆淡 0.3）：
+     鈕的 data-works-mode＝點了要切過去的那一種（works.js 切完換），只露那一種的圖示與名字（另一種 display: none＝也不算進報讀名稱）；兩張圖一樣寬＝換了鈕不動。
+     hover＝icon 下方一顆圓點（chrome.css，同其他 icon） */
+  .bar-works button[data-works-mode="bento"] :is(.icon-slideshow, [data-label="bar.works.slideshow"]),
+  .bar-works button[data-works-mode="slideshow"] :is(.icon-grid, [data-label="bar.works.bento"]) { display: none; }
   /* 選單開著＝當內容處理（同首頁的動態）：模糊＋疊白、不吃指標（點下去落在底列本身＝只收選單，chrome.js） */
   html.menu-open body[data-page="works"] .bar-works { opacity: 0.4; filter: blur(var(--blur)); pointer-events: none; }
   /* 作品頁一律深色：深色模式鈕藏起來（user 2026-11-23；原本停用＋淡 0.3。chrome.js syncTheme 照樣掛 disabled），
-     語言鈕補到它的位置（上面隔的就是選單分區的間距）；離開回到存的那種 */
+     語言鈕補到它的位置；離開回到存的那種 */
   body[data-page="works"] .theme-btn { display: none; }
 }

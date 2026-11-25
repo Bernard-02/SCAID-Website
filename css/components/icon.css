@@ -37,6 +37,8 @@
   .icon-half        { --icon: url('../website-icons/half.svg'); --ar: 42.764 / 70; }
   .icon-silence     { --icon: url('../website-icons/silence.svg'); --ar: 53.399 / 70; }
   .icon-fullscreen  { --icon: url('../website-icons/fullscreen.svg'); --ar: 45.083 / 70; }
+  .icon-news        { --icon: url('../website-icons/news.svg'); --ar: 45.08 / 70; }   /* 首頁展開動態時底部正中那顆（user 2026-11-25 自己加的；chrome.css .news-btn） */
+  .icon-shrink      { --icon: url('../website-icons/shrink.svg'); --ar: 45.08 / 70; }   /* 全螢幕中那顆鈕換成這張（user 2026-11-25 自己加的；chrome.css .media-fs） */
   .icon-close       { --icon: url('../website-icons/close.svg'); --ar: 32.675 / 70; }
   .icon-theme       { --icon: url('../website-icons/day.svg'); --ar: 45.084 / 70; }   /* 深色模式鈕：ai 的 night＝day 轉半圈 → 深色時轉（chrome.css） */
   .icon-slideshow   { --icon: url('../website-icons/slideshow.svg'); --ar: 45.084 / 70; }   /* 作品頁的排法：放映／總覽 */
