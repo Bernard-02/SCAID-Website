@@ -26,6 +26,9 @@ const bi = (tag, zh, en, attrs = '') => { const z = String(zh || en || ''); retu
 export async function loadFooterCms() {
   const root = document.querySelector('#page-content .footer-body');
   if (!root) return;
+  // 版權的年份＝今年（user 2026-11-25：「年份會自動更新」）；後台抓不到也照樣換
+  const copyright = root.querySelector('.footer-copyright');
+  if (copyright) copyright.textContent = `Copyright © ${new Date().getFullYear()}`;
   let d;
   try { d = await fetchCmsJson(`${CMS_API_BASE}/footer?fields=*,badge.id,badge.title,sections.sort,sections.title_zh,sections.title_en,sections.entries&deep[sections][_sort]=sort`); }
   catch (e) { console.warn('[footer] 後台抓不到，維持靜態字：', e instanceof Error ? e.message : e); return; }
@@ -59,10 +62,9 @@ export async function loadFooterCms() {
     }).join('');
     show(social, social.children.length);
   }
-  // 標章：alt＝Directus 檔案標題（檔案庫可改）；沒放＝收掉
+  // 標章：alt＝Directus 檔案標題（檔案庫可改）；還沒放＝留著灰色佔位（user 2026-11-25 要佔位；原本收掉）
   const badge = root.querySelector('.footer-badge'), src = assetUrl(d.badge);
   if (src && badge) badge.outerHTML = `<img class="footer-badge" src="${escapeHtml(src)}" alt="${escapeHtml(d.badge.title)}">`;
-  else show(badge, false);
 
   applyLang(root);
 }

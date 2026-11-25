@@ -18,6 +18,7 @@ import { hover } from '../ui/item-marquee.js';
 import { DUR } from '../ui/motion.js';
 import { prefersReducedMotion } from '../ui/reduce-motion.js';
 import { sitePath } from '../ui/site-base.js';
+import { FACULTY_LINES, subLines } from '../ui/item-list-cms.js';
 
 // ── 小工具 ──
 /** 中文寫內文、英文寫 data-en（lang.js 切），英文空退中文；兩個都空＝不出 @param {string} tag @param {any} zh @param {any} en @param {string} [attrs] */
@@ -32,7 +33,7 @@ const filesOf = (list) => (Array.isArray(list) ? list : []).slice().sort(bySort)
 const FILE = (/** @type {string} */ f) => `${f}.sort,${f}.directus_files_id.id,${f}.directus_files_id.width,${f}.directus_files_id.height,${f}.directus_files_id.title,${f}.directus_files_id.filename_download`;
 const p2 = (/** @type {number} */ x) => String(x).padStart(2, '0');
 const EN_DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-/** 時間（後台用選的，user 2026-11-24）：日期［–結束日期］，沒有幾點（user 同一天：動態、入學的開始／結束時間都拿掉，「留下日期即可」）。
+/** 入學的時間（動態 2026-11-25 起照 SCCD＝上面的 datesOf）；後台用選的（user 2026-11-24）：日期［–結束日期］，沒有幾點（user 同一天：動態、入學的開始／結束時間都拿掉，「留下日期即可」）。
  *  中文 2025.12.20–12.27（跨年才再寫年）、英文 20–27 Dec 2025 @param {any} n */
 const timeOf = (n) => {
   if (!n.date) return '';
@@ -40,6 +41,34 @@ const timeOf = (n) => {
   const zhDay = (/** @type {Date} */ d, year = true) => `${year ? d.getFullYear() + '.' : ''}${p2(d.getMonth() + 1)}.${p2(d.getDate())}`;
   const a = day(n.date), b = n.end_date && n.end_date.slice(0, 10) !== n.date.slice(0, 10) ? day(n.end_date) : null;
   return bi('p', zhDay(a) + (b ? '–' + zhDay(b, b.getFullYear() !== a.getFullYear()) : ''), b ? EN_DAY.formatRange(a, b) : EN_DAY.format(a));
+};
+const MON_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const MON_ZH = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+const ymd = (/** @type {unknown} */ s) => String(s || '').slice(0, 10).split('-').map(Number);
+/** 動態的日期（照 SCCD 的活動，user 2026-11-25：「動態的日期，前臺跟後臺都調整跟sccd的一樣」；SCCD activities-data-loader.js formatSingleDateGroup）：
+ *  後台 dates 一筆一段、「, 」接起來；這裡不分年（問過）＝每段都帶開始的年（＝SCCD 的 includeStartYear），數字的中英同一行：
+ *  2025/03/05、2025/03/05 - 03/08、跨年 2024/12/28 - 2025/01/03；只到月 2025 DEC／2025 十二月；月到月 2025 DEC - FEB（跨年 2025 DEC - 2026 FEB）；
+ *  只到年＝那一年（SCCD 寫 N/A／無記錄：它左邊有年份欄、這裡沒有）；取消（cancelled）＝Canceled／取消（同 SCCD） @param {any} n */
+export const datesOf = (n) => {   // export：煙霧測試直接餵各種寫法
+  if (n.cancelled) return bi('p', '取消', 'Canceled');
+  const mon = (/** @type {number} */ y, /** @type {number} */ m, /** @type {string[]} */ L, withYear = true) => `${withYear ? y + ' ' : ''}${L[m - 1] || ''}`;
+  const parts = (Array.isArray(n.dates) ? n.dates : []).filter(d => d?.start).map(d => {
+    const [y, m, dd] = ymd(d.start), [y2, m2, d2] = d.end ? ymd(d.end) : [y, m, dd];
+    if (d.yearOnly) return [String(y), String(y)];
+    if (d.monthOnly || (d.monthRange && y2 === y && m2 === m)) return [mon(y, m, MON_ZH), mon(y, m, MON_EN)];
+    if (d.monthRange) return [MON_ZH, MON_EN].map(L => `${mon(y, m, L)} - ${mon(y2, m2, L, y2 !== y)}`);
+    const start = `${y}/${p2(m)}/${p2(dd)}`;
+    const s = y2 === y && m2 === m && d2 === dd ? start : `${start} - ${y2 !== y ? y2 + '/' : ''}${p2(m2)}/${p2(d2)}`;
+    return [s, s];
+  });
+  return parts.length ? bi('p', parts.map(x => x[0]).join(', '), parts.map(x => x[1]).join(', ')) : '';
+};
+/** 動態的順序（同 SCCD）：第一段的開始、新到舊；只到年＝排在那一年最後；沒日期＝最後 @param {any} n */
+const dateKey = (n) => {
+  const d = (Array.isArray(n.dates) ? n.dates : []).find(x => x?.start);
+  if (!d) return -Infinity;
+  const [y, m, dd] = ymd(d.start);
+  return d.yearOnly ? y * 10000 : y * 10000 + m * 100 + dd;
 };
 const article = () => document.querySelector('#page-content .page-body');
 /** 摺疊一列：展開內容空的＝不能點的 div 列 @param {string} head @param {string} body @param {string} [cls] */
@@ -148,12 +177,19 @@ function setLead(p) {
 // 欄位用 *（這個集合現在有的都拿）＋相簿、附件那幾層，不一個一個點名：後台刪掉不要的欄位（user 2026-11-24 刪了動態的開始／結束時間）前台照樣讀得到——
 // 點名一個已經不存在的欄位，Directus 整串回 403、前台退回示意。沒有的欄位這裡本來就當空的（timeOf、bi）
 const FIELDS = { activities: `*,${FILE('album')}`, admission: `*,${FILE('album')},${FILE('attachments')}` };
+/** 一個地點：城市（手打）有填＝接在後面的括號裡——中文「地點（城市）」全形、英文「place (city)」半形（user 2026-11-25：「渲染就是跟在地點後面，
+ *  （）半型全型再根據語言調整」「城市的是手動key的文字」「動態不需要國家」）。英文空退中文 @param {any} x */
+const place = (x) => {
+  const cz = x?.city_zh || x?.city_en || '', ce = x?.city_en || x?.city_zh || '';
+  const nz = x?.name_zh || x?.name_en || '', ne = x?.name_en || x?.name_zh || '';
+  return bi('p', nz && cz ? `${nz}（${cz}）` : nz || cz, ne && ce ? `${ne} (${ce})` : ne || ce);
+};
 /** 動態頁那一列（後台照 SCCD 的活動，user 2026-11-24）：縮圖＋標題＋副標（一筆一行，同師資那種；原本一行「分類」）；
  *  展開＝時間、地點（可以好幾個、一個一行；原本一格 place_*）、相簿（影片在前） @param {any} n */
 const newsRow = (n) => {
   const lines = (/** @type {any} */ rows, /** @type {string} */ k) => (Array.isArray(rows) ? rows : []).map(x => bi('p', x?.[`${k}_zh`], x?.[`${k}_en`])).join('');
   const head = `${n.image ? `<div class="item-thumb"><img src="${esc(assetUrl(n.image))}" alt="" loading="lazy"></div>` : ''}<div>${bi('h3', n.title_zh, n.title_en)}${lines(n.subtitles, 'text')}</div>`;
-  const meta = timeOf(n) + lines(n.locations, 'name');
+  const meta = datesOf(n) + (Array.isArray(n.locations) ? n.locations : []).map(place).join('');
   return fold(head, (meta ? `<div class="fold-meta">${meta}</div>` : '') + album(filesOf(n.album), videosOf(n.videos)));
 };
 /** 入學頁那一列：標題＋時間（沒縮圖、沒分類）；展開＝說明 → 相簿 → 附件 @param {any} n */
@@ -170,8 +206,10 @@ async function newsList(admission = false, item = '') {
   const ul = document.querySelector('#page-content .page-section .item-list');
   if (!ul) return;
   const col = admission ? 'admission' : 'activities';
-  const rows = await list(col, `sort=-date&limit=-1&fields=${FIELDS[col]}`);
+  // 動態：日期是重複列（dates，照 SCCD）＝後台排不了 → 這裡排（dateKey）；入學照舊後台照 date 排
+  const rows = await list(col, `${admission ? 'sort=-date&' : ''}limit=-1&fields=${FIELDS[col]}`);
   if (!rows || !ul.isConnected) return;
+  if (!admission) rows.sort((a, b) => (dateKey(b) - dateKey(a)) || 0);   // || 0：兩個都沒日期（-Infinity − -Infinity＝NaN）
   ul.innerHTML = rows.map(admission ? admissionRow : newsRow).join('');
   await refresh();
   if (!item || !ul.isConnected) return;   // 等介面文字的時候換頁了，同上
@@ -255,8 +293,12 @@ async function curriculum() {
 
 // ── 榮譽（榮譽、報導合在一個集合 records；user 2026-11-25：「後臺資料庫上，將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」）：
 //    一筆一個摺疊＝動態那種列的變體（縮圖＝國旗、小一號，page.css .record）；收著＝國旗＋標題＋類型（榮譽／報導，介面文字 records.type.*），
-//    點開＝主辦方（榮譽）／媒體（報導）——從單位庫／媒體庫選——＋內容（重複列 details，一筆一行：得獎人、獎別、刊出日期…）＋圖片（album，同動態的相簿、點了放大）──
+//    點開＝主辦方（榮譽，從單位庫選）＋內容（重複列 details，一筆一行：得獎人、獎別、報導標題、刊出日期…）＋圖片（album，同動態的相簿、點了放大）。
+//    類型不是後台選的（user 2026-11-25：「如果是寫標題的話，就會是award，如果是從庫裏面選的話，則是press，二選一」）：從媒體庫選了媒體＝報導、那一列的標題＝媒體的名字；
+//    沒選＝榮譽、標題＝寫的獎項名稱。後台那兩格互鎖；原本另外有一格「類型」category、報導的標題是自己打的 ──
 const RECORD_TYPES = { award: ['榮譽', 'Award'], press: ['報導', 'Press'] };
+// 國旗給報讀的國名（user 2026-11-25：「這個報讀是指無障礙嗎？這個不需要寫在後臺」）＝瀏覽器內建的國名、照國家代碼自己生（原本後台一格 country_zh／country_en 要人填，刪了）
+const REGION = { zh: new Intl.DisplayNames(['zh-Hant'], { type: 'region' }), en: new Intl.DisplayNames(['en'], { type: 'region' }) };
 async function records() {
   // 欄位用 *：舊的那幾格（award_*、winner_*…）藏起來了還在，之後後台刪掉也不會整串 403（同動態）
   const rows = await list('records', `sort=sort&limit=-1&fields=*,organizer.name_zh,organizer.name_en,media.name_zh,media.name_en,${FILE('album')}`);
@@ -265,11 +307,12 @@ async function records() {
   ul.innerHTML = rows.map(r => {
     const code = /^[a-z]{2}$/.test(r.country_code || '') ? r.country_code : '';
     const flag = code ? `<div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${code}.svg" alt="" loading="lazy"></div>` : '';   // 同動態的縮圖標記；大小在 page.css .record
-    const type = r.category === 'press' ? 'press' : 'award', [typeZh, typeEn] = RECORD_TYPES[type];
-    const words = `${bi('span', r.country_zh, r.country_en, ' class="sr-only"')}${bi('h3', r.title_zh, r.title_en)}${lbl('p', `records.type.${type}`, typeZh, typeEn)}`;
+    const press = !!(r.media?.name_zh || r.media?.name_en), type = press ? 'press' : 'award', [typeZh, typeEn] = RECORD_TYPES[type];
+    const title = press ? bi('h3', r.media.name_zh, r.media.name_en) : bi('h3', r.title_zh, r.title_en);   // 報導＝媒體的名字、榮譽＝獎項名稱
+    const words = `${(code ? bi('span', REGION.zh.of(code.toUpperCase()), REGION.en.of(code.toUpperCase()), ' class="sr-only"') : '')}${title}${lbl('p', `records.type.${type}`, typeZh, typeEn)}`;
     const head = flag ? `${flag}<div>${words}</div>` : words;   // 沒國旗＝純文字的列（不放圖框，同動態沒圖的那則）：字直接放在列裡，標題、副標之間的 gap 才吃得到（page.css）
-    const who = type === 'press' ? r.media : r.organizer;   // 從庫選的那一格（user 2026-11-25：「要，從庫裏面選」）：報導＝媒體（媒體庫）、榮譽＝主辦方（單位庫）＝點開後的第一行
-    const lines = bi('p', who?.name_zh, who?.name_en) + (Array.isArray(r.details) ? r.details : []).map((/** @type {any} */ x) => bi('p', x?.text_zh, x?.text_en)).join('');
+    // 點開後的第一行：榮譽＝主辦方（單位庫；user 2026-11-25：「要，從庫裏面選」）；報導的媒體已經是標題了＝不再重複
+    const lines = (press ? '' : bi('p', r.organizer?.name_zh, r.organizer?.name_en)) + (Array.isArray(r.details) ? r.details : []).map((/** @type {any} */ x) => bi('p', x?.text_zh, x?.text_en)).join('');
     // .record＝國旗不是封面（chrome.js：打開了點它照常收合、不放大，相簿放大的那一組也不含它）；點開沒東西也照樣是摺疊
     return `<li><details class="record"><summary class="item-row">${head}</summary><div class="fold-body">${lines ? `<div class="fold-meta">${lines}</div>` : ''}${album(filesOf(r.album))}</div></details></li>`;
   }).join('');
@@ -295,20 +338,21 @@ async function regulations() {
   if (items.length || secs.length) await refresh();
 }
 
-// ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業）：每頁一個單例 ──
-// 關於、捐款的段落是子集合（要放輪播圖；輪播下面一段說明、再來是小節，小節也是子集合：要放圖）——捐款 user 2026-11-24「比照 about」，
+// ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業） ──
+// 導言（後台叫 Hero）每一頁自己一個單例 <slug>_page，跟那一頁的其他內容分開（user 2026-11-25：「後臺我想要每個頁面的hero文字都分開，不要混在一起」；
+// 師資、合作企業本來就是，關於、捐款原本導言跟段落在同一個單例）。
+// 關於、捐款的段落在單例 <slug>＝子集合（要放輪播圖；輪播下面一段說明、再來是小節，小節也是子集合：要放圖）——捐款 user 2026-11-24「比照 about」，
 // 原本是重複列（JSON）＋一整段 rich text；兩邊欄位一樣＝抓的也一樣（規章的條款也是，上面 regulations()）。師資、合作企業只有導言
 const TEXT_SECTIONS = 'sections.sort,sections.title_zh,sections.title_en,sections.description_zh,sections.description_en,sections.timeline,sections.subsections.*,'
   + FILE('sections.subsections.images') + ',' + FILE('sections.images') + '&deep[sections][_sort]=sort';
-/** @type {Record<string, [string, string]>} slug → [集合, 導言以外要抓的欄位] */
-const SINGLE = { about: ['about', TEXT_SECTIONS], donate: ['donate', TEXT_SECTIONS], faculty: ['faculty_page', ''], partners: ['partners_page', ''] };
+const WITH_SECTIONS = ['about', 'donate'];   // 有段落的頁（集合名＝slug）
 /** @param {string} slug */
 async function textPage(slug) {
-  const [col, more] = SINGLE[slug];
-  const page = await single(col, 'lead_zh,lead_en' + (more ? ',' + more : ''));
+  // 兩個各抓各的：一個抓不到，另一個照換
+  const [hero, page] = await Promise.all([single(`${slug}_page`, 'lead_zh,lead_en'), WITH_SECTIONS.includes(slug) ? single(slug, TEXT_SECTIONS) : null]);
   const art = article();
-  if (!page || !art?.isConnected) return;
-  setLead(page);
+  if (!(hero || page) || !art?.isConnected) return;
+  setLead(hero);
   const secs = sectionsOf(page);
   if (secs.length) replaceSections(art, secs.map(textSection).join(''));
   await refresh();
@@ -322,14 +366,14 @@ async function facultyDetail(params) {
   const id = params.get('id') || '';
   if (!/^\d+$/.test(id)) return;
   let f;
-  try { f = await fetchCmsJson(`${CMS_API_BASE}/faculty/${id}?fields=photo.id,photo.width,photo.height,person.name_zh,person.name_en,subtitles,sections.sort,sections.title_zh,sections.title_en,sections.entries&deep[sections][_sort]=sort`); }
+  try { f = await fetchCmsJson(`${CMS_API_BASE}/faculty/${id}?fields=photo.id,photo.width,photo.height,person.name_zh,person.name_en,${FACULTY_LINES},subtitles,sections.sort,sections.title_zh,sections.title_en,sections.entries&deep[sections][_sort]=sort`); }
   catch (e) { console.warn('[faculty] 詳細頁抓不到，維持示意：', e instanceof Error ? e.message : e); return; }
   const art = article(), head = art?.querySelector(':scope > .item-row'), photo = art?.querySelector('.profile-photo');
   // 不是一筆（沒資料、拿到陣列）＝維持示意：原本靠 f.status 順便擋掉，2026-11-24 拿掉上架狀態後空陣列會把整頁清空
   if (!f || typeof f !== 'object' || Array.isArray(f) || !art?.isConnected || !head) return;
   if (photo) photo.innerHTML = f.photo ? `<img ${imgAttrs(f.photo)}>` : '';
-  const subs = (Array.isArray(f.subtitles) ? f.subtitles : []).map(x => bi('p', x?.text_zh, x?.text_en)).join('');
-  head.innerHTML = bi('h1', f.person?.name_zh, f.person?.name_en) + subs;
+  // 名字下面：校內職級 → 校外單位 → 副標，一筆一行（同列表那一列，item-list-cms.js subLines；user 2026-11-25）
+  head.innerHTML = bi('h1', f.person?.name_zh, f.person?.name_en) + subLines(f).map(([z, e]) => bi('p', z, e)).join('');
   // 一個清單（標題＋那幾筆）一塊 .subsection＝同關於的小節：清單之間＝.subsections 的 gap xl（同關於的小節）；一筆都沒有的清單不出
   replaceSections(art, `<section class="page-section"><div class="subsections">${(Array.isArray(f.sections) ? f.sections : []).slice().sort(bySort).map((/** @type {any} */ s) => {
     const items = entryList(s?.entries);

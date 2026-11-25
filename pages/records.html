@@ -17,8 +17,9 @@
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/records.html 也能獨立跑。版型同 about（css/components/page.css）。
        榮譽（user 2026-11-19）：榮譽、報導列在同一串（user 2026-11-25：報導頁拿掉、後台兩個合成一個集合 records：「將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」）。
        一筆一個摺疊＝動態那種列的變體（「改成跟動態一樣的設計。然後thumbnail改成國旗」「應該是這個list的變體吧，國旗不需要那麽大」）：
-       縮圖＝國旗、小一號（內文欄的 1 欄寬、4:3；動態的縮圖是 1.5 欄的方框），標題 text-md＝獎項名稱／報導標題、副標 text-s＝類型（榮譽／報導，介面文字 records.type.*），文字對在國旗的正中；手機也是圖左字右。
-       沒有分類的 Section title → 沒有段落導覽。點開＝主辦方（榮譽）／媒體（報導）——後台從單位庫／媒體庫選——接著內容（一筆一行直接寫、不加標籤：得獎人、獎別、刊出日期…）＋圖片（相簿，同動態：一排橫捲、點了放大），從國旗的左緣排起。
+       縮圖＝國旗、小一號（內文欄的 1 欄寬、4:3；動態的縮圖是 1.5 欄的方框），標題 text-md＝獎項名稱（榮譽）／媒體的名字（報導）、副標 text-s＝類型（榮譽／報導，介面文字 records.type.*），文字對在國旗的正中；手機也是圖左字右。
+       類型不是後台選的（user 2026-11-25：「如果是寫標題的話，就會是award，如果是從庫裏面選的話，則是press，二選一」）：後台寫了獎項名稱＝榮譽、從媒體庫選了媒體＝報導（那一列的標題就是媒體的名字）。
+       沒有分類的 Section title → 沒有段落導覽。點開＝主辦方（榮譽，後台從單位庫選）接著內容（一筆一行直接寫、不加標籤：得獎人、獎別；報導＝報導標題、刊出日期…）＋圖片（相簿，同動態：一排橫捲、點了放大），從國旗的左緣排起。
        國旗＝flag-icons 的 SVG（jsDelivr，檔名＝ISO 3166-1 兩碼小寫），彩色、不加框；國旗不是封面＝打開了點它照常收合、不放大（details 掛 .record，chrome.js）。國家名稱寫在文字欄的 .sr-only（報讀用，跟語言切）。
        原本（11-19～24）只有榮譽：國旗是一行字高的小圖（寬 2em）、副標＝得獎人、展開的內容（主辦方、獎別）對齊右邊獎項那一欄。
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
@@ -26,6 +27,7 @@
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
         <h1 class="sr-only" data-label="nav.records" data-en="Records">紀錄</h1>
+        <p class="coming-soon" data-label="page.coming-soon" data-en="Coming soon">即將推出</p>   <!-- 後台「即將推出」勾了這一頁才出、在 Hero 下面那塊的正中（coming-soon.js；user 2026-11-25） -->
 
       <section class="page-section">
         <ul class="item-list mt-0">
@@ -55,13 +57,13 @@
               <div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/jp.svg" alt="" loading="lazy"></div>
               <div>
                 <span class="sr-only" data-en="Country">國家</span>
-                <h3 data-en="Article headline 1">報導標題一</h3>
+                <h3 data-en="Media outlet">媒體名稱</h3>
                 <p data-label="records.type.press" data-en="Press">報導</p>
               </div>
             </summary>
             <div class="fold-body">
               <div class="fold-meta">
-                <p data-en="Media outlet">媒體名稱</p>
+                <p data-en="Article headline">報導標題</p>
                 <p data-en="Date published">刊出日期</p>
               </div>
               <div class="album">

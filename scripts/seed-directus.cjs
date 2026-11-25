@@ -74,9 +74,16 @@ const keyOf = r => `${(r.name_en || '').trim().toLowerCase()}|${(r.name_zh || ''
 // ── 各集合（照各頁現在的標記；標記改了這裡跟著改） ──
 // 動態、入學各一個集合（user 2026-11-24；原本共用 news、勾「入學」）。動態頁每則＝縮圖＋標題＋副標（一筆一行，同師資那種；user 2026-11-24 從「分類」改的），展開＝時間、地點（可以好幾個、一個一行）、相簿裡的影片（button[data-video]）；入學頁每則＝標題＋時間，展開＝說明
 const meta = d => kids(find(d, cls('fold-meta')), tag('p'));
+// 動態的時間那行（照 SCCD 的活動，user 2026-11-25）：2025/12/20 - 12/27、跨年 2024/12/28 - 2025/01/03 → 日期重複列 dates 的一筆（start／end）
+const datesFrom = el => {
+  const m = (el ? text(el) : '').match(/(\d{4})\/(\d{2})\/(\d{2})(?: - (?:(\d{4})\/)?(\d{2})\/(\d{2}))?/);
+  if (!m) return [];
+  const [, y, mo, d, y2, mo2, d2] = m;
+  return [{ start: `${y}-${mo}-${d}`, ...(d2 ? { end: `${y2 || y}-${mo2}-${d2}` } : {}) }];
+};
 const activities = () => findAll(read('activities'), tag('details')).map(d => {
   const sum = find(d, tag('summary')), [time, ...places] = meta(d);
-  return { ...when(time), ...zhEn(find(sum, tag('h3')), 'title'), subtitles: subsOf(kids(sum).at(-1)),
+  return { dates: datesFrom(time), ...zhEn(find(sum, tag('h3')), 'title'), subtitles: subsOf(kids(sum).at(-1)),
     locations: places.map(p => ({ name_zh: text(p), name_en: p.attrs['data-en'] ?? text(p) })), videos: findAll(d, cls('album-video')).map(b => ({ url: b.attrs['data-video'] })) };
 });
 const admission = () => findAll(read('admission'), tag('details')).map(d => {
@@ -115,14 +122,14 @@ function regulations() {
   }));
   return { items, sections: textSingle('regulations').sections };
 }
-// 榮譽與報導（user 2026-11-25 合成一個集合）：國旗檔名＝國家代碼；類型看副標的 data-label（records.type.<award|press>）；
-// 點開的第一行＝主辦方（榮譽，進單位庫）／媒體（報導，進媒體庫）——user：「要，從庫裏面選」；其他每一行＝內容的一筆；圖在後台上傳
+// 榮譽與報導（user 2026-11-25 合成一個集合）：國旗檔名＝國家代碼；類型看副標的 data-label（records.type.<award|press>）——後台沒有「類型」那一格
+// （user 同一天：「如果是寫標題的話，就會是award，如果是從庫裏面選的話，則是press，二選一」）：
+// 榮譽＝標題寫進 title_*、點開的第一行＝主辦方（進單位庫），其他每一行＝內容的一筆；報導＝標題是媒體的名字（進媒體庫、不寫 title_*），點開的每一行都是內容。圖在後台上傳
 const records = () => pub(findAll(read('records'), tag('details')).map(d => {
-  const sum = find(d, tag('summary')), box = kids(sum).at(-1), [who, ...rest] = kids(find(d, cls('fold-meta')), tag('p'));
-  const press = (kids(box, tag('p'))[0]?.attrs['data-label'] || '').endsWith('.press');
-  return { category: press ? 'press' : 'award', country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null, ...zhEn(find(box, cls('sr-only')), 'country'),
-    ...zhEn(find(box, tag('h3')), 'title'), [press ? 'media' : 'organizer']: pool(press ? 'media_outlets' : 'organizations', who),
-    details: rest.map(p => ({ text_zh: text(p), text_en: p.attrs['data-en'] ?? text(p) })) };
+  const sum = find(d, tag('summary')), box = kids(sum).at(-1), h3 = find(box, tag('h3')), ps = kids(find(d, cls('fold-meta')), tag('p'));
+  const press = (kids(box, tag('p'))[0]?.attrs['data-label'] || '').endsWith('.press'), line = p => ({ text_zh: text(p), text_en: p.attrs['data-en'] ?? text(p) });
+  return { country_code: (find(sum, tag('img'))?.attrs.src.match(/\/(\w{2})\.svg$/) || [])[1] || null,
+    ...(press ? { media: pool('media_outlets', h3), details: ps.map(line) } : { ...zhEn(h3, 'title'), organizer: pool('organizations', ps[0]), details: ps.slice(1).map(line) }) };
 }));
 // 首頁的 news（user 2026-11-24：原本叫 home_news；2026-11-23 跟動態頁拆開）：首頁展開那串一則一個 li（p＝標題；裡面兩個 span.block＝標題＋說明），照順序。
 // 點了去哪 HTML 示意沒有：寫進後台時，標題跟入學頁的某一則一樣＝連到那一則（下面主程式；同動態／入學「標題一樣＝同一則」）
@@ -161,7 +168,7 @@ function page(slug, body = subsections) {
   return row;
 }
 // 介面文字：掃殼＋每頁的 data-label，一個 key 一筆（同 key 取第一次出現的字）；分類照 key 的開頭（setup-directus.cjs LABEL_CATS）
-const LABEL_CAT = k => k.startsWith('nav.') ? '選單與頁名' : /^(menu|bar|common)\./.test(k) ? '底列與共用' : k.startsWith('faculty.') ? '師資'
+const LABEL_CAT = k => k.startsWith('nav.') ? '選單與頁名' : /^(menu|bar|common|page)\./.test(k) ? '底列與共用' : k.startsWith('faculty.') ? '師資'
   : k.startsWith('curriculum.') ? '課程' : k.startsWith('contact.') ? '聯絡' : k.startsWith('records.') ? '榮譽' : k.startsWith('error.') ? '404' : null;
 function labels() {
   const m = new Map();
@@ -175,13 +182,17 @@ function labels() {
 
 const POOLS = ['people', 'organizations', 'media_outlets'];
 // 每頁一個單例（user 2026-11-22，照 SCCD）。關於、捐款、規章的條款的段落是子集合（about_sections／donate_sections／regulations_sections，有排序；捐款、規章 user 2026-11-24 比照關於）
-const textSingle = slug => { const r = page(slug, subsections); return { ...r, sections: pub(r.sections || []) }; };
+// 導言（後台叫 Hero）每一頁自己一個單例 <頁>_page（user 2026-11-25：「每個頁面的hero文字都分開，不要混在一起」）：關於、捐款的單例只放段落
+const textSingle = slug => ({ sections: pub(page(slug, subsections).sections || []) });
+const heroOf = slug => { const { lead_zh, lead_en } = page(slug); return lead_zh || lead_en ? { lead_zh, lead_en } : {}; };
 const SINGLES = {
+  about_page: () => heroOf('about'),
   about: () => textSingle('about'),
+  donate_page: () => heroOf('donate'),
   donate: () => textSingle('donate'),
   regulations,
-  faculty_page: () => page('faculty'),
-  partners_page: () => page('partners'),
+  faculty_page: () => heroOf('faculty'),
+  partners_page: () => heroOf('partners'),
 };
 const blank = v => v == null || v === '' || (Array.isArray(v) && !v.length);
 

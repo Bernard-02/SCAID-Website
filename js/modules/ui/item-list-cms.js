@@ -9,10 +9,21 @@ import { escapeHtml } from './escape-html.js';
 import { applyLang } from './lang.js';
 import { initSectionNav } from './section-nav.js';
 
+// 師資名字下面那幾行（user 2026-11-25 照 SCCD：「老師要加上校内職級及校外單位兩個選項，前者是key的，後者是從庫裏面選」）：
+// 校內職級（手打）→ 校外單位（單位庫，照拖曳順序）→ 副標，一筆一行；合作企業只有副標。詳細頁（cms-pages.js facultyDetail）同一支
+export const FACULTY_LINES = 'internal_titles,external_units.sort,external_units.organizations_id.name_zh,external_units.organizations_id.name_en';
+/** @param {any} r @returns {[any, any][]} [中, 英] */
+export const subLines = (r) => /** @type {[any, any][]} */ ([
+  ...(Array.isArray(r.internal_titles) ? r.internal_titles : []).map((/** @type {any} */ x) => [x?.title_zh, x?.title_en]),
+  ...(Array.isArray(r.external_units) ? r.external_units : []).slice().sort((/** @type {any} */ a, /** @type {any} */ b) => (a?.sort ?? 0) - (b?.sort ?? 0))
+    .map((/** @type {any} */ x) => [x?.organizations_id?.name_zh, x?.organizations_id?.name_en]),
+  ...(Array.isArray(r.subtitles) ? r.subtitles : []).map((/** @type {any} */ x) => [x?.text_zh, x?.text_en]),
+]).filter(([z, e]) => z || e);
+
 // 各集合：要抓的欄位、縮圖欄位、標題（名字從人名庫／單位庫來，user 2026-11-21）、整列連到哪（回 '' ＝那列不可點、用 div）
 /** @type {Record<string, { fields: string, thumb: (r: any) => unknown, name: (r: any) => any, link: (r: any) => string }>} */
 const SPEC = {
-  faculty: { fields: 'id,category,photo,person.name_zh,person.name_en', thumb: r => r.photo, name: r => r.person, link: r => `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` },
+  faculty: { fields: `id,category,photo,person.name_zh,person.name_en,${FACULTY_LINES}`, thumb: r => r.photo, name: r => r.person, link: r => `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` },
   // 企業官網：另開新視窗；只放行 http(s)，空的或其他＝不可點
   partners: { fields: 'id,logo,url,organization.name_zh,organization.name_en', thumb: r => r.logo, name: r => r.organization,
     link: r => (/^https?:\/\//i.test(r.url || '') ? `href="${escapeHtml(r.url)}" target="_blank" rel="noopener"` : '') },
@@ -24,10 +35,9 @@ const t = (tag, zh, en) => `<${tag} data-en="${escapeHtml(en || zh || '')}">${es
 /** @param {any} r @param {typeof SPEC[string]} s */
 const row = (r, s) => {
   const src = assetUrl(s.thumb(r)), link = s.link(r), tag = link ? 'a' : 'div', n = s.name(r) || {};
-  const subs = (Array.isArray(r.subtitles) ? r.subtitles : []).filter(x => x?.text_zh || x?.text_en);
   return `<li><${tag} class="item-row" ${link}>`
     + `<div class="item-thumb">${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy">` : ''}</div>`
-    + `<div>${t('h3', n.name_zh, n.name_en)}${subs.map(x => t('p', x.text_zh, x.text_en)).join('')}</div></${tag}></li>`;
+    + `<div>${t('h3', n.name_zh, n.name_en)}${subLines(r).map(([z, e]) => t('p', z, e)).join('')}</div></${tag}></li>`;
 };
 
 export async function loadItemListCms() {

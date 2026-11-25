@@ -74,6 +74,7 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   // 縮圖＋標題＋副標的列表（師資、合作企業）＝Directus；頁面有 ul.item-list[data-cms] 才載
   if (document.querySelector('#page-content .item-list[data-cms]')) cms.push(import('./modules/ui/item-list-cms.js').then(m => m.loadItemListCms()));
   cms.push(import('./modules/pages/cms-pages.js').then(m => m.loadPage(page, params)));   // 其他各頁的內容
+  cms.push(import('./modules/ui/coming-soon.js').then(m => m.applyComingSoon(page)));     // 後台「即將推出」勾了這一頁＝只剩 Hero＋一行字
   return Promise.allSettled(cms);
 }
 
