@@ -39,7 +39,7 @@ export function setLabel(el, zh, en) {
   el.setAttribute('aria-label', getLang() === 'en' ? el.dataset.enLabel : zh);
 }
 
-/** 切一次：留著的直條（選單選中那項、hover 著的）先切出去 → 換字＝整個畫面 fade（user 2026-11-21）→ 照新的字切進來
+/** 切一次：留著的圓點（選單選中那項、hover 著的；2026-11-25 前是直條）先切出去 → 換字＝整個畫面 fade（user 2026-11-21）→ 照新的字切進來
  * （user 2026-11-24：「切換成英文的時候，應該要看英文的寬度，再做一次 stroke 的進出場」；chrome.css html.strokes-out／strokes-in） */
 async function toggle() {
   try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}

@@ -32,16 +32,21 @@ export async function loadFooterCms() {
   if (!d) return;
 
   // 聯絡資訊＝清單（同師資詳細頁的標記：.subsections > .subsection > h3 + ul，page.css）：照拖曳順序；一筆＝文字，連結有填＝整筆是連結；
-  // 沒文字的那筆不算、一筆都沒有的清單不出、一個清單都沒有＝整塊收掉
+  // 沒文字的那筆不算、一筆都沒有的清單不出、一個清單都沒有＝整塊收掉。
+  // 單位（設計學院、姊妹系所…）＝其中一個清單（user 2026-11-25：「聯絡的這些單位改成跟上面的一樣，就是如果有 link 的話，就會導航到別的 page」；
+  // 原本另一格 footer.links、另一塊連結清單 .footer-links——資料搬進 footer_sections 之後那一格 2026-11-25 刪了）。沒填標題的清單＝不出 h3
   const contact = root.querySelector('.footer-contact');
   if (contact) {
-    contact.innerHTML = list(d.sections).slice().sort((a, b) => (a?.sort ?? 0) - (b?.sort ?? 0)).map(s => {
-      const rows = list(s?.entries).filter(x => x?.text_zh || x?.text_en).map(x => {
+    /** @param {string} title @param {any[]} entries */
+    const block = (title, entries) => {
+      const rows = entries.filter(x => x?.text_zh || x?.text_en).map(x => {
         const link = entryLink(x.url);
         return link ? `<li>${bi('a', x.text_zh, x.text_en, ` ${link}`)}</li>` : bi('li', x.text_zh, x.text_en);
       }).join('');
-      return rows ? `<div class="subsection">${s.title_zh || s.title_en ? bi('h3', s.title_zh, s.title_en) : ''}<ul>${rows}</ul></div>` : '';
-    }).join('');
+      return rows ? `<div class="subsection">${title}<ul>${rows}</ul></div>` : '';
+    };
+    contact.innerHTML = list(d.sections).slice().sort((a, b) => (a?.sort ?? 0) - (b?.sort ?? 0))
+      .map(s => block(s?.title_zh || s?.title_en ? bi('h3', s.title_zh, s.title_en) : '', list(s?.entries))).join('');
     show(contact, contact.children.length);
   }
 
@@ -54,17 +59,6 @@ export async function loadFooterCms() {
     }).join('');
     show(social, social.children.length);
   }
-  // 姊妹系所（user 2026-11-21）：全名、一行一個＝連結清單（.link-list 裡的 a.nav-link）；中文寫內文、英文寫 data-en（最後 applyLang 套），英文空退中文。
-  // 舊資料只有 label（縮寫）＝先照它顯示
-  const links = root.querySelector('.footer-links');
-  if (links) {
-    links.innerHTML = list(d.links).map(l => {
-      const zh = l?.label_zh || l?.label || '';
-      return `<li><a class="nav-link" ${ext(l?.url)} data-en="${escapeHtml(l?.label_en || zh)}">${escapeHtml(zh)}</a></li>`;
-    }).join('');
-    show(links, links.children.length);
-  }
-
   // 標章：alt＝Directus 檔案標題（檔案庫可改）；沒放＝收掉
   const badge = root.querySelector('.footer-badge'), src = assetUrl(d.badge);
   if (src && badge) badge.outerHTML = `<img class="footer-badge" src="${escapeHtml(src)}" alt="${escapeHtml(d.badge.title)}">`;

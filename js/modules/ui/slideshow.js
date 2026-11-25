@@ -3,11 +3,12 @@
  * 一列、每張一樣高（＝框高）、寬照圖的比例（不裁；user 2026-11-23：「照片應該以後台的 size 為主，不要 crop」「要一樣大的高度」），
  * 目前那張在正中、其他隔一個 gutter 接在兩邊，超出框的切掉；點左右那張就換到中間（環狀），整列滑過去。
  * 這裡照每張的寬算位置（left／width），寫 data-pos（跟中間的距離：報讀、測試用）；過場是 CSS。
- * 框的左右兩側＝漸進模糊：這裡插 .slide-blur 的幾層（樣式 page.css；user 2026-11-23，取代 11-21 的「左右兩張各自失焦」），
+ * 框的左右兩側＝模糊：這裡插 .slide-blur 的那一層（樣式 page.css；user 2026-11-23，取代 11-21 的「左右兩張各自失焦」；
+ * 2026-11-25 從 5 層越外面越糊改成一層、整段同一個量＝平的），
  * 而且邊緣本身也糊（user 2026-11-23：「blur 是包含整個 box 的邊緣要有，不只是往內加上 blur」）：照片和那幾層包進 .slide-strip，
  * 左右各往框外多伸一段、透明度漸層淡掉（page.css）＝框的邊線落在半透明、糊開的地方，不是一刀切。
  * 自動播放（user 2026-11-21）：每 AUTOPLAY_MS 換下一張；滑鼠在上面／鍵盤聚焦在裡面＝暫停（WCAG 2.2.2），點了從頭計時；減少動態＝不自動播。
- * 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem、最寬的那張也放得進內文欄＝min(16rem, 欄寬 ÷ 最寬那張的比例)。
+ * 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem、最寬的那張也放得進內文欄＝min(16rem, 欄寬 ÷ 最寬那張的比例)；手機欄寬只算 72%＝兩邊露出旁邊那張。
  * 元素都在 main 裡、換頁整個換掉 → 掛在它們身上的 listener 不用收；計時器、window 的 resize 要收（registerPageCleanup）。
  */
 import { prefersReducedMotion } from './reduce-motion.js';
@@ -15,7 +16,6 @@ import { registerPageCleanup } from './page-cleanup.js';
 import { setLabel } from './lang.js';
 
 const AUTOPLAY_MS = 4000;
-const LAYERS = 5;   // 兩側的漸進模糊疊幾層（page.css .slide-blur > i：每層模糊加倍、越外面越糊）
 
 /** 圖的寬高比：載好了看圖本身，還沒＝HTML 的 width／height（後台給的），都沒有＝3:2 @param {HTMLElement} s */
 const ratio = (s) => {
@@ -36,7 +36,7 @@ export function initSlideshow() {
     const blur = document.createElement('span');
     blur.className = 'slide-blur';
     blur.setAttribute('aria-hidden', 'true');
-    blur.innerHTML = Array.from({ length: LAYERS }, (_, i) => `<i style="--i:${i}"></i>`).join('');
+    blur.innerHTML = '<i></i>';   // 一層＝平的、整段同一個模糊量（user 2026-11-25；page.css .slide-strip .slide-blur > i）
     const strip = document.createElement('div');   // 照片＋模糊那幾層：左右伸出框外、邊緣淡掉（page.css .slide-strip）
     strip.className = 'slide-strip';
     strip.append(...slides, blur);
@@ -46,8 +46,10 @@ export function initSlideshow() {
     const render = () => {
       const pos = slides.map((_, i) => (((i - active) % n) + n + half) % n - half);   // 跟中間的距離，環狀
       const cs = getComputedStyle(root), gap = parseFloat(cs.columnGap) || 0, r = slides.map(ratio);
-      // 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem（CSS max-height），而且最寬的那張也放得進內文欄
-      const H = Math.min(parseFloat(cs.maxHeight) || Infinity, root.clientWidth / Math.max(...r));
+      // 框高＝同小節圖（user 2026-11-23：「段落應該跟小節圖同步」）：最高 16rem（CSS max-height），而且最寬的那張也放得進內文欄；
+      // 手機只放得進欄寬的 72%（同作品頁手機的放映）＝兩邊露出旁邊那張、看得出點得到（user 2026-11-25）
+      const fit = root.clientWidth * (matchMedia('(min-width: 768px)').matches ? 1 : 0.72);
+      const H = Math.min(parseFloat(cs.maxHeight) || Infinity, fit / Math.max(...r));
       root.style.height = `${H}px`;
       const w = r.map(k => H * k), x = slides.map(() => 0), at = (/** @type {number} */ p) => pos.indexOf(p);
       const c = at(0);
@@ -66,11 +68,7 @@ export function initSlideshow() {
         else if (Math.abs(pos[i]) === 1) { setLabel(s, pos[i] < 0 ? '上一張' : '下一張', pos[i] < 0 ? 'Previous image' : 'Next image'); s.removeAttribute('aria-hidden'); }
         else { setLabel(s); s.setAttribute('aria-hidden', 'true'); }   // 其他的不給讀
       });
-      // 糊的那一段＝目前那張以外（同作品頁的放映：正中的永遠不糊、兩邊的整張在糊的那段裡；user 2026-11-24：「這邊的 fade 可以參考作品頁面的那個」，
-      // 原本固定框寬的 22%＝旁邊那張半張清楚半張糊）：從列的外緣到目前那張的邊。跟照片一起滑（page.css @property --slide-cut 補間）；第一次擺＝直接到位
-      if (!was.length) strip.style.transition = 'none';
-      strip.style.setProperty('--slide-cut', `${x[c]}px`);
-      if (!was.length) { void strip.offsetWidth; strip.style.transition = ''; }
+      // 兩側糊的那一段多寬＝CSS 自己算（框寬的一成，page.css --edge-blur；user 2026-11-25）——原本這裡量「到目前那張的邊」寫 --slide-cut
       was = pos;
     };
     let timer = 0, hover = false, focus = false;

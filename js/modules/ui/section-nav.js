@@ -1,9 +1,10 @@
 /**
  * 內頁段落導覽（css/components/page.css .section-nav）：main 裡每個 .section-title 一個矩形鈕，沒有上下 chevron（user 2026-11-18）。
- * 最上面多一格＝頁標題（h1，.section-nav-top；一顆正方形方塊、中心對 h1 那一行）：點了捲回頁頂；還沒捲到第一段（在 h1／導言）時亮的是它，
- * 不是第一段的矩形（user 2026-11-18）。
- * 點了把該段頂端捲到 h1 那條線＝「h1 在頁頂時的位置」（user 2026-11-18；段落頂＝包著標題的 .page-section）；捲動時標目前段落（aria-current）。
- * 矩形從 h1 那條線往下排、排不進時整串上移讓目前那格看得到：這裡只給格數 --n 與第幾格 --i，排不排得進、位移多少都是 page.css 算。
+ * 頁標題不出了（user 2026-11-25：「每一頁的標題都拿掉，第一個方塊定位的是段落文字即可」；h1 只留給報讀）：
+ * 最上面那一格（.section-nav-top）＝導言（.page-lead，頁頂那段文字），有導言的頁才有；點了捲回頁頂、還沒捲到第一段時亮的是它（user 2026-11-18 的規矩照舊，原本對的是 h1）。
+ * 沒導言的頁（課程、規章）第一格就是第一段。
+ * 點了把該段頂端捲到內容的起始線（--top-h＝內文欄的頂；段落頂＝包著標題的 .page-section）；捲動時標目前段落（aria-current）。
+ * 矩形從起始線往下排、排不進時整串上移讓目前那格看得到：這裡只給格數 --n 與由上往下第幾格 --i，排不排得進、位移多少都是 page.css 算。
  * 頁面沒有 .section-nav 就不做事。
  */
 import { registerPageCleanup } from './page-cleanup.js';
@@ -14,24 +15,24 @@ export function initSectionNav() {
   if (!nav || !titles.length) return;
 
   titles.forEach((t, i) => { if (!t.id) t.id = `section-${i + 1}`; });
-  const h1 = document.querySelector('#page-content h1');
+  const h1 = document.querySelector('#page-content .page-lead') && document.querySelector('#page-content h1');   // 有導言才有最上面那一格
   if (h1 && !h1.id) h1.id = 'page-title';
-  // 報讀名稱＝標題本身（aria-labelledby）→ 換語言自動跟著。頁標題那一格是第 -1 格，段落的矩形從 0 起
+  // 報讀名稱＝標題本身（aria-labelledby；最上面那一格＝頁名，h1 看不到但還在）→ 換語言自動跟著。最上面那一格是第 -1 格，段落的矩形從 0 起
   nav.innerHTML = (h1 ? `<button type="button" class="section-nav-top" data-i="-1" aria-labelledby="${h1.id}"></button>` : '')
     + titles.map((t, i) => `<button type="button" class="section-nav-dot" data-i="${i}" aria-labelledby="${t.id}"></button>`).join('');
   nav.style.setProperty('--n', String(titles.length));
   const dots = [...nav.querySelectorAll('.section-nav-dot')];
   const top = nav.querySelector('.section-nav-top');
-  const first = top ? -1 : 0;   // 最前面那一格：有頁標題那一格就是它
-  /** 排不進畫面時哪一格要看得到 @param {number} i */
-  const reveal = (i) => nav.style.setProperty('--i', String(i));
+  const first = top ? -1 : 0;   // 最前面那一格：有導言那一格就是它
+  /** 排不進畫面時哪一格要看得到（--i＝由上往下第幾格，最上面那格也算） @param {number} i */
+  const reveal = (i) => nav.style.setProperty('--i', String(i - first));
 
   const secs = titles.map(t => /** @type {HTMLElement} */ (t.closest('.page-section') || t));   // 沒包 section 就拿標題本身
-  const anchor = h1 || secs[0];   // 對齊線＝h1 在頁頂時的位置（--top-h）；沒 h1 就第一段
+  const anchor = titles[0].closest('.page-body') || secs[0];   // 對齊線＝內文欄的頂在頁頂時的位置（--top-h）
   const docTop = (el) => el.getBoundingClientRect().top + window.scrollY;
-  // 第 i 段的捲動位置：段落頂對齊 h1 那條線；-1（頁標題）＝頁頂
+  // 第 i 段的捲動位置：段落頂對齊起始線；-1（導言）＝頁頂
   const target = (i) => i < 0 ? 0 : docTop(secs[i]) - docTop(anchor);
-  let active = -2;   // 還沒標過（-1 是頁標題那一格，不能拿來當「沒有」）
+  let active = -2;   // 還沒標過（-1 是導言那一格，不能拿來當「沒有」）
   let goal = -1;   // 點了、正捲過去的那格
   const update = () => {
     const y = window.scrollY;
@@ -42,7 +43,7 @@ export function initSectionNav() {
       i = secs.reduce((best, _, k) => Math.abs(target(k) - y) < Math.abs(target(best) - y) ? k : best, first);
       if (Math.abs(target(goal) - y) < 2) goal = -1;
     } else {
-      // 一般捲動：段落頂過了 h1 那條線才算到；還沒捲到第一段（在 h1／導言）＝頁標題那一格（沒有那一格才算第一段）
+      // 一般捲動：段落頂過了起始線才算到；還沒捲到第一段（在導言）＝最上面那一格（沒有那一格才算第一段）
       i = Math.max(first, titles.filter((_, k) => target(k) <= y + 1).length - 1);
     }
     if (i === active) return;

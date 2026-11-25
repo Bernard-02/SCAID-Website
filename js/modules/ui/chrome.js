@@ -7,7 +7,7 @@ import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
 import { logoToStroke, logoPage } from './logo.js';
-import { flash, remeasure, hoverIfOver } from './item-marquee.js';
+import { flash, remeasure, hoverIfOver, fogged } from './item-marquee.js';
 import { setLabel } from './lang.js';
 
 const html = document.documentElement;
@@ -32,7 +32,12 @@ function setMenu(open) {
   html.classList.toggle('menu-open', open);
   setExpanded('.menu-btn', open);
   if (was && !open) { menuUnlockAt = 0; lockScroll(prefersReducedMotion() ? 0 : DUR.medium * 1000); }
-  else if (open) { clearTimeout(menuClosingTimer); html.classList.remove('menu-closing'); menuUnlockAt = 0; }
+  else if (open) {
+    clearTimeout(menuClosingTimer); html.classList.remove('menu-closing'); menuUnlockAt = 0;
+    // 當前頁的選項捲到捲動框的正中（user 2026-11-25：「當前頁的選項應該要 center 這個 box」；捲不到那麼多＝捲到頭為止，固定的常見問題那組不在框裡）
+    const box = document.querySelector('.site-menu-nav'), a = box?.querySelector('.nav-link.active');
+    if (box && a) { const r = a.getBoundingClientRect(), b = box.getBoundingClientRect(); box.scrollTop += r.top + r.height / 2 - (b.top + b.height / 2); }
+  }
   fitBar();
 }
 // 首頁動態展開（點底列的動態，下面 openNewsAt）：底列的動態先淡出，logo 上移、清單從畫面底下升上來（晚 --news-wait 才動，home.css）。
@@ -160,7 +165,7 @@ export function syncFigure() {
 function openObjectDialog(e) {
   const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
   if (!dialog || !box) return;
-  figureItems = []; dialog.classList.remove('has-nav', 'has-video'); setLabel(dialog, '圖片', 'Image');
+  figureItems = []; dialog.classList.remove('has-nav', 'has-video'); box.classList.remove('is-tall'); setLabel(dialog, '圖片', 'Image');
   dialog.classList.add('is-object');   // 沒有 ‹ X ›、關閉＝右下角那顆骨牌（chrome.css .figure-obj-close；user 2026-11-24）
   openObject(box);
   dialog.showModal();
@@ -171,6 +176,9 @@ function openObjectDialog(e) {
 // 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕，關閉＝menu 鈕那顆）、開著＝關燈
 let figureItems = /** @type {Element[]} */ ([]), figureIndex = 0;
 let figureStep = /** @type {((i: number) => void) | null} */ (null);   // 切到第幾個時叫（openFigure 給；作品總覽：背景跟著捲過去）
+// 多細長的圖才撐寬往下捲：高 ≥ 寬 × TALL（user 2026-11-25：「要決定一個適合的長寬比，才需要觸發scroll的行爲」→ 2＝比 1:2 還細長）。
+// 一般直式照片（4:5、3:4、2:3）整張塞進框、滾輪換圖；手機截圖（約 1:2.2）、報導的長截圖撐寬。原本只要是直式就撐寬＝桌面上直式照片也要捲
+const TALL = 2;
 function renderFigure() {
   const dialog = figureDialog();
   if (!dialog || !figureItems[figureIndex]) return;
@@ -178,7 +186,17 @@ function renderFigure() {
   const node = /** @type {Element} */ (figureItems[figureIndex].cloneNode(true)), video = node instanceof HTMLVideoElement, yt = node instanceof HTMLIFrameElement;
   if (yt) node.src += '&controls=0&enablejsapi=1';   // YouTube 收掉它自己的控制列、開 postMessage（下面 mediaAct）
   if (video) node.controls = false;
-  dialog.querySelector('.figure-dialog-body')?.replaceChildren(node);
+  const body = /** @type {HTMLElement} */ (dialog.querySelector('.figure-dialog-body'));
+  body.replaceChildren(node);
+  // 細長的圖（高 ≥ 寬 × TALL）＝撐滿內文寬（--body-w）、從頂開始、比框高就往下捲著讀（page.css .is-tall；user 2026-11-25：報導的長截圖「一開始會fit width，
+  // 然後往下scroll可以滾動閲讀」）。寬高照圖本身；還沒載到＝照 width／height 屬性（後台給的），載到再對一次；都不知道＝先當一般的圖
+  const tall = () => {
+    const img = node instanceof HTMLImageElement ? node : null;
+    const w = img ? img.naturalWidth || +(img.getAttribute('width') || 0) : 0, h = img ? img.naturalHeight || +(img.getAttribute('height') || 0) : 0;
+    body.classList.toggle('is-tall', w > 0 && h >= TALL * w);
+  };
+  tall(); node.addEventListener('load', tall, { once: true });
+  body.scrollTop = 0;
   dialog.classList.toggle('has-video', video || yt);
   dialog.classList.toggle('no-fs', !document.fullscreenEnabled && !video);   // iPhone：只有 <video> 能全螢幕（webkitEnterFullscreen）
   dialog.classList.toggle('no-vol', !canVolume);
@@ -195,7 +213,9 @@ function renderFigure() {
  *  cms-pages.js videoShot）＝放大 dialog 裡放播放器、切到才載（同作品頁的總覽），其他＝那張圖
  *  @param {Element} el 點的那一格（相簿的 button）或封面的 img @param {MouseEvent} e */
 function openGallery(el, e) {
-  const src = [...(el.closest('details') ?? el.closest('.album'))?.querySelectorAll(':scope > summary .item-thumb img, .album button') ?? []];
+  const box = el.closest('details') ?? el.closest('.album');
+  // 榮譽（.record）的縮圖是國旗、不是封面＝那一組只有相簿（user 2026-11-25）
+  const src = [...box?.querySelectorAll(box.matches('.record') ? '.album button' : ':scope > summary .item-thumb img, .album button') ?? []];
   const items = src.map(s => !(s instanceof HTMLButtonElement) ? s : s.dataset.video ? player(s.dataset.video, s.textContent?.trim() || '影片') : s.querySelector('img'));
   const node = items[src.indexOf(el)];
   if (node) openFigure(node, e, /** @type {Element[]} */ (items.filter(Boolean)));
@@ -319,21 +339,39 @@ function lights(off) {
   lightsOff = off;
   glide(() => syncPageTheme(document.body.dataset.page || '', false));
 }
-/** 上一張／下一張（到頭不動）。作品頁＝淡出 → 換 → 淡入（user 2026-11-24：「作品頁面中的影片跟圖片切換，要用 fade in out」；網站 fade，
- *  chrome.css .is-swapping）；連按＝只換到最後那一個。其他頁（動態的相簿）照舊直接換 @param {number} dir */
+/** 上一張／下一張（到頭不動）＝淡出 → 換 → 淡入（網站 fade，chrome.css .is-swapping）；連按＝只換到最後那一個。
+ *  每一頁的 lightbox 都是（user 2026-11-25：「lightbox 換圖的轉場用 fade 的吧」；11-24 只有作品頁：「作品頁面中的影片跟圖片切換，要用 fade in out」，
+ *  動態的相簿那時直接換） @param {number} dir */
 let swapTimer = 0;
 function stepFigure(dir) {
   const i = figureIndex + dir, d = figureDialog();
   if (!d?.open || i < 0 || i >= figureItems.length) return;
   figureIndex = i;
   figureStep?.(i);
-  if (document.body.dataset.page !== 'works' || prefersReducedMotion()) { renderFigure(); return; }
+  if (prefersReducedMotion()) { renderFigure(); return; }
   d.classList.add('is-swapping');
   clearTimeout(swapTimer);
   swapTimer = window.setTimeout(() => {
     if (d.open && !d.classList.contains('is-closing')) renderFigure();
     d.classList.remove('is-swapping');
   }, DUR.fade * 1000);
+}
+// 放大 dialog 開著的滾輪＝換圖（user 2026-11-25：「滾輪可以換圖」）：往下／往右＝下一張、往上／往左＝上一張，一個手勢換一張。
+// 觸控板放開後慣性還一直送事件（越來越小）→ 事件沒斷（間隔 < WHEEL_GAP）的時候，要過了 WHEEL_COOL、而且力道不比這個手勢最大的那一下小才再換：
+// 滑鼠滾輪每一格一樣大＝一直滾就每 WHEEL_COOL 換一張；慣性越來越小＝不再換
+const WHEEL_GAP = 200, WHEEL_COOL = 250;
+/** 放大 dialog 裡撐寬、捲得動的長圖（.is-tall，renderFigure）：有＝滾輪、觸控、上下鍵是捲它、不換圖（user 2026-11-25：「如果它不需要滾動的話，那麽預設滾動就是切換不同的圖片」） */
+const longFigure = () => { const b = figureDialog()?.open ? figureDialog()?.querySelector('.figure-dialog-body.is-tall') : null; return b && b.scrollHeight > b.clientHeight ? b : null; };
+let wheelAt = 0, wheelStepAt = 0, wheelPeak = 0;
+/** @param {WheelEvent} e */
+function wheelFigure(e) {
+  const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX, size = Math.abs(d), t = e.timeStamp;
+  if (t - wheelAt > WHEEL_GAP) wheelPeak = 0;   // 停過了＝新的手勢
+  const go = size > 0 && (!wheelPeak || (t - wheelStepAt > WHEEL_COOL && size >= wheelPeak));
+  wheelAt = t; wheelPeak = Math.max(wheelPeak, size);
+  if (!go) return;
+  wheelStepAt = t;
+  stepFigure(Math.sign(d));
 }
 // 關＝先淡出（.is-closing）、淡完才真的 close()；全螢幕先退、開燈跟著淡出一起
 function closeFigure() {
@@ -358,7 +396,7 @@ export function fitBar() {
 }
 
 // 首頁底列的動態（user 2026-11-23：拿掉＋、一次只顯示一則；原本好幾則排成一排一直跑、兩份接力）：
-// 放得下＝停 NEWS_HOLD；放不下＝淡入完就從頭捲到尾、捲到尾馬上換（user 2026-11-23：前後都不停；原本前後各停 1 秒）；
+// 放得下＝停 NEWS_HOLD；放不下＝淡入完就從頭捲到尾、捲到尾停一下（跟開頭淡入一樣長）再換（user 2026-11-25；11-23 是前後都不停、再之前前後各停 1 秒）；
 // 換＝網站 fade，先淡出、淡完才淡入下一則（不交疊＝不會兩則疊在一起）。
 // 滑鼠在上面／鍵盤聚焦＝先不換（WCAG 2.2.2；點下去展開的就是看到的這則）；看不到的時候（不在首頁、首頁展開著）＝在底下換好下一則、停著，
 // 回來才開始計時（awayNews）。減少動態＝不捲、直接換
@@ -397,7 +435,7 @@ async function runNews(gen) {
     const over = cur.getBoundingClientRect().width - (track?.clientWidth ?? Infinity);
     cur.classList.toggle('is-long', over > 0.5);   // 放不下＝從欄的左緣起；放得下＝置中（chrome.css）
     items.forEach(s => s.classList.toggle('is-current', s === cur));   // 淡入（看不到的時候＝在底下換好）
-    remeasure();   // hover 著的直條搬到這則的字尾（展開時在底下換的，收回來游標還在上面）
+    remeasure();   // hover 著的圓點搬到這則的字尾（展開時在底下換的，收回來游標還在上面）
     await newsSleep(fade);
     while (alive() && newsAway()) await newsSleep(300);   // 看不到：停在這則，回來才開始算
     if (!alive()) return;
@@ -406,6 +444,8 @@ async function runNews(gen) {
       const run = cur.animate([{ transform: 'none' }, { transform: `translateX(${-over}px)` }],
         { duration: over / (MARQUEE_SPEED * parseFloat(getComputedStyle(cur).fontSize)) * 1000, easing: 'linear', fill: 'forwards' });
       await run.finished.catch(() => {});
+      // 捲到尾停一下再換（user 2026-11-25：「marquee結束的時候應該跟開頭一樣會稍微停頓一下」）：停的長度＝開頭淡入那段（字還沒動的時間）
+      if (alive()) await newsSleep(fade);
     } else await newsSleep(NEWS_HOLD);
     while (alive() && newsHeld()) await newsSleep(300);
     if (!alive()) return;
@@ -433,7 +473,7 @@ function openNewsAt(i) {
   // 升上來的起點＝看得到的最上面那一點在畫面底緣（同收合的 --news-drop）：沒捲＝原本的 100svh − top-h，捲了就照捲完的位置算
   list.style.setProperty('--news-rise', `${innerHeight - Math.max(0, listTop)}px`);
   window.scrollTo({ top, behavior: 'instant' });
-  // 升好了閃一下（同 SCCD 的 deep link）＝hover 的蓋黑收直條、直條停一下就淡掉（item-marquee.js flash；user 2026-11-23：「highlight 是指我 hover 的效果」）
+  // 升好了閃一下（同 SCCD 的 deep link）＝hover 的蓋黑收圓點、圓點停一下就切掉（item-marquee.js flash；user 2026-11-23：「highlight 是指我 hover 的效果」；2026-11-25 直條換成圓點）
   clearTimeout(flashTimer);
   flashTimer = window.setTimeout(() => flash(li), prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);   // ＝home.css --news-wait（底列的動態淡出）＋清單升上來
 }
@@ -449,6 +489,8 @@ export function initChrome() {
     const play = t.closest('.play-btn');
     if (play instanceof HTMLElement) { openIntro(play, e); return; }
     if (t.closest('.figure-btn')) { openObjectDialog(e); return; }
+    // 首頁展開著、底列正中那顆（user 2026-11-25）：收回去；鈕跟著藏起來＝焦點還給打開它的底列動態
+    if (t.closest('.news-btn')) { setNews(false); /** @type {HTMLElement | null} */ (document.querySelector('.bar-news'))?.focus({ preventScroll: true }); return; }
     if (t.closest('.object-canvas')) return;   // dialog 裡的 object：點它＝露出名字、拖＝轉視角（object.js），不算「點任何地方都關」
     if (t.closest('.figure-prev')) { stepFigure(-1); return; }
     if (t.closest('.figure-next')) { stepFigure(1); return; }
@@ -461,10 +503,10 @@ export function initChrome() {
     if (t.closest('.figure-ctrl')) return;   // 控制列的空隙、音量拉桿：不算「點旁邊」
     const shot = t.closest('.album button');
     if (shot) { openGallery(shot, e); return; }
-    // 清單列掛 data-zoom（報導，user 2026-11-21）：不換頁、不另開，放大 dialog 直接看 href 那張圖（報導的截圖）
-    const zoom = t.closest('a[data-zoom]');
-    if (zoom instanceof HTMLAnchorElement) { e.preventDefault(); openFigure(Object.assign(new Image(), { src: zoom.href, alt: zoom.querySelector('h3')?.textContent ?? '' }), e); return; }
     if (t.closest('#figure-dialog')) { closeFigure(); return; }   // 放大後點任何地方都關（X 也是）
+    // 選單的選項在捲動框兩端糊掉的那段裡＝不能點（user 2026-11-25：「模糊的那個選項也不能點」；同不能 hover，item-marquee.js fogged）：擋下來＝不換頁
+    // （router 看到 defaultPrevented 放行）、選單照開著，捲清楚了才點得到。只擋滑鼠／觸控（detail > 0）：鍵盤 Tab 過去瀏覽器只把它捲到框的邊＝還在糊的那段，Enter 要照常
+    if (e.detail && fogged(t)) { e.preventDefault(); return; }
     // 點選單連結：這裡不收，交給 router.js loadPage 先收選單、收完才淡出換頁（user 2026-11-18）；修飾鍵另開分頁的不路由＝選單留著
     if (t.closest('.site-menu a')) return;
     // 手機選單全螢幕（chrome.css，user 2026-11-22）：點選單的空白處＝收選單。用 click 不用 pointerdown：拖著捲選單不會觸發
@@ -487,8 +529,8 @@ export function initChrome() {
   // （accordion.js 在 main 的冒泡 listener 會先把它標 open）；攔下來不往下傳＝不開合、也不走上面那個委派
   document.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
-    const cover = t?.closest('details[open]:not(.is-closing) > summary .item-thumb');
-    const img = cover?.querySelector('img');   // 裡面有圖的才是封面（榮譽的國旗本身就是 .item-thumb＝點了照常收合）
+    const cover = t?.closest('details[open]:not(.is-closing, .record) > summary .item-thumb');   // 榮譽（.record）的縮圖是國旗、不是封面＝點了照常收合
+    const img = cover?.querySelector('img');   // 裡面有圖的才是封面（沒圖的灰底佔位不算）
     if (!cover || !img) return;
     e.preventDefault(); e.stopPropagation();
     openGallery(img, e);
@@ -499,6 +541,8 @@ export function initChrome() {
     if (e.key === 'Escape') closeOverlays();
     // 放大 dialog 開著：左右鍵切上一張／下一張（焦點在音量拉桿上＝左右鍵是調音量，不切）
     if (!(e.target instanceof HTMLInputElement)) { if (e.key === 'ArrowLeft') stepFigure(-1); else if (e.key === 'ArrowRight') stepFigure(1); }
+    // 長圖：上下鍵捲（焦點在關閉鈕上、不在圖裡＝原生的方向鍵捲不到它）
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') longFigure()?.scrollBy({ top: (e.key === 'ArrowDown' ? 1 : -1) * 0.2 * innerHeight, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
     // 影片：空白鍵＝播放／暫停（user 2026-11-23）。焦點在控制列的鈕上＝照那顆鈕自己的（空白鍵按它）；其他地方都是播放／暫停——
     // 包括一開就聚焦的關閉鈕（autofocus，不然鍵盤開的一按空白鍵就關了；關＝Enter／Esc）。按著不放的重複不算
     const d = figureDialog();
@@ -525,6 +569,18 @@ export function initChrome() {
   // 滾輪／觸控滑動：選單開著＝第一下只關選單；關掉後同一個手勢還在送事件＝繼續鎖，停了才解。兩種都 preventDefault 讓內容不動
   // （CSS 的 overflow: hidden 在 WebKit 擋不住滾輪捲 viewport，實測照樣捲 100px）→ listener 要 passive: false；平常不開選單時什麼都不做
   const onScrollGesture = (/** @type {Event} */ e) => {
+    // 放大 dialog 開著（user 2026-11-25：「滾輪可以換圖，然後後面的操作應該要 freeze 掉」）：後面那一頁不捲（chrome.css 也鎖了 overflow）、滾輪＝換圖。
+    // 不擋的：Ctrl＋滾輪／兩指捏合＝瀏覽器縮放；觸控拖音量拉桿
+    if (figureDialog()?.open) {
+      const wheel = e instanceof WheelEvent;
+      if (wheel ? e.ctrlKey : e.target instanceof HTMLInputElement || /** @type {TouchEvent} */ (e).touches.length > 1) return;
+      // 長圖捲得動：在圖上＝原生的捲（overscroll-behavior 擋著、不帶到後面那頁）；圖外（logo 那條、控制列那條）的滾輪＝幫它捲
+      const long = longFigure();
+      if (long && e.target instanceof Node && long.contains(e.target)) return;
+      e.preventDefault();
+      if (wheel) { if (long) long.scrollBy(0, e.deltaY); else wheelFigure(e); }
+      return;
+    }
     const open = html.classList.contains('menu-open'), closing = html.classList.contains('menu-closing');
     if (!open && !closing) return;
     if (open && inMenuColumn(e)) return;   // 在選單那一欄捲＝捲選單自己（選單比畫面高時）
@@ -555,9 +611,11 @@ export function initChrome() {
   ['pointermove', 'pointerdown', 'keydown'].forEach(type => document.addEventListener(type, wakeControls, true));
   document.addEventListener('fullscreenchange', () => {
     clearTimeout(idleTimer);
-    const st = fsStage();
+    const st = fsStage(), fs = /** @type {HTMLElement | null} */ (document.querySelector('.media-fs'));
     if (st) st.classList.add('is-idle');
     else document.querySelector('.figure-stage.is-idle')?.classList.remove('is-idle');
+    // 全螢幕鈕的圖示進去換成 shrink（chrome.css，user 2026-11-25）＝報讀名稱跟著換
+    if (fs) { if (st) setLabel(fs, '離開全螢幕', 'Exit full screen'); else setLabel(fs, '全螢幕', 'Full screen'); }
   });
   // 音量拉桿（拉的途中就一直調）：亮幾根 → 0～1
   document.addEventListener('input', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('.media-vol')) mediaVolume(Number(e.target.value) / BARS); });

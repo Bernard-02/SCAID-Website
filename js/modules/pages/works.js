@@ -177,7 +177,8 @@ export function initWorks() {
       setLabel(hit, label && title ? `${label}：${title}` : label, title ? `${en}: ${title}` : en);   // 報讀名稱跟語言走（user 2026-11-25）
       if (!bento && Math.abs(pos) > 1) w.setAttribute('aria-hidden', 'true'); else w.removeAttribute('aria-hidden');   // 放映時藏著的不給讀
     });
-    document.querySelectorAll('.bar-works [data-works-mode]').forEach(b => b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.worksMode === root.dataset.mode)));
+    // 底列那顆鈕（一顆、點了切換；user 2026-11-25）：換成「要切過去的那一種」＝圖示、名字跟著換（works.css）
+    document.querySelectorAll('.bar-works [data-works-mode]').forEach(b => { /** @type {HTMLElement} */ (b).dataset.worksMode = bento ? 'slideshow' : 'bento'; });
     // 放映時舞台兩側的漸進模糊（同關於的段落輪播 slideshow.js；works.css）：內容整批換掉（打亂、後台）之後都會叫 render → 這裡補回來
     if (!list.querySelector(':scope > .slide-blur')) list.insertAdjacentHTML('beforeend', `<div class="slide-blur" aria-hidden="true">${[0, 1, 2, 3, 4].map(i => `<i style="--i:${i}"></i>`).join('')}</div>`);
     layoutBento();

@@ -90,7 +90,7 @@ const paras = (zh, en) => {
 };
 /** 關於的一個小節（user 2026-11-23：不用 rich text，一個小節一筆、可以一直加；同一天加圖片、附註）：標題 → 圖 → 內文 → 附註，有才排。
  *  圖可以多張（user 2026-11-24）：一張＝照原比例放在內文欄正中、多張＝輪播（同段落圖片，框高也同小節圖）。
- *  一個小節一塊 .subsection（小節之間＝.subsections 的 gap、同清單列，user 2026-11-24：「年級這邊應該是用 gap 來調整」）；
+ *  一個小節一塊 .subsection（小節之間＝.subsections 的 gap xl，user 2026-11-25）；
  *  塊裡隔 sm（同分段）、第一塊不留上距；圖的最高 page.css @param {any} it */
 const subsection = (it) => {
   /** @type {((c: string) => string)[]} */
@@ -158,11 +158,13 @@ const newsRow = (n) => {
 };
 /** 入學頁那一列：標題＋時間（沒縮圖、沒分類）；展開＝說明 → 相簿 → 附件 @param {any} n */
 const admissionRow = (n) => {
+  // 附件點了＝下載、不開新頁（user 2026-11-25：「點擊admission的檔案應該是下載，不是開新的page」）：檔在後台的網域＝跨網域，a 的 download 屬性瀏覽器不理，
+  // 要 Directus 自己回 attachment（assets 網址加 ?download）；download 屬性留著＝同網域時也是下載
   const files = filesOf(n.attachments);
-  const links = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(assetUrl(f))}" target="_blank" rel="noopener">${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
+  const links = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(`${assetUrl(f)}?download`)}" download>${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
   return fold(bi('h3', n.title_zh, n.title_en) + timeOf(n), text(n.summary_zh, n.summary_en) + album(filesOf(n.album)) + links);
 };
-/** 動態頁／入學頁的清單。item＝首頁連過來的那一則（入學頁 ?item=<id>，user 2026-11-23 照 SCCD）：打開、捲到 h1 那條線（同段落導覽的對齊） @param {boolean} [admission] @param {string} [item] */
+/** 動態頁／入學頁的清單。item＝首頁連過來的那一則（入學頁 ?item=<id>，user 2026-11-23 照 SCCD）：打開、捲到內容的起始線（同段落導覽的對齊） @param {boolean} [admission] @param {string} [item] */
 async function newsList(admission = false, item = '') {
   // 抓之前先記住這一頁的清單：後台慢、抓完已經換到動態／入學另一頁（同樣有 .item-list）＝不畫到那一頁去
   const ul = document.querySelector('#page-content .page-section .item-list');
@@ -173,13 +175,14 @@ async function newsList(admission = false, item = '') {
   ul.innerHTML = rows.map(admission ? admissionRow : newsRow).join('');
   await refresh();
   if (!item || !ul.isConnected) return;   // 等介面文字的時候換頁了，同上
-  const li = ul.children[rows.findIndex(n => String(n.id) === item)], h1 = document.querySelector('#page-content h1');
+  const li = ul.children[rows.findIndex(n => String(n.id) === item)], body = ul.closest('.page-body');
   if (!li) return;
-  if (h1) window.scrollTo({ top: li.getBoundingClientRect().top - h1.getBoundingClientRect().top, behavior: 'instant' });   // 兩個都是畫面座標＝相減跟目前捲到哪無關（同 section-nav 的 target）
+  // 那一則捲到內容的起始線（＝內文欄的頂；原本量 h1，標題 2026-11-25 起只給報讀）。兩個都是畫面座標＝相減跟目前捲到哪無關（同 section-nav 的 target）
+  if (body) window.scrollTo({ top: li.getBoundingClientRect().top - body.getBoundingClientRect().top, behavior: 'instant' });
   void reveal(li, ul);   // 不等它：router 等這支換好內容才淡入
 }
 /** deep link 到的那一則（user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」；原本一到就直接打開＋聚焦＝hover 跟著同時跑）：
- *  等這一頁看得到了（換頁的淡入、第一次載入的 logo 進場都演完）→ hover 的效果（蓋黑收直條）做完 → 照手風琴自己的開法打開（高度補間、一次只開一個）
+ *  等這一頁看得到了（換頁的淡入、第一次載入的 logo 進場都演完）→ hover 的效果（帶蓋上、收掉）做完 → 照手風琴自己的開法打開（高度補間、一次只開一個；空心點變實心）
  *  → 焦點放到它（鍵盤從這一則接著走，同網址的 #錨點；不然第一下 Tab 從頁首開始、把它捲走） @param {Element} li @param {Element} ul */
 async function reveal(li, ul) {
   const html = document.documentElement;
@@ -234,54 +237,41 @@ export async function loadBarNews() {
 // ── 課程：一年級～四年級各一段（介面文字），同年級必修在前、選修在後；一門課一個摺疊、點開＝說明 ──
 const YEARS = [['一年級', 'Year 1'], ['二年級', 'Year 2'], ['三年級', 'Year 3'], ['四年級', 'Year 4']];
 async function curriculum() {
-  const rows = await list('courses', 'sort=sort&limit=-1&fields=year,sort,required,name_zh,name_en,description_zh,description_en');
+  // 必修／選修＝下拉 category（required／elective；user 2026-11-25：「後臺的必選修應該改成dropdown才對，不是checkbox」，原本一格勾選 required）
+  const rows = await list('courses', 'sort=sort&limit=-1&fields=year,sort,category,name_zh,name_en,description_zh,description_en');
   const art = article();
   if (!rows || !art?.isConnected) return;
+  const req = (/** @type {any} */ c) => c.category !== 'elective';   // 沒填＝必修（後台的預設）
   replaceSections(art, [1, 2, 3, 4].map(y => {
-    const cs = rows.filter(c => c.year === y).sort((a, b) => (Number(!!b.required) - Number(!!a.required)) || bySort(a, b));
+    const cs = rows.filter(c => c.year === y).sort((a, b) => (Number(req(b)) - Number(req(a))) || bySort(a, b));
     if (!cs.length) return '';
     const [yz, ye] = YEARS[y - 1];
     return `<section class="page-section">${lbl('h2', `curriculum.year.${y}`, yz, ye, ' class="section-title"')}<ul class="item-list">${cs.map(c => fold(
-      bi('h3', c.name_zh, c.name_en) + (c.required ? lbl('p', 'curriculum.required', '必修', 'Required') : lbl('p', 'curriculum.elective', '選修', 'Elective')),
+      bi('h3', c.name_zh, c.name_en) + (req(c) ? lbl('p', 'curriculum.required', '必修', 'Required') : lbl('p', 'curriculum.elective', '選修', 'Elective')),
       text(c.description_zh, c.description_en))).join('')}</ul></section>`;
   }).join(''));
   await refresh();
 }
 
-// ── 常見問題：依分類分段，一題一個摺疊＝排法同課程（user 2026-11-23）：外面＝問題（標題）、點開＝答案 ──
-async function qa() {
-  const rows = await list('qa', 'sort=sort&limit=-1&fields=sort,category_zh,category_en,question_zh,question_en,answer_zh,answer_en');
-  const art = article();
-  if (!rows || !art?.isConnected) return;
-  replaceSections(art, groups(rows).map(g => `<section class="page-section">${bi('h2', g.zh, g.en, ' class="section-title"')}<ul class="item-list">${g.items.map(q =>
-    fold(bi('h3', q.question_zh, q.question_en), text(q.answer_zh, q.answer_en))).join('')}</ul></section>`).join(''));
-  await refresh();
-}
-
-// ── 榮譽：一筆一個摺疊；收著＝國旗＋獎項＋得獎人，點開＝主辦方（單位庫）、獎別 ──
+// ── 榮譽（榮譽、報導合在一個集合 records；user 2026-11-25：「後臺資料庫上，將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」）：
+//    一筆一個摺疊＝動態那種列的變體（縮圖＝國旗、小一號，page.css .record）；收著＝國旗＋標題＋類型（榮譽／報導，介面文字 records.type.*），
+//    點開＝主辦方（榮譽）／媒體（報導）——從單位庫／媒體庫選——＋內容（重複列 details，一筆一行：得獎人、獎別、刊出日期…）＋圖片（album，同動態的相簿、點了放大）──
+const RECORD_TYPES = { award: ['榮譽', 'Award'], press: ['報導', 'Press'] };
 async function records() {
-  const rows = await list('records', 'sort=sort&limit=-1&fields=country_code,country_zh,country_en,award_zh,award_en,winner_zh,winner_en,organizer.name_zh,organizer.name_en,prize_zh,prize_en');
+  // 欄位用 *：舊的那幾格（award_*、winner_*…）藏起來了還在，之後後台刪掉也不會整串 403（同動態）
+  const rows = await list('records', `sort=sort&limit=-1&fields=*,organizer.name_zh,organizer.name_en,media.name_zh,media.name_en,${FILE('album')}`);
   const ul = document.querySelector('#page-content .page-section .item-list');
   if (!rows || !ul?.isConnected) return;
   ul.innerHTML = rows.map(r => {
     const code = /^[a-z]{2}$/.test(r.country_code || '') ? r.country_code : '';
-    const flag = code ? `<img class="item-thumb" src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${code}.svg" alt="" loading="lazy">` : '';
-    const head = `${flag}<div>${bi('span', r.country_zh, r.country_en, ' class="sr-only"')}${bi('h3', r.award_zh, r.award_en)}${bi('p', r.winner_zh, r.winner_en)}</div>`;
-    const meta = bi('p', r.organizer?.name_zh, r.organizer?.name_en) + bi('p', r.prize_zh, r.prize_en);
-    // 國旗的大小掛在 details.record 上（page.css）→ 點開沒東西也照樣是摺疊
-    return `<li><details class="record"><summary class="item-row">${head}</summary><div class="fold-body">${meta ? `<div class="fold-meta">${meta}</div>` : ''}</div></details></li>`;
-  }).join('');
-  await refresh();
-}
-
-// ── 報導：一則一列（標題＋媒體庫的媒體），點了放大看截圖；沒截圖＝不能點 ──
-async function press() {
-  const rows = await list('press', 'sort=-date&limit=-1&fields=title_zh,title_en,media.name_zh,media.name_en,screenshot');
-  const ul = document.querySelector('#page-content .page-section .item-list');
-  if (!rows || !ul?.isConnected) return;
-  ul.innerHTML = rows.map(p => {
-    const head = bi('h3', p.title_zh, p.title_en) + bi('p', p.media?.name_zh, p.media?.name_en);
-    return p.screenshot ? `<li><a class="item-row" data-zoom href="${esc(assetUrl(p.screenshot))}">${head}</a></li>` : `<li><div class="item-row">${head}</div></li>`;
+    const flag = code ? `<div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${code}.svg" alt="" loading="lazy"></div>` : '';   // 同動態的縮圖標記；大小在 page.css .record
+    const type = r.category === 'press' ? 'press' : 'award', [typeZh, typeEn] = RECORD_TYPES[type];
+    const words = `${bi('span', r.country_zh, r.country_en, ' class="sr-only"')}${bi('h3', r.title_zh, r.title_en)}${lbl('p', `records.type.${type}`, typeZh, typeEn)}`;
+    const head = flag ? `${flag}<div>${words}</div>` : words;   // 沒國旗＝純文字的列（不放圖框，同動態沒圖的那則）：字直接放在列裡，標題、副標之間的 gap 才吃得到（page.css）
+    const who = type === 'press' ? r.media : r.organizer;   // 從庫選的那一格（user 2026-11-25：「要，從庫裏面選」）：報導＝媒體（媒體庫）、榮譽＝主辦方（單位庫）＝點開後的第一行
+    const lines = bi('p', who?.name_zh, who?.name_en) + (Array.isArray(r.details) ? r.details : []).map((/** @type {any} */ x) => bi('p', x?.text_zh, x?.text_en)).join('');
+    // .record＝國旗不是封面（chrome.js：打開了點它照常收合、不放大，相簿放大的那一組也不含它）；點開沒東西也照樣是摺疊
+    return `<li><details class="record"><summary class="item-row">${head}</summary><div class="fold-body">${lines ? `<div class="fold-meta">${lines}</div>` : ''}${album(filesOf(r.album))}</div></details></li>`;
   }).join('');
   await refresh();
 }
@@ -340,7 +330,7 @@ async function facultyDetail(params) {
   if (photo) photo.innerHTML = f.photo ? `<img ${imgAttrs(f.photo)}>` : '';
   const subs = (Array.isArray(f.subtitles) ? f.subtitles : []).map(x => bi('p', x?.text_zh, x?.text_en)).join('');
   head.innerHTML = bi('h1', f.person?.name_zh, f.person?.name_en) + subs;
-  // 一個清單（標題＋那幾筆）一塊 .subsection＝同關於的小節：清單之間＝.subsections 的 gap、同清單列（user 2026-11-24）；一筆都沒有的清單不出
+  // 一個清單（標題＋那幾筆）一塊 .subsection＝同關於的小節：清單之間＝.subsections 的 gap xl（同關於的小節）；一筆都沒有的清單不出
   replaceSections(art, `<section class="page-section"><div class="subsections">${(Array.isArray(f.sections) ? f.sections : []).slice().sort(bySort).map((/** @type {any} */ s) => {
     const items = entryList(s?.entries);
     return items && `<div class="subsection">${bi('h3', s.title_zh, s.title_en)}${items}</div>`;
@@ -354,7 +344,7 @@ async function facultyDetail(params) {
 export function loadPage(page, params) {
   /** @type {Record<string, () => Promise<void>>} */
   const run = {
-    index: homeNews, activities: () => newsList(), admission: () => newsList(true, params.get('item') || ''), curriculum, qa, records, press, regulations,
+    index: homeNews, activities: () => newsList(), admission: () => newsList(true, params.get('item') || ''), curriculum, records, regulations,
     about: () => textPage('about'), donate: () => textPage('donate'), faculty: () => textPage('faculty'), partners: () => textPage('partners'),
     'faculty-detail': () => facultyDetail(params),
   };
