@@ -155,7 +155,10 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   {
     const w = await m.evaluate(() => { const s = document.createElement('span'); s.style.cssText = 'position:absolute;white-space:nowrap;font-size:100px;visibility:hidden'; document.body.append(s);
       const out = ['學學學學', '為教，。', 'AI20'].map(t => { s.textContent = t; return s.getBoundingClientRect().width / t.length; }); s.remove(); return [...out, [...document.fonts].some(f => /JetBrains Mono/.test(f.family) && f.status === 'loaded') ? 1 : 0]; });   // 第 4 個＝JetBrains Mono 有沒有載到（fonts.check 在整份字體 CSS 沒抓到時也回 true，不能用）
-    assert(Math.abs(w[0] - 100.5) < 0.2 && Math.abs(w[1] - 100.5) < 0.2 && Math.abs(w[2] - 60) < 0.2, `中文字距：每字 1.005em、英數 0.6em（${w.slice(0, 3).map(x => x.toFixed(2))}${w[3] ? '' : '；JetBrains Mono 沒載到＝Google Fonts 連不上，英數量到的是備援字體，不是站的問題'}）`);
+    assert(Math.abs(w[0] - 100.5) < 0.2 && Math.abs(w[1] - 100.5) < 0.2 && Math.abs(w[2] - 60) < 0.2, `中文字距：每字 1.005em、英數 0.6em（${w.slice(0, 3).map(x => x.toFixed(2))}${w[3] ? '' : '；JetBrains Mono 沒載到，英數量到的是備援字體'}）`);
+    // 英文字體自架（user 2026-11-25；原本連 Google Fonts）：fonts/jetbrains-mono/ 的字檔載得到（@font-face 在 typography.css）、各頁不再連 Google Fonts
+    assert(w[3] === 1 && ['index.html', ...fs.readdirSync(path.join(ROOT, 'pages')).map(f => 'pages/' + f)].every(f => !/fonts\.(googleapis|gstatic)\.com/.test(fs.readFileSync(path.join(ROOT, f), 'utf8'))),
+      `英文字體 JetBrains Mono 自架：字檔載入、各頁不連 Google Fonts（載入 ${w[3]}）`);
   }
   assert(await m.$('link[rel="icon"][href*="favicon.svg"]') !== null, 'favicon link');
   { const pt = parseFloat(await css(m, '#page-content', 'paddingTop')), bh = (await rect(m, '.menu-btn .bar-rect')).height;   // 骨牌高＝logo 一行（stroke 版）的高
@@ -372,6 +375,9 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   }
   assert((await css(m, '.site-grid', 'gridTemplateColumns')).split(' ').length === 4, 'mobile grid 4 欄');
   assert((await m.textContent('main h1')).trim() === '網站地圖', 'sitemap h1 zh');
+  // 網站地圖的順序＝選單（user 2026-11-25：選單的次選單 11-24 重排過、這頁沒跟上），不列自己
+  assert(await m.evaluate(() => { const h = (/** @type {string} */ s) => [...document.querySelectorAll(s)].map(a => a.getAttribute('href'));
+    return h('.site-menu-links .nav-link').filter(x => x !== 'sitemap.html').join() === h('main .link-list a').join(); }), '網站地圖：順序同選單、不列自己');
   await m.waitForTimeout(700);   // 選單關閉後 logo 的右推 transition 走完再量位置
   lr = await rect(m, '.site-logo');
   assert(Math.abs(lr.top) < 1, `內頁 logo 頂到頂（top ${lr.top}）`);
@@ -386,7 +392,7 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   // 內容標題跟語言走：當頁切換＋切換後換頁
   await openMenu(m);
   await swap(m, '.lang-btn');
-  assert((await m.textContent('main h1')).trim() === 'Regulations & Policies', '切 en：當頁標題');
+  assert((await m.textContent('main h1')).trim() === 'Regulations & Policies' && await m.title() === 'Regulations & Policies - SCAID', `切 en：當頁標題、分頁標題跟著換（${await m.title()}）`);
   // 內頁選單開（手機全螢幕，user 2026-11-22）：內容不右推——導覽矩形照舊對齊 menu 鈕、內文在它右邊一個 rail（半欄＝38.75）
   await m.waitForTimeout(700);
   {
@@ -403,9 +409,17 @@ const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open
   await m.waitForFunction(() => document.body.dataset.page === 'about');
   assert((await m.textContent('main h1')).trim() === 'About' && (await m.textContent('main h2')).trim() === 'Competencies', 'en 換頁：新頁標題也是英文');
   assert(await css(m, '.section-nav', 'display') === 'flex' && await css(m, '.page-figure', 'display') === 'none', '手機 about：段落導覽在、右圖不在內文裡（改右緣縮圖鈕）');
+  // 報讀名稱（aria-label）也跟語言走（user 2026-11-25：「報讀要用英文」）：HTML 寫的（data-en-label）、JS 設的（lang.js setLabel：輪播、放大 dialog）都是
+  const spoken = () => m.evaluate(() => ({ zh: [...document.querySelectorAll('[aria-label]')].map(e => e.getAttribute('aria-label') || '').filter(t => /[一-鿿]/.test(t)).join(),
+    menu: document.querySelector('#site-menu')?.getAttribute('aria-label'), slide: document.querySelector('.slideshow [data-pos="0"]')?.getAttribute('aria-label'),
+    nav: document.querySelector('.section-nav')?.getAttribute('aria-label'), dialog: document.querySelector('#figure-dialog')?.getAttribute('aria-label') }));
+  { const s = await spoken();
+    assert(s.zh === '' && s.menu === 'Main menu' && s.slide === 'Current image' && s.nav === 'Sections on this page' && s.dialog === 'Image', `en：報讀名稱都是英文（${JSON.stringify(s)}）`); }
   await openMenu(m);
   await swap(m, '.lang-btn');
   assert((await m.textContent('main h1')).trim() === '關於' && (await m.textContent('main h2')).trim() === '培育能力', '切回 zh：標題');
+  { const s = await spoken();
+    assert(s.menu === '主選單' && s.slide === '目前圖片' && s.nav === '本頁段落' && s.dialog === '圖片' && await m.title() === '關於 - SCAID', `切回 zh：報讀名稱、分頁標題換回中文（${JSON.stringify(s)}、${await m.title()}）`); }
   // 手機選單全螢幕（user 2026-11-22）：輪播那一列被選單蓋住，點下去落在選單的空白處＝只收選單、輪播沒被點到，段落導覽淡回來。
   // 輪播會自動播（只往下一張走）→ 不比整排位置，只看被點的那張（-1）沒跑到中間
   {

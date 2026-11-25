@@ -8,6 +8,7 @@ import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
 import { logoToStroke, logoPage } from './logo.js';
 import { flash, remeasure, hoverIfOver } from './item-marquee.js';
+import { setLabel } from './lang.js';
 
 const html = document.documentElement;
 const phoneMenu = matchMedia('(max-width: 767px)');   // ＝chrome.css 手機全螢幕選單那段的斷點
@@ -159,7 +160,7 @@ export function syncFigure() {
 function openObjectDialog(e) {
   const dialog = figureDialog(), box = dialog?.querySelector('.figure-dialog-body');
   if (!dialog || !box) return;
-  figureItems = []; dialog.classList.remove('has-nav', 'has-video'); dialog.setAttribute('aria-label', '圖片');
+  figureItems = []; dialog.classList.remove('has-nav', 'has-video'); setLabel(dialog, '圖片', 'Image');
   dialog.classList.add('is-object');   // 沒有 ‹ X ›、關閉＝右下角那顆骨牌（chrome.css .figure-obj-close；user 2026-11-24）
   openObject(box);
   dialog.showModal();
@@ -181,7 +182,7 @@ function renderFigure() {
   dialog.classList.toggle('has-video', video || yt);
   dialog.classList.toggle('no-fs', !document.fullscreenEnabled && !video);   // iPhone：只有 <video> 能全螢幕（webkitEnterFullscreen）
   dialog.classList.toggle('no-vol', !canVolume);
-  dialog.setAttribute('aria-label', video || yt ? '影片' : '圖片');
+  if (video || yt) setLabel(dialog, '影片', 'Video'); else setLabel(dialog, '圖片', 'Image');
   if (video) { mediaState(true, node.muted, node.volume); if (!dialog.classList.contains('is-waiting')) node.play().catch(() => {}); }   // 播了（play 事件）圖示才換；等 logo 的時候先不播（openFigure）
   if (yt) { mediaState(false, false, 1); listen(node); }                                    // autoplay=1：先當作在播、全音量，播放器回報了再照它
   lights(video || yt);

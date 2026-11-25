@@ -20,11 +20,23 @@ export function applyLang(root = document) {
     if (el.dataset.zh == null) el.dataset.zh = el.textContent;
     el.textContent = lang === 'en' ? el.dataset.en : el.dataset.zh;
   });
+  // 報讀名稱（aria-label）也跟語言走（user 2026-11-25：「報讀要用英文」）：aria-label 寫中文、英文寫 data-en-label；JS 自己設的走下面 setLabel
+  /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll('[data-en-label]')).forEach(el => {
+    if (el.dataset.zhLabel == null) el.dataset.zhLabel = el.getAttribute('aria-label') || '';
+    el.setAttribute('aria-label', (lang === 'en' ? el.dataset.enLabel : el.dataset.zhLabel) || '');
+  });
   // 切換鈕顯示「要切過去」的語言；報讀名稱也跟著換
   root.querySelectorAll('.lang-btn').forEach(b => {
     b.textContent = lang === 'en' ? '中文' : 'EN';
     b.setAttribute('aria-label', lang === 'en' ? 'Switch to Chinese' : '切換為英文');
   });
+}
+
+/** JS 自己設的報讀名稱：照現在的語言寫 aria-label、兩種都記著（換語言 applyLang 接手）；沒給中文＝拿掉 @param {HTMLElement} el @param {string} [zh] @param {string} [en] */
+export function setLabel(el, zh, en) {
+  if (!zh) { el.removeAttribute('aria-label'); delete el.dataset.zhLabel; delete el.dataset.enLabel; return; }
+  el.dataset.zhLabel = zh; el.dataset.enLabel = en || zh;
+  el.setAttribute('aria-label', getLang() === 'en' ? el.dataset.enLabel : zh);
 }
 
 /** 切一次：留著的直條（選單選中那項、hover 著的）先切出去 → 換字＝整個畫面 fade（user 2026-11-21）→ 照新的字切進來
@@ -33,7 +45,12 @@ async function toggle() {
   try { localStorage.setItem(KEY, getLang() === 'en' ? 'zh' : 'en'); } catch {}
   const html = document.documentElement, still = prefersReducedMotion(), wait = () => new Promise(r => setTimeout(r, DUR.fast * 1000));
   if (!still) { html.classList.add('strokes-out'); await wait(); }
-  await fadeSwap(() => applyLang());
+  await fadeSwap(() => {
+    applyLang();
+    // 分頁標題（報讀一進頁先念它）跟著換：內頁＝「頁標題 - SCAID」（ui-labels.js、師資詳細頁設的），首頁的標題中英並列、不動
+    const h1 = document.querySelector('#page-content h1')?.textContent?.trim();
+    if (h1 && / - SCAID$/.test(document.title)) document.title = `${h1} - SCAID`;
+  });
   if (!still) { html.classList.replace('strokes-out', 'strokes-in'); await wait(); html.classList.remove('strokes-in'); }
 }
 

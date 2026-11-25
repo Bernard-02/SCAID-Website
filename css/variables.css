@@ -26,7 +26,7 @@
   --dark-gray: #333333;
 
   /* ===== Typography ===== */
-  /* 英文 JetBrains Mono（Google Fonts）、中文 Glow Sans TC Compressed（未來熒黑，自架切片 fonts/glow-sans-tc-compressed/font.css）；
+  /* 英文 JetBrains Mono（自架 fonts/jetbrains-mono/，@font-face 在 typography.css）、中文 Glow Sans TC Compressed（未來熒黑，自架切片 fonts/glow-sans-tc-compressed/font.css）；
      字串堆疊在 tailwind.config.js fontFamily.sans */
   --font-mono: 'JetBrains Mono';
   --font-zh: 'Glow Sans TC Compressed';

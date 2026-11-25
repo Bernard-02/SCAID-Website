@@ -7,9 +7,6 @@
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <title>常見問題 - SCAID</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -22,7 +19,7 @@
        內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
-      <nav class="section-nav flex" aria-label="本頁段落"></nav>
+      <nav class="section-nav flex" aria-label="本頁段落" data-en-label="Sections on this page"></nav>
 
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
         <h1 data-label="nav.qa" data-en="QA">常見問題</h1>

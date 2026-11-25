@@ -18,6 +18,7 @@ import { registerPageCleanup } from '../ui/page-cleanup.js';
 import { prefersReducedMotion } from '../ui/reduce-motion.js';
 import { openFigure, youtubeFrame } from '../ui/chrome.js';
 import { sitePath } from '../ui/site-base.js';
+import { setLabel } from '../ui/lang.js';
 
 // 本機的測試資料（user 2026-11-23：「works 頁面先用 json 的方式，我想測試效果」）：一筆＝一個 Work，或 { kind: 'playlist', url }＝一個 YouTube 播放清單。
 // 有寫＝用這個檔、不抓後台。2026-11-24 換回後台（user：「改讀後臺吧」；那串 SCCD 畢製清單貼進後台了），當時的 data/ 刪了、要再用從 git 拿回來
@@ -172,7 +173,8 @@ export function initWorks() {
       const label = bento ? (w.dataset.kind === 'video' ? '播放' : '放大') : pos === 0 ? (w.dataset.kind === 'video' ? '播放' : '') : pos === -1 ? '上一個' : pos === 1 ? '下一個' : '';
       w.dataset.pos = String(pos);
       hit.disabled = !label;
-      if (label) hit.setAttribute('aria-label', title ? `${label}：${title}` : label); else hit.removeAttribute('aria-label');
+      const en = { 播放: 'Play', 放大: 'Enlarge', 上一個: 'Previous', 下一個: 'Next' }[label] || '';
+      setLabel(hit, label && title ? `${label}：${title}` : label, title ? `${en}: ${title}` : en);   // 報讀名稱跟語言走（user 2026-11-25）
       if (!bento && Math.abs(pos) > 1) w.setAttribute('aria-hidden', 'true'); else w.removeAttribute('aria-hidden');   // 放映時藏著的不給讀
     });
     document.querySelectorAll('.bar-works [data-works-mode]').forEach(b => b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.worksMode === root.dataset.mode)));

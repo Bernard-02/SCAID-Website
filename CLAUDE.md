@@ -7,7 +7,7 @@
 
 ## 設計決策（user 2026-11-03 拍板，參考圖＝2022 degree show 站）
 - **網站是彩色的，不是黑白**（user 2026-11-19 更正；這條原本寫「黑白品牌：只有黑／白＋灰階」）：殼與文字目前是黑字白底，但不要因為「黑白」把內容（圖片、國旗…）轉成灰階或避開顏色。
-- **字體**：英文 JetBrains Mono（Google Fonts）、中文 **Glow Sans TC Compressed**（未來熒黑 v0.93，OFL；user 2026-11-18）（一個堆疊 `font-sans`）。
+- **字體**：英文 JetBrains Mono（**自架**，user 2026-11-25；原本連 Google Fonts＝連不上時英文掉回系統字體、字寬不同，而且每個訪客都連一次 Google、跟規章頁「不蒐集個人資料」有出入：`fonts/jetbrains-mono/`＝Google Fonts 那份 v24 的六片可變字重 woff2（400–700）＋OFL.txt，`@font-face` 寫在 `css/base/typography.css`、unicode-range 照抄 Google＝哪些字走 JetBrains Mono 跟原本一樣；各頁 `<head>` 不用連任何東西；要更新＝照 typography.css 註解的網址重抓那六片蓋掉）、中文 **Glow Sans TC Compressed**（未來熒黑 v0.93，OFL；user 2026-11-18）（一個堆疊 `font-sans`）。
   - 中文字體 Google Fonts 沒有 → 自架：`fonts/glow-sans-tc-compressed/`＝woff2 切片（Regular＋Medium＋Bold 各 104 片，照 Google 切 Noto Sans TC 的 unicode-range，瀏覽器只抓用到的）＋`font.css`（各頁 `<head>` 連）。全由 `scripts/build-fonts.py` 產生，不要手改；換字重／版本重跑（用法見檔頭）。
     網址都帶 `?v=內容雜湊`（font.css 裡每片 woff2、各頁 `<head>` 連 font.css 那行——後者 script 重跑時自動改全部頁面；新頁複製既有頁的 `<head>` 就會被改到）：重切後瀏覽器才不會拿新 CSS 配舊字檔（搬過片的字會掉回系統字體，2026-11-18「即」踩過）。
   - **中文字距照 logo 的中文**（user 2026-11-21）：`images/Logo Text.svg` 那行中文＝Glow Sans **J** Compressed **Medium**（拿外框比對，誤差 0.06%）、相鄰兩字原點相距 1.005em，字體原本字寬 0.8em → 切片時每個字的字寬多加 0.205em（`build-fonts.py TRACKING = 205`；`hmtx` 與 CFF 外框自己記的寬**兩處都改**，WebKit 照後者排、只改 hmtx 沒用）。燒在字體裡＝只有中文字體的字（含中文標點）變寬，英數走 JetBrains Mono 不變（logo 那行裡的「AI」也是原本的字距）；**不要用 CSS `letter-spacing` 做這件事**（分不出中英文）。空加在字的右邊、行首不動（同 letter-spacing）。logo 的字距再改＝重量、改 `TRACKING` 重跑（`item-marquee.js TRACK`、`chrome.css` 選單選中那項的直條 `0.205em` 跟著改：hover 的帶與直條算到最後一個字本身的右緣、扣掉這段字距）；煙霧測試守「中文每字 1.005em、英數 0.6em」。
@@ -16,7 +16,7 @@
 - **手機優先**：token `:root` 是手機值、`@media (min-width: 768px)` 放大；Tailwind 先寫無前綴再加 `md:`。
   **左右內距照 Apple iOS 的 layout margin**（user 2026-11-22）：`--container-padding` 手機 16px、≥414（iPhone Plus／Max）20px、桌面 60px（variables.css；414 那段要寫在 768 前面）。
 - **一般 grid**：`.site-grid` 手機 4 欄 → ≥768 12 欄。
-- **中英分開**：中文寫在內文、英文寫 `data-en`（`lang.js` 第一次套用時把中文記到 data-zh，來回切）；全站標題、示意文字、底列名字、聯絡頁都要標。選單最下方 `.lang-btn` 切換（localStorage）。
+- **中英分開**：中文寫在內文、英文寫 `data-en`（`lang.js` 第一次套用時把中文記到 data-zh，來回切）；**報讀名稱（aria-label）也跟語言走**（user 2026-11-25：「報讀要用英文」）：HTML 的 `aria-label` 寫中文、英文寫 `data-en-label`（lang.js 同一支 applyLang 換）；JS 自己設的用 `lang.js setLabel(el, zh, en)`（輪播、放大 dialog、作品頁；不給 zh＝拿掉），不要直接 `setAttribute('aria-label', 中文)`。切語言時分頁標題（「頁標題 - SCAID」）也跟著換。煙霧測試守「英文版沒有中文的 aria-label」。全站標題、示意文字、底列名字、聯絡頁都要標。選單最下方 `.lang-btn` 切換（localStorage）。
 - **後台**（user 2026-11-21：全站接 Directus、照 SCCD 加人名庫與 ui labels；欄位表＝`docs/Directus-後台欄位.md`）：
   - **每頁 HTML 裡的內容＝備援**：後台抓不到、或那個集合還沒有任何一筆＝照舊顯示 HTML；抓到＝換成後台的（版型照抄 HTML 那份標記）。渲染在 `js/modules/pages/cms-pages.js`（各頁）、`ui/item-list-cms.js`（師資／合作企業列表）、`ui/footer-cms.js`（聯絡）；`main.js initPageModules` 每頁叫、殼載完叫底列跑馬燈。
   - **庫**（照 SCCD；user 選三個、不要職稱庫）：人名庫 `people`←師資名字、單位庫 `organizations`←合作企業與榮譽主辦方、媒體庫 `media_outlets`←報導的媒體；M2O、還有人用就刪不掉。職稱（教授…）照舊寫在副標；得獎人（學生）照打字。
@@ -134,7 +134,7 @@
 | slug | 中／英 | 群組 |
 |---|---|---|
 | about / partners / faculty / curriculum / works / activities / records / press / admission | 關於／合作企業／師資／課程／作品／動態／榮譽／報導／入學 · About／Partners／Faculty／Curriculum／Works／Activities／Records／Press／Admission | 主選單（works＝課程後面，user 2026-11-23；**動態＝Activities（slug `activities`）、news＝首頁底列那串**，user 2026-11-24：原本 slug `news`，後台集合名照舊 `news`；首頁的 news 沒 JS 時連到入學、不是動態） |
-| qa / donate / regulations / sitemap / contact | 常見問題／捐款／規章與政策／網站地圖／聯絡 · QA／Donate／Regulations & Policies／Site Map／Contact | 次選單（regulations＝規章＋原本的條款頁併成一頁，user 2026-11-21；sitemap 頁本身：連結一串 text-md、不列自己、最後一項「聯絡」，user 2026-11-18；contact＝原本的 footer，user 2026-11-21） |
+| qa / donate / regulations / sitemap / contact | 常見問題／捐款／規章與政策／網站地圖／聯絡 · QA／Donate／Regulations & Policies／Site Map／Contact | 次選單（regulations＝規章＋原本的條款頁併成一頁，user 2026-11-21；sitemap 頁本身：連結一串 text-md、**順序同選單**（主選單 → 規章與政策 → 常見問題、捐款、聯絡；user 2026-11-25：選單 11-24 重排後這頁沒跟上，煙霧測試直接拿選單比）、不列自己、最後一項「聯絡」，user 2026-11-18；contact＝原本的 footer，user 2026-11-21） |
 | faculty-detail | 教師（師資列表點進去） | 詳細頁（不進選單／sitemap） |
 | 404 | 未知 · unknown（介面文字 `error.unknown`） | 簡單版：一個字、沒有右圖、左下角語言鈕取代 menu（user 2026-11-24） |
 
@@ -160,6 +160,7 @@
 │   └── modules/ui/         # chrome / logo（logo 的動態）/ object（右圖的 3D object）/ bg / ui-labels / item-list-cms / footer-cms / section-nav / accordion / item-marquee（清單列跑馬燈＋蓋黑收直條）/ thumb-board（清單圖片的中空板）/ slideshow（關於的段落輪播）/ album（相簿）/ grid-overlay（按 G 的 grid 疊圖）/ lang / custom-scrollbar / site-base / site-assets（網頁 icon ← 後台）/ escape-html / page-cleanup / motion / reduce-motion
 ├── images/favicon.svg      # 矩形＋圓（TODO 正式 SVG）
 ├── fonts/glow-sans-tc-compressed/  # 中文字體 woff2 切片＋font.css＋OFL.txt（scripts/build-fonts.py 產生）
+├── fonts/jetbrains-mono/   # 英文字體 JetBrains Mono 六片 woff2＋OFL.txt（自架，@font-face 在 css/base/typography.css）
 ├── objects/                # 右圖 object 的模型：index.json＋<slug>.bin（scripts/build-objects.cjs 產生，不要手改）
 ├── scripts/                # smoke.cjs（Playwright 煙霧測試）、build-fonts.py（切中文字體）、build-objects.cjs（把 3D 模型轉成 objects/ 的精簡檔）、build-icons.cjs（從 ai 抽 icon 成 website-icons/ 的 SVG）、setup-directus.cjs（建後台集合、庫、介面文字、網頁 icon）、migrate-directus.cjs（後台整套搬到另一台，Directus 12 → 11 用過）、seed-directus.cjs（解析各頁 HTML 寫進後台：庫→內容→文字頁→介面文字；只補空的／缺的，不蓋後台改過的）；都可重跑、先 --dry、.directus-token 不入庫
 ├── docs/                   # ROADMAP.md（還剩什麼，做完就勾）、Directus-後台欄位.md（後台集合／欄位 key 照這份建，新接一個集合就補一節）、Directus-搬到11.md、IT-請求-*.txt；SCAID icon.ai（icon 原始檔，不進 repo）
@@ -183,12 +184,12 @@ node scripts/smoke.cjs "../SCCD Website/node_modules/playwright" "%LOCALAPPDATA%
 2. **顏色／間距／時長一律 `var(--*)`**；灰底用 `bg-light-gray`／`bg-dark-gray`。前景／背景色用 `--theme-fg`／`--theme-bg`（Tailwind `bg-theme-fg`／`text-theme-bg`…），不要寫 `bg-black`／`text-white`：深色模式不會跟著反過來。
 3. **手機優先**：先寫手機版 class，桌面再加 `md:`；grid 子元素先 `col-span-4` 再 `md:col-span-N`。
 4. **站內路徑一律 `sitePath()`**（JS）或相對 `.html`（HTML）；不寫根目錄絕對路徑。
-5. **新頁三步**：`pages/X.html`（複製 about.html；`<head>` 裡深色模式那行 inline script 要一起帶）→ `router.js PAGES` 加 slug → header 選單＋sitemap 加連結；所有文字中文寫內文、英文寫 data-en。頁標題 h1 與選單、網站地圖那一項都標 `data-label="nav.<slug>"`，再跑 `scripts/seed-directus.cjs` 把新 key 補進後台。頁面專屬 JS 用動態 import 掛在 `main.js initPageModules`。沒有 Section title 的頁不放 `<nav class="section-nav">`（沒有段落就沒有 anchor 方塊；user 2026-11-18）。
+5. **新頁三步**：`pages/X.html`（複製 about.html；`<head>` 裡深色模式那行 inline script 要一起帶）→ `router.js PAGES` 加 slug → header 選單＋sitemap 加連結（兩邊同一個順序）；所有文字中文寫內文、英文寫 data-en。頁標題 h1 與選單、網站地圖那一項都標 `data-label="nav.<slug>"`，再跑 `scripts/seed-directus.cjs` 把新 key 補進後台。頁面專屬 JS 用動態 import 掛在 `main.js initPageModules`。沒有 Section title 的頁不放 `<nav class="section-nav">`（沒有段落就沒有 anchor 方塊；user 2026-11-18）。
 6. **換頁要收乾淨**：window/document 級 listener 用 `registerPageCleanup()`；`<main>` 內 GSAP／ScrollTrigger 由 `cleanupPageModules` 統一殺。
 7. **動畫**：`DUR.*`／`EASE.*`（motion.js）；進場要能在 `prefers-reduced-motion` 下直接到終態（GSAP 已全域 patch）。
 8. **版型看寬度、互動看輸入**：排版 `SCAIDHelpers.isMobileLayout()`（＝<768，同 CSS；**不分 iPad**，user 2026-11-23：SCCD 那條 768–1023／矮橫向手機的 gate 拿掉了），hover 類 `canHover()`／`isCoarsePointer()`。例外＝右圖看「是不是 PC」（`pc:`，見上「手機的右圖」）。
 9. **後台文字塞 innerHTML 前過 `escapeHtml()`**；純文字用 `textContent`。
-10. **無障礙**：要點的東西一律用 `<button>`／`<a href>`（全站現在都是）；真的要讓 div／span 可點，要補 `role="button"`、`tabindex="0"`、Enter／Space 觸發（原本的 `a11y.js makeActivatable()` 一直沒用到、2026-11-24 刪了，要用從 SCCD 搬回來）；icon／矩形鈕有 `aria-label`。
+10. **無障礙**：要點的東西一律用 `<button>`／`<a href>`（全站現在都是）；真的要讓 div／span 可點，要補 `role="button"`、`tabindex="0"`、Enter／Space 觸發（原本的 `a11y.js makeActivatable()` 一直沒用到、2026-11-24 刪了，要用從 SCCD 搬回來）；icon／矩形鈕有 `aria-label`（中文）＋`data-en-label`（英文，見「中英分開」）。
 11. **MOCK 內容**：**畫面上的示意文字不加「示意：」／「Placeholder: 」前綴**（user 2026-11-21 全站拿掉，一般說明、標題、副標直接寫）；人名、日期這類會被當真的才在後面標「（示意）」／「(placeholder)」，公司名照舊寫成「示意○○公司」。示意內容是哪些＝各頁 HTML 註解寫的「內容為 MOCK 示意」那份，不再靠 grep 前綴找。2026-11-21 起這份＝後台抓不到時的備援，真的內容在後台改；HTML 改了要同步進後台就跑 `seed-directus.cjs`（只補空的集合）。
 12. **殼的 z 序**：背景 -1（畫布 ＜ 中空板，`bg.css`）＜ 內容 ＜ logo 30（毛玻璃 `.top-blur` 是 logo 的子層）＜ 捲軸 35 ＜ 選單 40 ＜ 底列 60；`#page-content` 有 transform（右推用），裡面別放 fixed 元素。
 

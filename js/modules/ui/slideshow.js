@@ -12,6 +12,7 @@
  */
 import { prefersReducedMotion } from './reduce-motion.js';
 import { registerPageCleanup } from './page-cleanup.js';
+import { setLabel } from './lang.js';
 
 const AUTOPLAY_MS = 4000;
 const LAYERS = 5;   // 兩側的漸進模糊疊幾層（page.css .slide-blur > i：每層模糊加倍、越外面越糊）
@@ -61,9 +62,9 @@ export function initSlideshow() {
         if (jump) { void s.offsetWidth; s.style.transition = ''; }
         s.dataset.pos = String(pos[i]);
         s.disabled = Math.abs(pos[i]) !== 1;                                                  // 只有左右兩張能點
-        if (pos[i] === 0) { s.setAttribute('aria-label', '目前圖片'); s.removeAttribute('aria-hidden'); }
-        else if (Math.abs(pos[i]) === 1) { s.setAttribute('aria-label', pos[i] < 0 ? '上一張' : '下一張'); s.removeAttribute('aria-hidden'); }
-        else { s.removeAttribute('aria-label'); s.setAttribute('aria-hidden', 'true'); }   // 其他的不給讀
+        if (pos[i] === 0) { setLabel(s, '目前圖片', 'Current image'); s.removeAttribute('aria-hidden'); }
+        else if (Math.abs(pos[i]) === 1) { setLabel(s, pos[i] < 0 ? '上一張' : '下一張', pos[i] < 0 ? 'Previous image' : 'Next image'); s.removeAttribute('aria-hidden'); }
+        else { setLabel(s); s.setAttribute('aria-hidden', 'true'); }   // 其他的不給讀
       });
       // 糊的那一段＝目前那張以外（同作品頁的放映：正中的永遠不糊、兩邊的整張在糊的那段裡；user 2026-11-24：「這邊的 fade 可以參考作品頁面的那個」，
       // 原本固定框寬的 22%＝旁邊那張半張清楚半張糊）：從列的外緣到目前那張的邊。跟照片一起滑（page.css @property --slide-cut 補間）；第一次擺＝直接到位

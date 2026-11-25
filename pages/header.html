@@ -23,7 +23,7 @@
   <canvas class="object-canvas" role="img" aria-label=""></canvas>
 
   <!-- 全屏選單：透明、只占左欄（--menu-w），開著時內容往右推同寬、logo 不動（首頁長條原地換鎖定版）。文字依語言切換（data-zh／data-en，lang.js） -->
-  <div class="site-menu" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單">
+  <div class="site-menu" id="site-menu" role="dialog" aria-modal="true" aria-label="主選單" data-en-label="Main menu">
     <!-- 可以捲的只有選項（user 2026-11-24：「語言切換跟 mode 是 sticky 的，可以 scroll 的是 menu 選單的部分」）；深色模式＋語言鈕在 nav 外面、固定在底下 -->
     <!-- nav 裡兩塊：上面捲動框（主選單＋規章那組）、下面固定的常見問題那組（user 2026-11-24：「我想讓規章那組跟常見問題那組對調位置，然後讓常見問題那組也 sticky 在畫面上」）；
          固定的那組也留在 nav 裡＝報讀照樣是一個導覽區 -->
@@ -87,7 +87,7 @@
     </a>
     <!-- 作品頁的兩種排法（user 2026-11-23）：放映（slideshow）／總覽（bento）。只在作品頁、跟首頁的動態同一格（畫面正中；css/components/works.css），
          按了由 js/modules/pages/works.js 接；目前那個 aria-pressed -->
-    <div class="bar-works" role="group" aria-label="排法">
+    <div class="bar-works" role="group" aria-label="排法" data-en-label="Layout">
       <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
       <button type="button" data-works-mode="slideshow" aria-pressed="true"><span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-zh="放映" data-en="Slideshow">放映</span></button>
       <button type="button" data-works-mode="bento" aria-pressed="false"><span class="icon icon-grid" aria-hidden="true"></span><span data-label="bar.works.bento" class="sr-only" data-zh="總覽" data-en="Overview">總覽</span></button>
@@ -103,12 +103,12 @@
   <!-- 放大 dialog（lightbox）：相簿／封面／報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片（user 2026-11-23 併進來，原本自己一個滿版黑底的 dialog）都開在這裡。
        原生 <dialog>、透明：後面的內容模糊＋疊白、底列收起來，logo 照常；內容的頂對齊各頁 title 那條線、下面留一樣多（user 2026-11-23）。
        在放影片＝關燈（整頁換深色，同作品頁）。點旁邊／Esc 關（fade in／out）。行為 chrome.js openFigure -->
-  <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片">
+  <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片" data-en-label="Image">
     <!-- .figure-stage＝全螢幕的那一塊（內容＋控制列；dialog 自己不能全螢幕，Fullscreen 規格擋 dialog） -->
     <div class="figure-stage">
     <div class="figure-dialog-body"></div>
     <!-- 播放／暫停＝影片正中（user 2026-11-24：「play pause 放進影片的中間」；原本是下面控制列的第一顆） -->
-    <button type="button" class="media-btn media-play" aria-label="播放" aria-pressed="true"><span class="icon icon-pause" aria-hidden="true"></span><span class="icon icon-play" aria-hidden="true"></span></button>
+    <button type="button" class="media-btn media-play" aria-label="播放" data-en-label="Play" aria-pressed="true"><span class="icon icon-pause" aria-hidden="true"></span><span class="icon icon-play" aria-hidden="true"></span></button>
     <!-- 控制列（user 2026-11-24：「統一一下 ui」）：底列那條線上，兩組（.figure-ctrl）——
          正中＝‹ X ›：上一張、關閉、下一張，對齊畫面正中；影片、圖片（lightbox）都是這個結構（user 2026-11-24：「X 在中間，lightbox 也是」）。
          一組多於一張才有上一個／下一個（.has-nav）；只有一張＝只剩 X；
@@ -117,23 +117,23 @@
          .fs-blur＝全螢幕時每一組後面的毛玻璃（同 logo 背後那塊：貼著這一組、四邊羽化；平常不出，chrome.css） -->
     <div class="figure-ctrl figure-nav">
       <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
-      <button type="button" class="figure-prev" aria-label="上一張"><span class="icon icon-back" aria-hidden="true"></span></button>
-      <button type="button" class="figure-close" aria-label="關閉" autofocus><span class="icon icon-close" aria-hidden="true"></span></button>
-      <button type="button" class="figure-next" aria-label="下一張"><span class="icon icon-next" aria-hidden="true"></span></button>
+      <button type="button" class="figure-prev" aria-label="上一張" data-en-label="Previous"><span class="icon icon-back" aria-hidden="true"></span></button>
+      <button type="button" class="figure-close" aria-label="關閉" data-en-label="Close" autofocus><span class="icon icon-close" aria-hidden="true"></span></button>
+      <button type="button" class="figure-next" aria-label="下一張" data-en-label="Next"><span class="icon icon-next" aria-hidden="true"></span></button>
     </div>
     <!-- 音量＝靜音鈕＋拉桿一組，拉桿游標移到這一組才長出來（user：「hover btn 時才會出現」） -->
     <div class="figure-ctrl figure-media">
       <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
       <div class="media-btn media-vol-wrap">
-        <button type="button" class="media-mute" aria-label="靜音" aria-pressed="false"><span class="icon icon-loud" aria-hidden="true"></span><span class="icon icon-half" aria-hidden="true"></span><span class="icon icon-silence" aria-hidden="true"></span></button>
+        <button type="button" class="media-mute" aria-label="靜音" data-en-label="Mute" aria-pressed="false"><span class="icon icon-loud" aria-hidden="true"></span><span class="icon icon-half" aria-hidden="true"></span><span class="icon icon-silence" aria-hidden="true"></span></button>
         <!-- 拉桿＝一排直條（樣子照 ai 的 volume、20 根＝一根 5%；.media-vol-bars 畫）；接滑鼠、鍵盤的是蓋在上面看不到的 range：0～20＝亮幾根 -->
-        <span class="media-vol-bars"><input type="range" class="media-vol" min="0" max="20" step="1" value="20" aria-label="音量"></span>
+        <span class="media-vol-bars"><input type="range" class="media-vol" min="0" max="20" step="1" value="20" aria-label="音量" data-en-label="Volume"></span>
       </div>
-      <button type="button" class="media-btn media-fs" aria-label="全螢幕"><span class="icon icon-fullscreen" aria-hidden="true"></span></button>
+      <button type="button" class="media-btn media-fs" aria-label="全螢幕" data-en-label="Full screen"><span class="icon icon-fullscreen" aria-hidden="true"></span></button>
     </div>
     <!-- 手機的右圖 object（chrome.js openObjectDialog 掛 .is-object）：沒有 ‹ X ›，關閉＝打開它的那顆骨牌、留在右下角原位——同 menu 鈕：開著中央圓點常駐、再點一次就關
          （user 2026-11-24：「下面沒有 X，是打開的那個 btn，保持在右下角，跟 menu 一樣的邏輯」）。dialog 開著外面點不到（showModal＝其他地方 inert）→ 在 dialog 裡同一個位置放一顆一樣的 -->
-    <button type="button" class="bar-btn figure-obj-close" aria-label="關閉"><span class="bar-rect"></span></button>
+    <button type="button" class="bar-btn figure-obj-close" aria-label="關閉" data-en-label="Close"><span class="bar-rect"></span></button>
     </div>
   </dialog>
 </header>

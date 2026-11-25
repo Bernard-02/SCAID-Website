@@ -42,7 +42,7 @@ HTML 在元素上標 `data-label="key"`，元素本身的字＝後台抓不到�
 
 | key | 類型 | 內容 |
 |---|---|---|
-| `key` | String（唯一、唯讀） | 例 `nav.about`、`faculty.type.full_time`、`curriculum.year.1`、`curriculum.required`、`faculty.back`、`common.image`、`error.lead` |
+| `key` | String（唯一、唯讀） | 例 `nav.about`、`faculty.type.full_time`、`curriculum.year.1`、`curriculum.required`、`faculty.back`、`common.image`、`error.unknown` |
 | `zh` / `en` | String | 中文／英文（英文留空＝顯示中文） |
 | `category` | Dropdown（可自填） | 後台整理用（選單與頁名、底列與共用、師資、課程、聯絡、榮譽、404），前台不看 |
 

@@ -79,7 +79,7 @@ const videosOf = (rows) => (Array.isArray(rows) ? rows : []).map(v => String(v?.
 const album = (fs, videos = []) => fs.length || videos.length ? `<div class="album">${videos.map(videoShot).join('')}${
   fs.map(f => `<button type="button"><img ${imgAttrs(f)}>${lbl('span', 'common.enlarge', '放大圖片', 'Enlarge image', ' class="sr-only"')}</button>`).join('')}</div>` : '';
 /** 段落圖片輪播（關於；小節放多張也是這個） @param {any[]} fs @param {string} [c] 多掛的 class（小節裡的間距） */
-const slideshow = (fs, c = '') => fs.length ? `<div class="slideshow${c ? ` ${c}` : ''}" aria-label="段落圖片">${fs.map(f => `<button type="button" class="slide"><img ${imgAttrs(f)}></button>`).join('')}</div>` : '';
+const slideshow = (fs, c = '') => fs.length ? `<div class="slideshow${c ? ` ${c}` : ''}" aria-label="段落圖片" data-en-label="Section images">${fs.map(f => `<button type="button" class="slide"><img ${imgAttrs(f)}></button>`).join('')}</div>` : '';
 /** 多行純文字 → 一段一個 p（換行照留、空一行＝分段；中英照段的順序對），回傳每段的產生器、class 由呼叫端給 @param {any} zh @param {any} en */
 const paras = (zh, en) => {
   const split = (/** @type {any} */ s) => String(s || '').trim().split(/\n\s*\n/), z = split(zh), e = split(en);

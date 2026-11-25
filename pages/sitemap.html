@@ -7,9 +7,6 @@
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
   <title>網站地圖 - SCAID</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..700&display=swap">
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -18,7 +15,7 @@
   <div id="site-header"></div>
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/sitemap.html 也能獨立跑。版型同 about（css/components/page.css）。
-       不分段、全部連結一串（.link-list 同選單間距；hover 蓋黑收直條，item-marquee.js）、text-md、不列自己、最後一項「聯絡」（user 2026-11-18；原本開頁尾覆蓋層，2026-11-21 改成聯絡頁）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+       不分段、全部連結一串（.link-list 同選單間距；hover 蓋黑收直條，item-marquee.js）、text-md、順序同選單（主選單 → 規章與政策 → 常見問題、捐款、聯絡；user 2026-11-25）、不列自己、最後一項「聯絡」（user 2026-11-18；原本開頁尾覆蓋層，2026-11-21 改成聯絡頁）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
@@ -34,9 +31,9 @@
           <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="榮譽" data-en="Records">榮譽</a></li>
           <li><a data-label="nav.press" href="press.html" class="nav-link" data-zh="報導" data-en="Press">報導</a></li>
           <li><a data-label="nav.admission" href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+          <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
           <li><a data-label="nav.qa" href="qa.html" class="nav-link" data-zh="常見問題" data-en="QA">常見問題</a></li>
           <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li>
-          <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
           <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-zh="聯絡" data-en="Contact">聯絡</a></li>
         </ul>
       </article>
