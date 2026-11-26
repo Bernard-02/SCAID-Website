@@ -8,21 +8,16 @@
  *     放映時只有正中那個出 play（works.css）
  * 放映時每個作品照自己的比例與大小、只限最大框，總覽撐滿一欄（works.css）；每次進來順序都打亂（兩種排法共用這一次的順序）。
  * 資料：後台單例 works 的 YouTube 播放清單（可以好幾個；用 Data API 拆成一支一支，照 SCCD about-data-loader）
- * ＋「圖片」欄位的圖（多圖，user 2026-11-24；原本是檔案庫「作品」資料夾裡的圖）。都沒有（後台抓不到、還沒建、還沒填）＝HTML 的示意。
- * TEST_JSON 有寫＝改讀本機的測試資料（2026-11-23 用過）。
+ * ＋「圖片」欄位的圖（多圖，user 2026-11-24；原本是檔案庫「作品」資料夾裡的圖）。HTML 不放示意（user 2026-11-26：不要假資料）：
+ * 都沒有（後台抓不到又沒有上次抓到的、還沒填）＝沒有作品。原本的 TEST_JSON（讀本機的測試資料，2026-11-23 用過）同一天拿掉。
  */
-import { CMS_API_BASE, assetUrl, fetchCmsJson, YT_API_KEY } from '../../config/api.js';
+import { assetUrl, cmsGet, YT_API_KEY } from '../../config/api.js';
 import { escapeHtml as esc } from '../ui/escape-html.js';
 import { DUR } from '../ui/motion.js';
 import { registerPageCleanup } from '../ui/page-cleanup.js';
 import { prefersReducedMotion } from '../ui/reduce-motion.js';
 import { openFigure, youtubeFrame } from '../ui/chrome.js';
-import { sitePath } from '../ui/site-base.js';
 import { setLabel } from '../ui/lang.js';
-
-// 本機的測試資料（user 2026-11-23：「works 頁面先用 json 的方式，我想測試效果」）：一筆＝一個 Work，或 { kind: 'playlist', url }＝一個 YouTube 播放清單。
-// 有寫＝用這個檔、不抓後台。2026-11-24 換回後台（user：「改讀後臺吧」；那串 SCCD 畢製清單貼進後台了），當時的 data/ 刪了、要再用從 git 拿回來
-const TEST_JSON = '';
 
 // 放映自動換下一個的間隔（user 2026-11-25：「作品那一頁的slideshow可以設定每4s換下一個嗎」；同關於的段落輪播 slideshow.js）
 const AUTOPLAY_MS = 4000;
@@ -114,31 +109,13 @@ async function playlist(id) {
 /** 後台：單例 works 的播放清單＋圖片欄位（files M2M，一列 { directus_files_id }；只收圖片檔、檔案刪掉了＝null 不出）；兩個都沒有＝null @returns {Promise<Work[] | null>} */
 async function fromCms() {
   const f = 'images.directus_files_id';
-  const page = await fetchCmsJson(`${CMS_API_BASE}/works?fields=playlists,${f}.id,${f}.type,${f}.width,${f}.height,${f}.description`).catch(() => null);
+  const page = await cmsGet(`works?fields=playlists,${f}.id,${f}.type,${f}.width,${f}.height,${f}.description`).catch(() => null);
   const ids = (Array.isArray(page?.playlists) ? page.playlists : []).map(p => listId(p?.url)).filter(Boolean);
   const videos = (await Promise.all([...new Set(ids)].map(playlist))).flat();
   /** @type {Work[]} */
   const images = (Array.isArray(page?.images) ? page.images : []).map(j => j?.directus_files_id).filter(x => x?.id && /^image\//.test(x.type || ''))
     .map(x => ({ kind: 'image', src: assetUrl(x), w: x.width, h: x.height, title: x.description || '' }));
   return images.length + videos.length ? [...images, ...videos] : null;
-}
-
-/** 本機的測試資料（TEST_JSON）：一筆＝一個 Work（圖的 src 寫站內路徑，照站台根），或 { kind: 'playlist', url }＝拆成一支一支（同後台那條）。
- *  沒寫／抓不到／空的＝null @returns {Promise<Work[] | null>} */
-async function fromJson() {
-  if (!TEST_JSON) return null;
-  try {
-    const r = await fetch(sitePath(TEST_JSON), { cache: 'no-cache' });
-    const items = r.ok ? await r.json() : null;
-    if (!Array.isArray(items)) return null;
-    /** @type {Work[]} */
-    const all = (await Promise.all(items.map(it => {
-      if (it.kind !== 'playlist') return [{ ...it, src: /^https?:\/\//i.test(it.src) ? it.src : sitePath(it.src) }];
-      const id = listId(it.url);
-      return id ? playlist(id) : [];
-    }))).flat();
-    return all.length ? all : null;
-  } catch { return null; }
 }
 
 /** 一個作品（兩種排法同一份標記，works.css 照排法、data-pos 擺）：大小＝--w／--h（沒寫寬高的檔當 16:9）；點的範圍＝蓋在上面的那顆鈕 @param {Work} it */
@@ -356,11 +333,11 @@ export function initWorks() {
   document.addEventListener('keydown', onKey);
   registerPageCleanup(() => { document.removeEventListener('click', onBar); document.removeEventListener('keydown', onKey); });
 
-  list.replaceChildren(...shuffle([...list.children]));   // 示意也打亂
+  list.replaceChildren(...shuffle([...list.children]));   // 清單裡原本有的（正式站的 HTML 是空的；煙霧測試的 fixture 有）照樣打亂、接上
   render();
   watchBars();
   restart();
-  return fromJson().then(items => items || fromCms()).then(items => {
+  return fromCms().then(items => {
     if (!items || !list.isConnected) return;
     stopVideo();
     list.innerHTML = shuffle(items).map(tile).join('');

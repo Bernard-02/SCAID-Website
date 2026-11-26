@@ -268,7 +268,10 @@
   /* 語言鈕＋深色模式：跟上面固定的聯絡同一組，聯絡 → EN → 深色模式 之間都是選項間距 sm（user 2026-11-25：「聯絡跟en是同一組、sticky」，
      順序先「將mode放在en上面吧」、再「兩者交換」；原本深色模式＋語言鈕自己一組、跟上面那組之間 xl） */
   .menu-tools { margin-top: var(--spacing-sm); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); }
-  .theme-btn { display: flex; align-items: center; min-height: 1lh; }   /* 至少一行字高；icon＝骨牌的高（下一條）比 EN 那行高一點 */
+  /* 至少一行字高；icon＝骨牌的高（下一條）比 EN 那行高一點。
+     EN → 深色模式＝聯絡 → EN（user 2026-11-26：「en到mode之間的gap要跟聯絡到en的一樣…可能要加上line height」）：字 ↔ 字兩邊各有半個行距、
+     字 ↔ icon 只有字那邊一份 → 上面補半個行距（--lead，同入學附件的 doc icon）。下面不補＝到 menu 鈕照舊 xl */
+  .theme-btn { display: flex; align-items: center; min-height: 1lh; margin-top: var(--lead); }
   .theme-btn .icon { font-size: var(--block-h); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
   html[data-theme="dark"] .theme-btn .icon { transform: rotate(180deg); }   /* 深色＝ai 的 night（＝day 轉半圈：實心那半到上面） */
   /* hover＝黑白對調（實心那半變空、空的那半變實心）＝另一個模式的樣子（user 2026-11-25：「hover mode btn時，是上下顛倒方塊」→「應該是白的變黑的，黑的變白的才對，不是旋轉」）：
@@ -310,7 +313,7 @@
 
   /* ── 底列：三欄 [左 menu／intro] [中 動態] [右 右圖的開關（PC 以外，user 2026-11-23；原本空著＝footer 鈕 2026-11-21 搬進選單＝聯絡頁）]；整列貼底 --bar-pad。
      兩側等寬（--side-min＝左欄內容寬，chrome.js fitBar 量）＝動態永遠畫面正中；
-     中欄最寬 --col-w（＝首頁動態圖片寬），側邊名字出來放不下時才縮中欄 ── */
+     中欄最寬 --news-w（＝首頁展開的 news 清單寬；user 2026-11-26，原本 --col-w＝整個 logo 寬），側邊名字出來放不下時才縮中欄 ── */
   .site-bar {
     @apply text-md;
     position: fixed;
@@ -321,7 +324,7 @@
     height: var(--bar-h);
     padding: 0 var(--container-padding) var(--bar-pad);
     display: grid;
-    grid-template-columns: minmax(var(--side-min, 4em), 1fr) minmax(0, var(--col-w)) minmax(var(--side-min, 4em), 1fr);
+    grid-template-columns: minmax(var(--side-min, 4em), 1fr) minmax(0, var(--news-w)) minmax(var(--side-min, 4em), 1fr);
     gap: var(--spacing-gutter);
     --bar-gap: var(--spacing-sm);   /* 左欄 menu／intro 間距 */
     align-content: end;
@@ -329,6 +332,13 @@
     color: var(--theme-fg);
   }
   .bar-left { justify-self: start; display: flex; align-items: center; gap: var(--bar-gap); }
+  /* 手機：首頁的 news 跑馬燈＝logo 全寬（user 2026-11-26：「這個news外面的寬度設成logo寬度的全寬好了，在手機上」；原本中欄＝兩側讓給 menu／play／右圖的鈕之後剩下的，87～303）：
+     中欄固定 --logo-w、兩側平分剩下的、不留 gap＝跑馬燈的左右緣對齊 logo 的兩端（390 寬＝55～335）。左邊 menu＋play 比那一欄寬＝play 疊進跑馬燈的左端
+     （user 選的時候知道：長標題捲動時從它底下過）→ 左邊那組墊在上層、點得到。桌面照舊（--news-w＝logo 直條那一段、兩側 --side-min） */
+  @media (max-width: 767px) {
+    .site-bar { grid-template-columns: minmax(0, 1fr) var(--logo-w) minmax(0, 1fr); column-gap: 0; }
+    .bar-left { position: relative; z-index: 1; }
+  }
   /* 404 的左下角＝語言鈕、不放 menu（user 2026-11-24：「左下角加一個語言切換的 btn 就好，不需要整個 menu」）：menu 鈕那個位置、同一行高；
      字＝選單裡那顆語言鈕（.lang-btn：lang.js 委派切換、填「要切過去」的語言）。別頁藏著 */
   .bar-lang { @apply text-md; display: none; align-items: center; height: max(1.5em, var(--block-h)); color: inherit; }
@@ -367,9 +377,13 @@
   }
   /* 底列中間的動態只在首頁（user 2026-11-10）：內頁淡出（同 intro） */
   body:not([data-page="index"]) .bar-news { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }
+  /* 一則都沒有（後台抓不到、還沒填；user 2026-11-26 起 header.html 不放示意）＝不出、點不到（不然點了展開一個空的清單）；後台晚到＝淡進來 */
+  .bar-news:has(.bar-news-copy:empty) { opacity: 0; visibility: hidden; filter: blur(var(--blur)); }
   /* intro（play）也只在首頁（user 2026-11-18）：同款淡出淡入，淡完才 hidden；位置照留＝選單開時 menu 鈕那格不變 */
   .play-btn { transition: var(--transition-fade), visibility 0s; }
-  body:not([data-page="index"]) .play-btn { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
+  /* 首頁影片後台沒有連結（data-video 空，cms-pages.js loadIntroVideo）＝▶ 不出（user 2026-11-26：「如果首頁的video，後臺沒有link，前臺就不渲染這個icon跟影片」）；
+     連結晚到＝淡進來。藏的是 visibility：選單、展開 news 開著那幾條會蓋 opacity，蓋不到它 */
+  body:not([data-page="index"]) .play-btn, .play-btn[data-video=""] { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   .play-btn .icon { font-size: var(--block-h); }   /* 同 menu 鈕骨牌的高（user 2026-11-24，icon.css） */
   /* 選單開著：menu 鈕不撐、play 留在原位（user 2026-11-24：「pc 的首頁，在打開 menu 的時候，play 就不需要移動，只需要被模糊即可」；
      原本 menu 鈕撐成選單欄那一格、play 滑到選單右緣，user 2026-11-03）。play 在首頁＝內容，選單開著模糊＋疊白（下面手機那段之後） */
@@ -450,7 +464,6 @@
   .object-canvas.is-dragging { cursor: grabbing; }
   .object-canvas.is-on { opacity: 1; visibility: visible; filter: none; transition: var(--transition-fade), visibility 0s; }
   .figure-dialog-body > .object-canvas { position: static; background: none; opacity: 1; visibility: visible; filter: none; }
-
   /* 動態（首頁）：中欄＝一次只顯示一則標題（user 2026-11-23：拿掉＋、只剩跑馬燈；原本好幾則排成一排一直跑＋右端的＋）。
      放得下＝置中、停 3 秒；放不下＝從欄的左緣起跑一趟馬燈、跑完才換；換＝網站 fade（先淡出、淡完才淡入下一則）——時間、順序都在 chrome.js runNews。
      兩端不淡（user 2026-11-23 拿掉）。中欄＝--col-w＝logo 寬（手機：左右讓給 menu／intro 鈕之後剩下的寬，仍在畫面正中）。
@@ -496,6 +509,9 @@
   /* 內頁：子層的 visible 會蓋過 .bar-news 的 hidden＝看不到卻點得到（作品頁 hover 排法鈕旁邊會連到動態頁）→ 這則也跟著淡完才 hidden */
   body:not([data-page="index"]) .bar-news-copy > span { visibility: hidden; transition: var(--transition-fade), visibility 0s var(--dur-fade); }
   html:is(.news-open, .news-closing) .bar-news-track { opacity: 0; filter: blur(var(--blur)); }
+  /* 淡掉的這段也不吃指標（user 2026-11-26：「news打開的時候要擋住hover的設定…下面的news會被hover一遍」）：看不到卻照樣 hover＝蓋黑收圓點在底下跑，
+     收回去淡回來時就露出來。按下去落在底列本身＝點動態以外＝收回去（chrome.js），同 menu、play */
+  html:is(.news-open, .news-closing) .bar-news { pointer-events: none; }
 
   /* ── 放大 dialog（lightbox：相簿、封面、報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片；user 2026-11-13 起）：蓋滿畫面、透明。
      內容的框＝作品頁放映的舞台那一段：頂＝各頁 title 那條線（--top-h）、底＝底列上方再留 md，內容在這一段的正中、左右置中（user 2026-11-25，下面 --fig-h；
@@ -674,6 +690,9 @@
   }
   /* play 鈕的圓點在 icon 右邊（user 2026-11-25：「hover play btn的時候，圓點設定在右邊」）：隔 xs、對在 icon 的正中 */
   .site-bar .play-btn::after { left: calc(100% + var(--spacing-xs)); margin-left: 0; top: 50%; margin-top: calc(var(--dot-size) / -2); }
+  /* 圓點對 icon 本身的寬、不是鈕的框（user 2026-11-26）：音量鈕三張疊在同一格、鈕＝最寬那張（silence）的寬、都靠左（上面 .media-mute）→
+     half 比較窄，left 50% 會偏右約 2.6px；loud 跟 silence 只差 0.1px＝不用管。42.764 / 70＝icon.css .icon-half 的 --ar */
+  .figure-dialog.is-half:not(.is-muted) .media-mute::after { left: calc(var(--block-h) * 42.764 / 70 / 2); }
   @media (hover: hover) { :is(.figure-ctrl button:not(:disabled), .bar-works button, .play-btn, .news-btn, .footer-social a, .theme-btn):hover::after { opacity: 1; } }
   html:not(.input-touch) :is(.figure-ctrl button, .bar-works button, .play-btn, .news-btn, .footer-social a, .theme-btn):focus-visible::after { opacity: 1; }
   /* 上一個／下一個＝淡出 → 換 → 淡入（每一頁的 lightbox，user 2026-11-25：「lightbox 換圖的轉場用 fade 的吧」；11-24 只有作品頁；chrome.js stepFigure 掛 .is-swapping）。

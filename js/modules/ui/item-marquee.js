@@ -311,8 +311,6 @@ const rising = (row) => document.documentElement.classList.contains('news-rising
  * 糊到 1px 以上才算：捲動框只比選項少幾 px 時，最後一項的糊只有零點幾 px＝看起來是清楚的、卻被擋掉（user 同一天：「捐款」要先往下捲才點得到，
  * 「沒有出現blur，但實際上應該是可以直接點擊的才對」；原本 > 0 就算） @param {Element} row */
 export const fogged = (row) => { const li = row.closest('.site-menu-nav li'); return !!li && parseFloat(getComputedStyle(li).filter.slice(5)) >= 1; };   // 'blur(1.2px)' → 1.2；'none' → NaN
-/** 升完：游標停在那一則上（升的途中進去、沒有再進出一次＝pointerover 不會再來）＝照 hover 的規矩補做（chrome.js） @param {Element} row */
-export function hoverIfOver(row) { if (row.matches(':hover')) strike(/** @type {HTMLElement} */ (row), wipe); }
 
 /** 程式叫的 hover：不管游標在不在都跑完整段（蓋 → 收 → 直條），回傳做完的 Promise；做完直條留著。
  * 入學頁的 deep link 先做完這個才打開那一則（cms-pages.js newsList；user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」）

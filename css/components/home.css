@@ -44,9 +44,9 @@
      帶與圓點插在 li 裡、照 li 的框擺（item-marquee.js strike／flash，樣子 page.css .item-cover）；圓點在一則的最右緣、對在標題的正中 */
   .home-news-list li { position: relative; }
   @media (min-width: 768px) {
-    /* 寬＝logo 第一根直條的左緣到最後一根的右緣（user 2026-11-25：「pc的news，我想要寬度調整成logo的第一根到最後一根的width」；原本＝--col-w＝連兩端骨牌的整個 logo 寬）：
-       展開時 logo 停在系名那 17 根的 stroke 版，直條那一段＝logo 寬扣兩端各「骨牌 45＋間隙 20」個 viewBox 單位（logo.js BLOCK／GAP、DEPT） */
-    .home-news-list > ul { width: calc(var(--col-w) * (var(--logo-vb-w) - 130) / var(--logo-vb-w)); margin: 0 auto; }
+    /* 寬＝logo 第一根直條的左緣到最後一根的右緣＝--news-w（variables.css；user 2026-11-25：「pc的news，我想要寬度調整成logo的第一根到最後一根的width」；
+       原本＝--col-w＝連兩端骨牌的整個 logo 寬）。底列的跑馬燈同寬（chrome.css .site-bar） */
+    .home-news-list > ul { width: var(--news-w); margin: 0 auto; }
   }
   /* 手機：圖在上、標題在下（user 2026-11-24；原本標題在上）。不加框（user 2026-11-24）。圖框＝同動態的清單列（user 2026-11-25：「手機上這個圖應該是跟activities的一樣調整，
      圖片不要被crop到」；原本滿版 3:1、cover 裁掉上下）：方框、寬 --item-thumb-w（page.css .item-thumb），圖照原比例 contain、貼框底靠左＝緊接著下面的標題，

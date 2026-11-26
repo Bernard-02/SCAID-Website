@@ -7,7 +7,7 @@ import { DUR, fadeSwap } from './motion.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 import { syncObject, openObject, closeObject } from './object.js';
 import { logoToStroke, logoPage } from './logo.js';
-import { flash, remeasure, hoverIfOver, fogged } from './item-marquee.js';
+import { flash, remeasure, fogged } from './item-marquee.js';
 import { setLabel } from './lang.js';
 
 const html = document.documentElement;
@@ -57,11 +57,9 @@ function setNews(open) {
   clearTimeout(risingTimer);
   if (open) {   // 收到一半又開＝先收完再照常升上來
     endNewsClosing(); html.classList.add('news-open', 'news-rising'); awayNews();
-    // 升上來的途中不能 hover（item-marquee.js rising；user 2026-11-24），升完（＝home.css --news-wait＋news-rise，同 openNewsAt 那一閃）才可以、游標停著的那則補做
-    risingTimer = window.setTimeout(() => {
-      html.classList.remove('news-rising');
-      document.querySelectorAll('#page-content .home-news-list li').forEach(hoverIfOver);
-    }, prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);
+    // 升上來的途中不能 hover（item-marquee.js rising；user 2026-11-24），升完（＝home.css --news-wait＋news-rise，同 openNewsAt 那一閃）才可以。
+    // 游標停著的那則不補做（user 2026-11-26：「news打開的時候要擋住hover…下面的news會被hover一遍」；11-24 起原本補做）＝要游標再進出一則才有
+    risingTimer = window.setTimeout(() => html.classList.remove('news-rising'), prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);
     return;
   }
   html.classList.remove('news-rising');

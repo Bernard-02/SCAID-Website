@@ -95,6 +95,7 @@
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
   --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
+  --news-w: var(--col-w);       /* 底列中欄最大寬（手機吃滿、被兩側的鈕擠）；桌面見 768 那段 */
   --logo-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));   /* 全站 logo 寬（chrome.css .site-logo）：手機＝內頁內文欄的寬＝第 1 欄正中 → 第 4 欄正中（user 2026-11-24） */
   /* 內頁內文欄的寬（絕對值）：手機＝扣內距、扣兩邊 rail；桌面＝12 欄裡的 6 欄（下面 768 那段；PC col 2–7、iPad col 4–9 都是）。
      清單縮圖／詳細頁照片＝它的 1.5 欄（user 2026-11-18）：內文欄手機當 4 欄、桌面 6 欄，1.5 欄＝1.5 個欄寬＋半個 gutter。
@@ -172,6 +173,9 @@
     --menu-w: 18rem;
     --col-w: min(60vw, 32rem);
     --logo-w: var(--col-w);     /* 桌面 logo 同動態欄寬 */
+    /* 首頁 news（展開的清單、底列的跑馬燈）的寬＝logo 第一根直條的左緣到最後一根的右緣（user 2026-11-25 清單、11-26 跑馬燈「也改成跟内容的寬度一樣」）：
+       展開時 logo 停在系名那 17 根的 stroke 版，直條那一段＝logo 寬扣兩端各「骨牌 45＋間隙 20」個 viewBox 單位（logo.js BLOCK／GAP） */
+    --news-w: calc(var(--col-w) * (var(--logo-vb-w) - 130) / var(--logo-vb-w));
     --rail-w: 0px;
     --body-w: calc((100vw - 2 * var(--container-padding) - var(--spacing-gutter)) / 2);
     --item-thumb-w: calc((var(--body-w) - 5 * var(--spacing-gutter)) / 6 * 1.5 + var(--spacing-gutter) / 2);
