@@ -8,19 +8,16 @@ import { closeOverlays } from './modules/ui/chrome.js';
 import { logoToStroke, logoPage } from './modules/ui/logo.js';
 import { syncObject } from './modules/ui/object.js';
 import { SITE_BASE_PATHNAME, sitePath } from './modules/ui/site-base.js';
+import { PAGE_FILES, pageOfSlug, pagePath, slugsFresh } from './config/slugs.js';
 import { DUR } from './modules/ui/motion.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
-// ── 路由表：新頁＝PAGES 加一個 slug ＋ pages/<slug>.html（乾淨路徑 /slug 與 /slug.html 都對到） ──
-// <slug>-detail＝從 <slug> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <slug>）
-const PAGES = ['about', 'partners', 'faculty', 'faculty-detail', 'curriculum', 'works', 'activities', 'records', 'admission',
-               'donate', 'regulations', 'sitemap', 'contact', '404'];
-const routes = {
-  '/':           { page: 'index', htmlFile: 'index.html' },
-  '/index.html': { page: 'index', htmlFile: 'index.html' },
-};
-for (const p of PAGES) routes[`/${p}`] = routes[`/${p}.html`] = { page: p, htmlFile: `pages/${p}.html` };
-const NOT_FOUND_ROUTE = routes['/404'];
+// ── 路由表：頁面清單與對外 slug 都在 js/config/slugs.js（PAGE_FILES／SLUG_DEFAULTS＋後台 site_slugs；user 2026-11-26 照 SCCD）。
+// 網址只認兩種寫法：真實檔名（/pages/about.html、/about.html）與乾淨 slug（/about——只認目前的 slug，舊的、內部代號＝404）。
+// <頁>-detail＝從 <頁> 列表點進去的詳細頁（不進選單／sitemap，選單亮 <頁>）
+const ROUTES = Object.fromEntries(Object.entries(PAGE_FILES).map(([page, htmlFile]) => [page, { page, htmlFile }]));
+const FILE_ROUTES = Object.fromEntries(Object.values(ROUTES).map(r => [`/${r.htmlFile.split('/').pop()}`, r]));
+const NOT_FOUND_ROUTE = ROUTES[404];
 
 // ── 路徑解析：部署在子路徑時 pathname 帶前綴（/SCAID/about.html），比對前先剝掉；/pages/ 前綴也剝 ──
 function stripBase(pathname) {
@@ -31,18 +28,20 @@ function stripBase(pathname) {
 }
 function resolveRoute(pathname) {
   const normalized = stripBase(pathname).replace(/^\/pages\//, '/').replace(/\/$/, '') || '/';
-  return routes[normalized] || null;
+  if (normalized === '/') return ROUTES.index;
+  if (normalized.endsWith('.html')) return FILE_ROUTES[normalized] || null;
+  return ROUTES[pageOfSlug(normalized.slice(1)) || ''] || null;
 }
 
-// ── pushState 網址：已設好 SPA fallback（.htaccess／CloudFront 404→index.html）的正式網域才輸出乾淨 URL（/about）；
-//    其餘（本地 dev server）用真實檔案路徑（/pages/about.html）→ refresh 不 404。resolveRoute 兩種都吃。
-//    ⚠️ 把網域加進來「之前」server fallback 必須先設好。TODO 正式網域定案後填入
-const CLEAN_URL_HOSTS = [];
-function pushPath(route) {
-  if (route.htmlFile === 'index.html') return SITE_BASE_PATHNAME;
-  return CLEAN_URL_HOSTS.includes(window.location.hostname)
-    ? SITE_BASE_PATHNAME + route.htmlFile.replace(/^pages\//, '').replace(/\.html$/, '')
-    : SITE_BASE_PATHNAME + route.htmlFile;
+// ── pushState 網址：正式站＝乾淨 slug（/about）、其餘＝真實檔案路徑（/pages/about.html）——判法與 CLEAN_URL_HOSTS 在 js/config/slugs.js pagePath ──
+/** @param {{ page: string }} route */
+const pushPath = (route) => pagePath(route.page);
+// 網址列換成這頁目前的對外寫法（不換頁）：舊寫法進來的、後台剛改了 slug 的，都收斂成同一個可分享的網址（同 SCCD canonicalize）
+/** @param {{ page: string }} route */
+function canonicalize(route) {
+  if (route.page === 'index' || route.page === '404') return;
+  const { pathname, search, hash } = window.location, url = pagePath(route.page);
+  if (url !== pathname) history.replaceState(history.state, '', url + search + hash);
 }
 
 // ── 無障礙：SPA 換頁不像整頁載入會移焦點、報讀新頁 → 焦點移到 main、aria-live 報新頁標題（WCAG 2.4.3／4.1.3）──
@@ -78,6 +77,16 @@ export function updateNavActive(page = document.body.dataset.page) {
   const home = page === 'index';
   logo.setAttribute('href', home ? 'about.html' : '../index.html');
   if (home) logo.setAttribute('aria-labelledby', 'nav-about'); else logo.removeAttribute('aria-labelledby');
+}
+
+// 各頁 <head> 的 metadata（description、canonical、og:*、twitter:*、robots；user 2026-11-26 填的 docs/metadata.txt）換頁時跟著換：
+// Google 會跑 JS，不換的話 head 一直是第一次載入那頁的——正式站的乾淨網址冷載入都是 index.html＝每一頁的 canonical 都指向首頁
+const HEAD_META = 'meta[name="description"], meta[name="robots"], meta[name^="twitter:"], meta[property^="og:"], link[rel="canonical"]';
+/** @param {Document} doc 新頁的 HTML */
+function syncHeadMeta(doc) {
+  document.head.querySelectorAll(HEAD_META).forEach(el => el.remove());
+  const title = document.head.querySelector('title');
+  doc.head.querySelectorAll(HEAD_META).forEach(el => document.head.insertBefore(document.importNode(el, true), title));
 }
 
 // ── 內容替換。navSeq：快速連點時只讓最後一次導航生效（每個 await 後比對，舊的放棄不 swap）──
@@ -130,6 +139,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
     if (!newMain) throw new Error('No <main> found in ' + route.htmlFile);
     const newTitle = doc.querySelector('title')?.textContent;
     if (newTitle) document.title = newTitle;
+    syncHeadMeta(doc);
 
     cleanupPageModules();
     window.scrollTo({ top: 0, behavior: 'instant' });   // 淡出中瞬間回頂（html 有 scroll-behavior:smooth，不寫 instant 會在淡入時看到捲動）
@@ -144,6 +154,9 @@ async function loadPage(route, search = '', fromUserNav = false) {
     logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（從首頁來＝移完才換，見上）
     // 後台的內容換好才淡入（user 2026-11-22：沒資料的老師，HTML 示意的學歷會先閃一下再被收掉）；後台慢就最多等 1.5 秒、先顯示示意
     const cmsReady = Promise.race([initPageModules(route.page, new URLSearchParams(search), fromUserNav), wait(1500)]);
+    // 分頁標題＝「頁名 - SCAID」（同 ui-labels.js；HTML 的 <title> 是給 Google、預覽看的「About 關於」）：報讀之前先換好，語言 initPageModules 已經套了
+    const h1 = main.querySelector('h1[data-label]');
+    if (h1) document.title = `${h1.textContent} - SCAID`;
     if (fromUserNav) announceAndFocusMain(main);
     if (logoFirst) {
       void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
@@ -194,10 +207,24 @@ export function initRouter() {
     loadPage(route, window.location.search);
   });
 
-  // 初始路由：直接開／refresh 時 HTML 已是該頁，只 init 不重抓；網址不在路由表（server fallback 到 index.html）→ 載 404
+  // 初始路由：直接開／refresh 真實檔案＝HTML 已是該頁，只 init 不重抓。
+  // 乾淨網址（/about）由 server fallback 回 index.html（body 靜態標 data-page="index"）＝內容不是這頁 → 照 slug 抓那一頁（同 SCCD 冷載入走 loadPage）；
+  // 先把 data-page 換成那一頁＝不演「首頁 → 內頁」的 logo 上移，照一般換頁淡入
+  const start = (/** @type {{ page: string, htmlFile: string }} */ route) => {
+    canonicalize(route);
+    const served = document.body.dataset.page;
+    document.body.dataset.page = route.page;
+    current = { page: route.page, search: window.location.search };
+    if (served === 'index' && route.page !== 'index') loadPage(route, window.location.search);
+    else initPageModules(route.page, new URLSearchParams(window.location.search), false);
+  };
+  // 後台的 slug 表晚到、而且改過：網址列收斂成最新寫法（這台存的是舊表、照舊 slug 開進來的）
+  slugsFresh.then(() => { const r = resolveRoute(window.location.pathname); if (r && r.page === current.page) canonicalize(r); });
   const route = resolveRoute(window.location.pathname);
-  if (!route) { loadPage(NOT_FOUND_ROUTE); return; }
-  document.body.dataset.page = route.page;
-  current = { page: route.page, search: window.location.search };
-  initPageModules(route.page, new URLSearchParams(window.location.search), false);
+  if (route) { start(route); return; }
+  // 不認得的路徑：可能是後台剛改的 slug（這台還沒讀到）→ 等最新的表再認一次（最多 3 秒），還是沒有＝404
+  Promise.race([slugsFresh, wait(3000)]).then(() => {
+    const late = resolveRoute(window.location.pathname);
+    if (late) start(late); else loadPage(NOT_FOUND_ROUTE);
+  });
 }
