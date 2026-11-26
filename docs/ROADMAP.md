@@ -20,7 +20,7 @@
 - **後台**：Directus **11.17.4**（2026-11-24 從 12 換過來，`scaidcms.usc.edu.tw`）。集合照前台選單排、收進資料夾（首頁、合作企業、師資、庫），另有介面文字 `ui_labels`、網頁 icon `site_icons`；Public 可讀。各頁的示意文字已在後台，圖還沒傳。
 - **Logo**：動態已做（2026-11-22 定的分鏡，`logo.js`）：進場、首頁在 stroke 與系名之間來回、換頁上移、內頁 stroke 長度跟著右圖 object 的名字。
 - **右圖**：3D object 已做（`object.js`，模型用同一種 stroke 的疏密排，定時換）；模型是暫用的（見第 3 節）。
-- **背景**：做過一版（炭筆＋中空板），**2026-11-23 先關掉**（`main.js DECOR = false`）；筆觸在試驗場 artifact 繼續試（見第 3 節）。
+- **背景**：2026-11-26 換成背景試驗場那一份、開了（`main.js BG`；見第 3 節）。原本的炭筆＋中空板（2026-11-23 先關掉）被取代。
 - **icon**：user 11-24 給的那套（`docs/SCAID icon.ai` → `scripts/build-icons.cjs`），沒用到的 SVG 都刪了；後台可以換（`site_icons`）。
 - **版本控制**：最後一次 commit＝`aae025a`（11-25 白天：英文字體自架、報讀名稱跟語言走）。**之後 11-25 的改動都還沒 commit**（報導、常見問題拿掉、紀錄、選單重排、hover 圓點與 chevron、清單 gap…），等整輪煙霧測試過了再 commit。
 
@@ -63,8 +63,9 @@
 
 ## 3. 背景的互動、右邊的常駐圖片
 
-- [ ] **背景（先關著）**：筆觸在試驗場 artifact 試（https://claude.ai/artifact/FsL3UdyzVvpbJQcKDcrvSa ，14 支筆、顏料改成光、隔著中空板看）。待 user 決定：用哪幾支筆、白天的光怎麼呈現（兩種）、中空板要不要糊、板子本身留不留。定了才改 `bg.js`、把 `DECOR` 打開。之後還有：手機（觸控沒有游標，現在不畫）、Mac Safari 實機效能。
-- [ ] **右圖 object 還沒做的**：brush 外觀（跟該頁背景同一種筆；提案頁 https://claude.ai/artifact/JaQUys4VtgTXNmJXXtamGr 有示意）、改走後台（一個集合：名字＋模型檔）、**換掉暫用的模型**（現在 102 個來自 Kenney／Quaternius）、名字與清單定稿。
+- [x] **背景**：2026-11-26 user 在背景試驗場（https://claude.ai/artifact/YJ4JpmdDhwZsArffEnphKX ）定了、搬上網站（看得見的中空板、整支筆、錯位 1.5、濃度 70%、深淺 100%；白天粉彩、夜晚原來的光或粉彩隨機）。
+- [ ] **背景還沒做的**：手機（觸控沒有游標，現在不畫）、Mac Safari 與一般筆電內顯的實機效能（畫面一直在重畫，跟不上會降解析度）。
+- [ ] **右圖 object 還沒做的**：brush 外觀（跟該頁背景同一種筆；提案頁 https://claude.ai/artifact/JaQUys4VtgTXNmJXXtamGr 有示意）、改走後台（一個集合：名字＋模型檔）、**換掉暫用的模型**（現在 48 個來自 Kenney／Quaternius，2026-11-26 從 102 個刪的；面數低＝圓的東西靠程式鼓圓，Kenney nature-kit 那種一面一條法線的鼓不動）、名字與清單定稿。
 
 ## 4. 細節調整
 
@@ -76,7 +77,7 @@
 ## 5. 接後台
 
 2026-11-21 全站接上，2026-11-24 換到 Directus 11。
-結構＝`scripts/setup-directus.cjs`（只加不刪）、資料＝`scripts/seed-directus.cjs`、前台＝`js/modules/pages/cms-pages.js`＋`works.js`＋`ui/ui-labels.js`＋`ui/item-list-cms.js`＋`ui/footer-cms.js`＋`ui/site-assets.js`；欄位表＝`docs/Directus-後台欄位.md`。
+結構＝`scripts/setup-directus.cjs`（只加不刪）、介面文字的 key＝`scripts/seed-directus.cjs`（內容一律在後台填，2026-11-26 起不從 HTML 匯入）、前台＝`js/modules/pages/cms-pages.js`＋`works.js`＋`ui/ui-labels.js`＋`ui/item-list-cms.js`＋`ui/footer-cms.js`＋`ui/site-assets.js`；欄位表＝`docs/Directus-後台欄位.md`。
 
 | 頁 | 集合 | 狀態 |
 |---|---|---|
@@ -112,20 +113,26 @@
 
 ## 6. 上線
 
-- [ ] **正式網域**定案：`router.js CLEAN_URL_HOSTS`（server 的 fallback 要先設好）、`index.html` 的 canonical 與 og:url。
+- [ ] **正式網域**：`js/config/slugs.js CLEAN_URL_HOSTS` 填 `scaid.usc.edu.tw`（server 的 fallback 要先設好）。各頁的 canonical／og:url 2026-11-26 已經照 `scaid.usc.edu.tw/<slug>` 寫好（後台改了 slug 要跟著改）。
 - [ ] **YouTube Data API 的 key 白名單加正式網域**（`config/api.js YT_API_KEY` 沿用 SCCD 那支，靠 GCP 網域白名單；不加的話作品頁的播放清單抓不到）。
-- [ ] 確認部署到哪台主機、SPA fallback 有沒有生效（`.htaccess` 已備好，只對 Apache 有用；打錯的網址要到 404）。
+- [ ] **主機＝S3＋CloudFront（同 SCCD）**：2026-11-26 實測 `scaid.usc.edu.tw` 已指過去、HTTPS 通、bucket 還是空的（每條路徑 403）＝`.htaccess` 在正式站用不到。請 IT 的事（bucket／distribution ID、上傳金鑰、403＋404 → `/index.html`、`Cache-Control: no-cache`）＝`docs/IT-請求-前台上線.txt`，等回覆；拿到後上傳第一版、照那份的三條 curl 驗。
+  - [ ] **開乾淨網址前要先補的 code**（讀 code 看到的、還沒實測）：①~~`router.js initRouter` 的初始路由假設「HTML 已經是那一頁」~~（2026-11-26 接網址 slug 時修了：拿到的是 index.html 就照 slug 抓那一頁，用模擬 fallback 的 server 測過）；②打錯的 `/pages/xxx.html` 拿到 index.html＝相對路徑全錯、整頁沒樣式（`.htaccess` 轉去 404.html 的那條 CloudFront 沒有）→ index.html 補一行轉去 404 頁。
+  - [ ] **上傳包**：只傳 `index.html`＋`pages`／`css`／`js`／`images`／`fonts`／`objects`／`website-icons`（約 13MB）；**不要整個資料夾同步**——`scripts/` 裡有後台的 token。可照 SCCD 的 `scripts/make-upload-package.ps1`。
 - [ ] `robots.txt`、`sitemap.xml`：現在都沒有。
-- [ ] og:image、各頁自己的 description：現在只有首頁有 description，全站沒有 og:image。
+- [x] 各頁的 description、og、canonical：user 2026-11-26 填的 `docs/metadata.txt` 寫進各頁 `<head>`；router 換頁時跟著換 head（不然冷載入 index.html 的 canonical 會一直指首頁）。
+- [ ] og:image、apple-touch-icon：等圖（metadata.txt 那兩格空著；有圖之後 twitter:card 改 summary_large_image）。
+- [ ] **LINE／FB 貼乾淨網址的預覽＝首頁的**：預覽的爬蟲不跑 JS，CloudFront 把 `/about` 回成 index.html＝看到的是首頁的 og（SCCD 也一樣）。Google 會跑 JS＝靠 router 換 head 沒問題。要修＝上傳時每一頁多傳一份沒有副檔名的（`about`＝`pages/about.html` 的內容、Content-Type `text/html`，檔名＝目前的 slug），S3 找得到就不會 fallback；pages 裡的相對路徑（`../css/`）在根目錄一層剛好對得上。後台改了 slug 要重傳那一份。
 - [ ] 示意內容清乾淨：各頁 HTML 註解標「內容為 MOCK 示意」的那幾份、人名日期後面的「（示意）」「(placeholder)」、公司名「示意○○公司」（`CLAUDE.md` 規範 11）。
-- [ ] **正式上線＝只讀後台、接不上要有 coming soon 的保護**（user 2026-11-25：「正式上綫的時候，會去掉 placeholder 的内容，只讀後臺，接不上的話，需要做 coming soon 的保護，但這會在蠻後面決定」）：**做法還沒定、很後面才決定，現在不要動**。到時候要一起想的：現在前台在三種情況會安靜地退回 HTML 的示意、畫面上分不出來——那一支查詢失敗或逾時、查詢裡有任何一個欄位／集合後台沒有（Directus 整串回 403）、那個集合一筆都沒有（`cms-pages.js list()`）；拿掉示意之後這三種各要顯示什麼（coming soon、空的、上次成功的那份＝`config/api.js saveLKG／readLKG` 現在沒人用）、是整站一個 coming soon 還是一頁一頁。在那之前「HTML 的內容＝備援」照舊。
+- [x] **正式上線＝只讀後台、接不上要有 coming soon 的保護**（user 2026-11-25：「正式上綫的時候，會去掉 placeholder 的内容，只讀後臺，接不上的話，需要做 coming soon 的保護，但這會在蠻後面決定」）：**做法還沒定、很後面才決定，現在不要動**。到時候要一起想的：現在前台在三種情況會安靜地退回 HTML 的示意、畫面上分不出來——那一支查詢失敗或逾時、查詢裡有任何一個欄位／集合後台沒有（Directus 整串回 403）、那個集合一筆都沒有（`cms-pages.js list()`）；拿掉示意之後這三種各要顯示什麼（coming soon、空的、上次成功的那份＝`config/api.js saveLKG／readLKG` 現在沒人用）、是整站一個 coming soon 還是一頁一頁。在那之前「HTML 的內容＝備援」照舊。
+  **2026-11-26 定了、做完**（user：「我們不需要假資料，收不到後臺也不需要render假的，做法比照sccd的去設計」）：各頁 HTML 的示意全拿掉、只放空的容器；抓到＝畫＋存一份（`config/api.js cmsGet`）；查詢失敗、逾時、403（點名了後台沒有的欄位）＝退這個分頁上次抓到的那份、沒有＝那一塊不畫；集合一筆都沒有＝不畫（空的段落 `main.js settle` 收掉）；整個連不上＝一頁一頁都只剩「即將推出」（同 SCCD；網站地圖、404 照常）。煙霧測試的示意搬到 `scripts/smoke-fixtures/`。
 - [x] 桌面 Chrome 不能左右捲（煙霧測試跑 WebKit，重現不了）：2026-11-25 用 Edge（同 Chromium）自動掃過每一頁、選單開了再收，都沒有多出可捲的寬度。版型大改後要再掃一次。
 - [ ] 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。
 - [ ] 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做。
 
 ## 7. 等素材（不擋前面，可以同時收）
 
-- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、課程（含每門課說明）、動態、紀錄（榮譽與報導）、入學、捐款、規章（PDF 或連結）、使用條款與隱私權政策。現在英文全是 placeholder。
+- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、動態、紀錄（榮譽與報導）、入學、捐款、規章（PDF 或連結）、使用條款與隱私權政策。現在英文全是 placeholder。
+  - [x] 課程（含每門課說明）：user 2026-11-26 給的 `docs/SCAID Curriculum.xlsx`（32 門、中英）已寫進後台 `courses`（同一天起 HTML 不放備援）。
 - [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
 - [ ] **作品**：SCAID 自己的 YouTube 播放清單、作品圖。
 - [ ] **聯絡頁真實資料**：電話、傳真、地址、IG 帳號、YouTube 頻道（後台 `footer` 現在是示意值，直接在後台改）。

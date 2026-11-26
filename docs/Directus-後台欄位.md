@@ -9,9 +9,8 @@
 要加欄位＝改 script 裡的 SPEC 再跑一次，同時補這份文件。token 放 `scripts/.directus-token`（gitignore）。先 `--dry` 看會做什麼。
 舊欄位只藏不刪（SPEC 的 `HIDE`），確定不要了再刪。
 
-**放資料：`node scripts/seed-directus.cjs`**（2026-11-21 全站接後台時跑過一次）：直接解析各頁 HTML 的示意內容寫進後台——
-庫（人名／單位／媒體）→ 內容 → 每頁的單例 → 介面文字。可重跑：內容集合還是空的才塞（單例＝每個欄位都空著）、庫只補那些要塞的集合用到、還沒有的名字、介面文字只補沒有的 key（後台改過的不蓋）。
-只放文字；圖（相簿、封面、截圖、段落輪播）之後在後台上傳（user 2026-11-21）。
+**放資料**：內容一律在後台填。前台 HTML 不放示意（user 2026-11-26，照 SCCD）：抓不到＝退這個分頁上次抓到的、沒有＝不畫、整個連不上＝每頁只剩「即將推出」（CLAUDE.md「後台」）。
+`node scripts/seed-directus.cjs` 只剩補介面文字的 key（掃 HTML 的 `data-label`，後台改過的不蓋）；2026-11-21 全站接後台時它也把各頁 HTML 的示意內容寫進後台過，那一段同一天拿掉了。
 
 共通：
 - 每個集合 Public 角色都已開 Read（含 `directus_files` 與 junction 表，前台 `/assets` 才讀得到圖）。
@@ -30,9 +29,12 @@ user 2026-11-21 照 SCCD：**全站的人名、單位、媒體只在庫裡打一
 
 | 庫 | 欄位 | 誰在用（M2O 欄位） |
 |---|---|---|
-| `people` 人名庫 | `name_zh`、`name_en` | `faculty.person` |
-| `organizations` 單位庫 | `name_zh`、`name_en` | `partners.organization`、`records.organizer`、`faculty.external_units`（多選，經過 junction `faculty_external_units`；反向欄 `faculty_units`） |
+| `people` 人名庫 | `name_zh`、`name_en`、`country` | `faculty.person`、`activities.participants`（M2A，沒有反向欄、刪的時候擋不住） |
+| `organizations` 單位庫 | `name_zh`、`name_en`、`country` | `partners.organization`、`records.organizer`、`faculty.external_units`（多選，經過 junction `faculty_external_units`；反向欄 `faculty_units`）、`activities.participants`（M2A，同上） |
 | `media_outlets` 媒體庫 | `name_zh`、`name_en` | `records.media` |
+
+**國家**（`country`，人名庫、單位庫；user 2026-11-26：「他們的國家也是以（）跟在名字後面」「只要有國家都這樣做」，同 SCCD 的 people／organizations.country）：下拉、所有國家都能選（同紀錄的國家，`scripts/country-choices.json`）、選填。
+**只用在動態的參與者／參與單位**：有選＝名字後面接（國家），中文全形「名字（國家）」、英文半形「name (Country)」，國名照瀏覽器內建的（`cms-pages.js named`）；沒選＝只有名字。師資的名字與校外單位、合作企業、紀錄的主辦方照名字、不接（同一天：「這裏應該是不會有國家，幫我刪掉，都要以後臺爲主」）。
 
 ## ui_labels（介面文字）
 
@@ -60,6 +62,20 @@ user 2026-11-24：「開一個資料夾，存放網頁的 icon」，照 SCCD 的
 | `key` | String（唯一、唯讀） | 例 `play`、`close`、`day`（深色模式鈕）、`ig` |
 | `file` | Image | 那張 SVG |
 | `note` | String | 用在哪裡（後台看的） |
+
+## site_slugs（網址 slug）
+
+user 2026-11-26：「slug幫我開個後臺，需要跟sccd的後臺做法一致」，照 SCCD 的 `site_slugs`（欄位、說明、驗證都同）。**一個頁面一列**＝網址上的用字（正式站 `scaid.usc.edu.tw/<slug>`）。
+前台 `js/config/slugs.js`：預設值＝`SLUG_DEFAULTS`，後台同 key 的列蓋過去；後台讀不到＝預設。不能用的（格式不對、`404`／`index`／`pages`、跟別頁撞名）＝那一頁退回預設。
+SCAID 沒有分頁（tab），只有 `page.` 這一組（SCCD 還有 `<頁>.<分頁>`）。首頁（`/`）與 404 固定、不在表裡。
+**改了舊網址就失效**（進 404、不留別名；已分享的連結、QR code）；該頁 HTML head 的 canonical／og:url 要手動跟著改。
+新頁面：`slugs.js` 的 `PAGE_FILES`＋`SLUG_DEFAULTS` 加一行，再跑 `setup-directus.cjs` 補列（已經有的 key 不蓋、後台改過的 slug 不動）。
+
+| key | 類型 | 內容 |
+|---|---|---|
+| `name` | String（唯讀） | 這一列是哪一頁（說明用，例「頁面｜About 關於」） |
+| `key` | String（唯一、唯讀） | `page.<route 名>`，例 `page.about`、`page.faculty-detail` |
+| `slug` | String（必填） | 只能小寫英文、數字、連字號；預設＝英文頁名小寫、空白換連字號（`regulations-and-policies`、`site-map`；老師個人頁 `faculty-profile`） |
 
 ## footer（聯絡頁；原本是頁尾）— 單例
 
@@ -131,13 +147,18 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 | `end_date` | Date | **入學**：結束日期（選填，跨天才填） |
 | `title_zh` / `title_en` | String | 標題 |
 
-`activities`（`pages/activities.html`）：每則是一個摺疊。收著＝縮圖＋標題＋副標；點開＝時間、地點（可以好幾個、沒填就不出）、相簿（影片排在照片前面）；點相簿的圖／影片放大到整個畫面。什麼都沒得展開＝那一列不能點。
-**後台照 SCCD 的活動**（user 2026-11-24）：做了副標、地點可以好幾個、影片連結；SCCD 還有、這裡還沒做的＝說明文字、來賓／講者（人名庫）、相關文件（多段日期 2026-11-25 做了＝上面的 `dates`；`docs/ROADMAP.md` 第 5 節）。
-**沒有分類、是副標**（user 2026-11-24：「參照 sccd 的設計…不會有什麼分類，我看到有入學什麼的，可以刪掉，這應該是改成副標才對」）：同 SCCD 活動的 `subtitles`、同這站師資／合作企業那種重複列。原本是一格 `category_zh`／`category_en`（招生、講座、參訪…），欄位連裡面的字後台都刪了。
+`activities`（`pages/activities.html`）：每則是一個摺疊。收著＝縮圖＋標題＋類別；點開＝時間、地點（可以好幾個、沒填就不出）、參與者／參與單位（一筆一行）→ 相簿（影片排在照片前面）；點相簿的圖／影片放大到整個畫面。什麼都沒得展開＝那一列不能點。
+**後台照 SCCD 的活動**（user 2026-11-24）：地點可以好幾個、影片連結、參與者（2026-11-26，見下）；SCCD 還有、這裡還沒做的＝說明文字、相關文件（多段日期 2026-11-25 做了＝上面的 `dates`；`docs/ROADMAP.md` 第 5 節）。
+**類別＝下拉**（user 2026-11-26：「動態的list，我想要它的副標是改成dropdown，決定它的類別，不是手key的」）：選項＝SCCD 動態的八類（展演、工作營、講座、參訪、競賽、論壇、學生自主、產學合作），
+字在介面文字 `activities.type.<值>`（分類「動態」，中英分開改）；加新類別＝欄位的選項加一個值、介面文字加一筆同名的 key。
+原本是副標 `subtitles`（2026-11-24：「這應該是改成副標才對」＝重複列手打；唯一填過的「講座」搬成類別、欄位 2026-11-26 刪了）；更早是一格手打的 `category_zh`／`category_en`，也刪了。
+**參與者／參與單位**（user 2026-11-26：「在相簿上可以增加一個section是無限加list，這個list的内容是從人名跟單位，他們的國家也是以（）跟在名字後面」「新增的那個section幫我叫：參與者/參與單位」）：
+一筆＝從人名庫或單位庫選一個（M2A，同 SCCD faculty.occupationItems 那種），可以一直加、拖曳排序；點開後接在時間地點下面一筆一行、不出標題（同一天：「不需要渲染title，往下排列即可」），相簿在下面；名字有國家＝（國家）。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
-| `subtitles` | JSON／Repeater | 副標：標題下面的字，**一筆＝一行**，可拖曳排序；沒填＝只有標題。子欄位 `text_zh`、`text_en`（英文留空＝顯示中文） |
+| `category` | Dropdown | 類別（選填）：`exhibitions` 展演／`workshops` 工作營／`lectures` 講座／`visits` 參訪／`competitions` 競賽／`forums` 論壇／`students` 學生自主／`industry` 產學合作；前台標題下面一行 |
+| `participants` | M2A → 人名庫／單位庫（junction `activities_participants`：`activities_id`、`collection`、`item`、`sort`；Public 可讀） | 參與者／參與單位：可以一直加、拖曳排序；庫裡那筆刪掉了＝前台不出 |
 | `locations` | JSON／Repeater | 地點（選填，**可以好幾個**；user 2026-11-24 照 SCCD）：一筆＝點開後時間下面的一行。子欄位 `name_zh`、`name_en`、`city_zh`、`city_en`（城市，手打、選填）；user 2026-11-25：前台接在地點後面的括號裡，中文全形「地點（城市）」例「台北市中山區（臺北）」、英文半形「place (city)」例「Zhongshan (Taipei)」（「動態不需要國家」）。原本是一格 `place_zh`／`place_en`，搬成第一筆、舊欄位刪了 |
 | `image` | Image | 那一列的縮圖 |
 | `album` | Files（多張，junction `activities_album`） | 相簿；可拖曳排序；前台 `<img>` 帶檔案的寬高（一打開摺疊就排好） |
@@ -157,19 +178,22 @@ user 2026-11-24：動態、入學各一個集合（「動態的資料庫，不�
 
 前台：`pages/faculty.html`（`item-list-cms.js`）依 `category` 分段，段落順序固定＝專任教師 → 兼任教師 → 行政管理（段名在介面文字 `faculty.type.*`＝後台「介面文字」分類「師資」那三筆，改了前台就跟著換），段內照 `sort`；某一類沒人＝那段不出。
 第三段原本是「業界導師」（key `faculty.type.mentor`、類別值 `mentor`），user 2026-11-24 改成行政管理、key 也一起改＝`faculty.type.admin`、類別值 `admin`。類別下拉的選項文字是欄位設定、不會跟著介面文字變：之後只改顯示的名字，下拉要另外改。
-點進 `faculty-detail.html?id=<id>`（`cms-pages.js`）：照片、名字＋副標、下面的清單（學歷、經歷…）。
+**結構同 SCCD 的 faculty**（user 2026-11-26：「除了sccd的placeholder圖片以外，剩下的結構要一樣，但是學歷那些保持目前的做法，不是寫死的」）：表單順序＝照片、姓名、類別、在職狀態、清單、聯絡、校內職級、校外單位；沒有 SCCD 的三張佔位圖；副標（`subtitles`）同一天刪了（SCCD 沒有）。
+**SCCD 在職的專任 10 位、行政 2 位同一天搬進來**（一次性腳本、沒進 repo）：名字進人名庫、照片傳到檔案庫「師資」資料夾（檔名的標題＝老師的中文名）、校內職級與行政的聯絡照搬；SCCD 的學歷／經歷／榮譽（寫死的重複列）轉成這裡的清單（SCCD 還有一個「歷程」，同一天搬過來之後 user 說拿掉：「老師的歷程幫我去掉，後臺也是」＝那 10 個清單刪了），一筆＝年份＋說明，**SCCD 一欄＝這裡一行、由上往下**（user 同一天：「在sccd有分col的，在這裏就是從上往下排列」；說明存成多行，前台 `cms-pages.js entryList` 一行一個 p、中英照行對）：學歷＝學校（國家）／科系／學位、經歷＝單位／角色（年份 2024– ＝至今）、榮譽＝獎項（國家）／類別（user 同一天：「老師的這個獎項國家，我想就直接是（）跟在名字後面」；先做的是同 SCCD 欄序的國家／獎項／類別）；**每一欄中文沒有＝用英文、英文沒有＝用中文**（「如果只有英文，那麽中文也會出現英文」），國家照語言。
+點進 `faculty-detail.html?id=<id>`（`cms-pages.js`）：照片、名字＋校內職級／校外單位、聯絡（行政管理）、下面的清單（學歷、經歷…）。
 **清單可以自己加**（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）：每位老師的「清單」欄位＝子集合 `faculty_sections`，一個清單＝標題＋一筆一筆（年份＋說明），在老師那一頁裡新增、拖曳排序；裡面一筆都沒有的清單前台不出。原本是寫死的六格（`education`／`experience`／`expertise`／`exhibitions`／`awards`／`publications`、標題在介面文字 `faculty.cv.*`）：學歷、經歷搬成每位老師的前兩個清單，其餘四格與那六個介面文字 user 說刪掉＝後台已經刪了。
 
 | key | 類型／介面 | 內容 |
 |---|---|---|
 | `sort` | | |
-| `category` | Dropdown | `part_time` 兼任教師／`full_time` 專任教師／`admin` 行政管理 |
-| `photo` | Image | 照片 |
+| `photo` | Image | 照片（SCCD 搬來的放在檔案庫「師資」資料夾） |
 | `person` | M2O → 人名庫 | 姓名（user 2026-11-21；原本的 `name_zh`／`name_en` 2026-11-25 刪了） |
+| `category` | Dropdown | `part_time` 兼任教師／`full_time` 專任教師／`admin` 行政管理 |
+| `status` | Dropdown | 在職狀態：`active` 在職（預設）／`former` 離職（user 2026-11-26，同 SCCD）；前台列表只列在職的（`filter[status][_neq]=former`） |
+| `sections` | O2M → `faculty_sections` | 清單（學歷、經歷…可以自己加），照拖曳順序；SCCD 的學歷／經歷／榮譽在這裡（user 2026-11-26：「學歷那些保持目前的做法，不是寫死的」） |
+| `contact` | Text／Multiline | 聯絡（user 2026-11-26，同 SCCD 行政管理的 contact）：純文字、一行一筆；**只在類別＝行政管理時出現**（conditions）。詳細頁排在清單前面、標題＝介面文字 `faculty.contact`（聯絡／Contact），整行是 Email／http(s)＝可以點 |
 | `internal_titles` | JSON／Repeater | 校內職級（user 2026-11-25 照 SCCD 的 internalTitles：「前者是key的」）：手打、可多筆、可拖曳排序。子欄位 `title_zh`、`title_en`（例：教授、學程主任）；前台名字下面一筆一行 |
 | `external_units` | M2M → 單位庫（junction `faculty_external_units`：`faculty_id`、`organizations_id`、`sort`） | 校外單位（同一天：「後者是從庫裏面選，跟sccd一樣」；SCCD 是職業庫或單位庫，這站只有單位庫）：可多選、可拖曳排序；前台接在校內職級下面 |
-| `subtitles` | JSON／Repeater | 副標：名字下面的字，**一筆＝一行**，可拖曳排序；沒填＝只有名字。子欄位 `text_zh`、`text_en`；前台接在校外單位下面 |
-| `sections` | O2M → `faculty_sections` | 清單（學歷、經歷…可以自己加），照拖曳順序 |
 
 ### faculty_sections（師資的清單；藏起來，從老師那一頁裡新增）
 
