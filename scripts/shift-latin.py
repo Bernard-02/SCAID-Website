@@ -22,7 +22,9 @@ from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 
-SHIFT_EM = 0.063      # 中文字筆畫底在基準線下面多少（em，Regular）
+# 往下移多少（em）：中文字筆畫底在基準線下面約 0.062（Regular），user 2026-11-25 先要對齊那條（0.063）、同一天看了說「英文的baseline要再往上一點點，視覺上才會對齊」
+# ＝少移一點：中文的底多半是一橫、看起來比實際的外框高，英數的底停在它上面一點才像對齊（0.045 → 2026-11-26「再高一點」0.03）
+SHIFT_EM = 0.03
 # CSS 的字重（variables.css --font-weight-regular／medium／bold）→ 實際畫的 JetBrains Mono 字重＝筆畫跟中文那個字重一樣粗。
 # 要調：改右邊那三個數字重跑（量法：scratchpad 的 stems.py——中文量「十口日一」、英數量 H 的直畫 × SIZE_ADJUST）
 WEIGHTS = {300: 150, 480: 350, 700: 550}
