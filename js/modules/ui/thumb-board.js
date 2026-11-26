@@ -12,15 +12,14 @@
  * 觸控（沒有 hover）、系統減少動態＝不做（同背景）。換頁整個換掉：畫布離開頁面就不畫了。
  */
 import { DUR } from './motion.js';
-import { INK } from './bg.js';
 import { prefersReducedMotion } from './reduce-motion.js';
 
 const ROWS = 'a.item-row, .page-body summary.item-row';   // 會出板子的列：整列連結、清單列的摺疊（裡面有 .item-thumb 才有圖）
 const STRIPS = 8;     // 一張圖平均切幾條（條太細＝錯位看不出來）
 const VARY = 0.3;     // 每條的寬差平均幾成（參考圖每條差不多寬）
 const LENS = 1.5;     // 每一條擠進來的圖＝自己寬的幾倍（1＝原樣；越大，交界錯得越多、五官被多帶到的那段越長；老師的照片 1.7 頭邊開始多出半個、2 就像複製了好幾個頭）
-// 游移的幅度、一趟幾秒：同背景（bg.js INK）。讀不到（煙霧測試把 bg.js 換成空殼）就不游移——NaN 丟給 drawImage，WebKit 會丟例外
-const DRIFT = INK.drift ?? 0, TIDE = INK.tide ?? 8;
+// 游移的幅度、一趟幾秒：原本跟背景共用（舊的炭筆背景 bg.js 的 INK.drift／tide）；2026-11-26 背景換成背景試驗場那一份、沒有這兩個數＝寫在這裡（值照舊）
+const DRIFT = 0.3, TIDE = 8;
 /** 一張縮圖的板子（第一次 hover 才建、之後留著；until＝淡出到什麼時候還要畫）
  *  @typedef {{ thumb: HTMLElement, img: HTMLImageElement, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, lines: ReturnType<typeof cells>, until: number }} Board */
 /** @type {WeakMap<Element, Board>} */
