@@ -23,6 +23,7 @@ import { initItemMarquee } from './modules/ui/item-marquee.js';
 import { initThumbBoard } from './modules/ui/thumb-board.js';
 import { applyUiLabels } from './modules/ui/ui-labels.js';
 import { initSiteIcons } from './modules/ui/site-assets.js';
+import { cmsDown } from './config/api.js';
 
 // 片段注入：pages/header.html → #site-header
 // cache: 'no-cache' 強制 revalidate：開發時改片段立即看到（SPA 不 hard reload）
@@ -66,8 +67,8 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   initAlbums();         // 相簿一排橫捲＋chevron（有 .album 的頁）
   syncFigure();         // 右圖的 object：畫布重找這一頁右圖那一格；手機右緣那顆鈕看這一頁有沒有右圖
   applyLang();          // 新換進來的內容若有 data-zh 也套語言
-  // ── 後台（Directus，user 2026-11-21 全站接上）：抓不到／還沒填＝留 HTML 的示意 ──
-  // 回傳＝後台這幾支都換完（router 等它才淡入，免得示意內容先閃一下）
+  // ── 後台（Directus，user 2026-11-21 全站接上）：各頁 HTML 只放空的容器，內容只從後台來（user 2026-11-26，照 SCCD；settle 收尾） ──
+  // 回傳＝後台這幾支都換完、收好（router 等它才淡入）
   const cms = [applyUiLabels(document.getElementById('page-content') || document)];   // 介面文字（頁名、固定小標）
   if (page === 'contact') cms.push(import('./modules/ui/footer-cms.js').then(m => m.loadFooterCms()));   // 聯絡頁＝Directus 單例 footer
   if (page === 'works') cms.push(import('./modules/pages/works.js').then(m => m.initWorks()));         // 作品頁：兩種排法＋後台／YouTube 播放清單
@@ -75,14 +76,41 @@ export function initPageModules(page, params = new URLSearchParams(), fromUserNa
   if (document.querySelector('#page-content .item-list[data-cms]')) cms.push(import('./modules/ui/item-list-cms.js').then(m => m.loadItemListCms()));
   cms.push(import('./modules/pages/cms-pages.js').then(m => m.loadPage(page, params)));   // 其他各頁的內容
   cms.push(import('./modules/ui/coming-soon.js').then(m => m.applyComingSoon(page)));     // 後台「即將推出」勾了這一頁＝只剩 Hero＋一行字
-  return Promise.allSettled(cms);
+  const body = document.querySelector('#page-content .page-body');   // 這一頁的：抓完時已經換到別頁＝不動那一頁（它的容器還在等自己的資料）
+  return Promise.allSettled(cms).then(() => settle(page, body));
+}
+
+// 後台抓完的收尾（user 2026-11-26：「我們不需要假資料，收不到後臺也不需要render假的，做法比照sccd的去設計」）：
+// ①後台整個連不上（cmsDown：憑證／DNS／拒連；逾時、HTTP 錯不算＝那種退上次抓到的，config/api.js cmsGet）＝這一頁只剩「即將推出」
+//   （同 SCCD 後台掛掉每頁只剩 COMING SOON；樣子＝後台勾了「即將推出」那種，page.css .is-coming-soon；導言也是後台的＝一起拿掉）。
+//   網站地圖、404 不接後台＝照常。首頁沒有 .page-body：news 抓不到＝清單、底列的 news 都是空的（chrome.css 空的不出）＝只剩 logo
+// ②沒畫到東西的：空的導言、清單是空的那一段（HTML 留的容器）收掉，段落導覽重排
+const STATIC_PAGES = new Set(['sitemap', '404']);
+/** @param {string} page @param {Element | null} body */
+function settle(page, body) {
+  if (!body?.isConnected) return;
+  if (cmsDown && !STATIC_PAGES.has(page)) {
+    if (!body.querySelector(':scope > .coming-soon')) {
+      const h1 = body.querySelector(':scope > h1'), p = '<p class="coming-soon" data-label="page.coming-soon" data-en="Coming soon">即將推出</p>';
+      h1 ? h1.insertAdjacentHTML('afterend', p) : body.insertAdjacentHTML('afterbegin', p);
+    }
+    body.querySelector(':scope > .page-lead:not([data-label])')?.remove();
+    body.classList.add('is-coming-soon');
+    applyLang(body);
+  }
+  let dropped = false;
+  body.querySelectorAll(':scope > .page-lead:not([data-label])').forEach(el => { if (!el.textContent?.trim()) { el.remove(); dropped = true; } });
+  body.querySelectorAll(':scope > .page-section').forEach(s => { if (s.querySelector('.item-list:empty')) { s.remove(); dropped = true; } });
+  if (dropped) initSectionNav();
 }
 
 // ── 開機 ──
-// 背景（筆跡＋中空板）與清單圖片 hover 的中空板：先關掉（user 2026-11-23），要開回來改 true（煙霧測試讀這一行決定測不測）
+// 背景（BG）：背景試驗場那一份（user 2026-11-26：「我想要你幫我將背景apply在現在的網站上」；bg.js）。
+// 清單圖片 hover 的中空板（DECOR）：先關掉（user 2026-11-23；原本跟舊的炭筆背景同一個開關），要開回來改 true。煙霧測試讀這兩行決定測不測
+const BG = true;
 const DECOR = false;
 installReducedMotionGsap();
-if (DECOR) try { initBg(); } catch (e) { console.warn('[bg] 背景載入失敗', e); }   // 背景：畫布（筆跡）＜ 中空板 ＜ 內文；純裝飾，出錯也不能卡住後面的開機
+if (BG) try { initBg(); } catch (e) { console.warn('[bg] 背景載入失敗', e); }   // 背景 ＜ 內文；純裝飾，出錯也不能卡住後面的開機
 initLang();
 initChrome();          // 先於 router：底列動態在首頁要攔 click（preventDefault → router 放行）
 initRouter();

@@ -6,11 +6,15 @@
   <meta name="format-detection" content="telephone=no, email=no, address=no">   <!-- iOS Safari 會自動把電話／email 變成底線連結 -->
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">   <!-- ?v＝換圖就加一（瀏覽器 favicon 快取很頑固）；先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
-  <meta name="description" content="實踐大學AI設計職人學位學程（Bachelor Program in Advanced Integrated Design, Shih Chien University）官方網站">
+  <meta name="description" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">   <!-- metadata：docs/metadata.txt（user 2026-11-26 填的）；網址＝正式站的乾淨網址（js/config/slugs.js 的 slug，改了 slug 這裡要跟著改）。還沒有 og:image（沒有圖＝twitter:card 用 summary） -->
+  <link rel="canonical" href="https://scaid.usc.edu.tw/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="實踐大學AI設計職人學位學程 SCAID">
-  <meta property="og:description" content="Bachelor Program in Advanced Integrated Design, Shih Chien University">
-  <title>實踐大學AI設計職人學位學程 SCAID</title>
+  <meta property="og:site_name" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:title" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:description" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:url" content="https://scaid.usc.edu.tw/">
+  <meta name="twitter:card" content="summary">
+  <title>SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程</title>
   <link rel="stylesheet" href="fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">   <!-- 中文字體 Glow Sans TC Compressed：自架的 woff2 切片（scripts/build-fonts.py 產生） -->
   <link rel="stylesheet" href="css/output.css">
 </head>
@@ -24,16 +28,9 @@
   <main id="page-content">
     <h1 class="sr-only" data-en="Bachelor Program in Advanced Integrated Design, Shih Chien University">實踐大學AI設計職人學位學程</h1>
     <!-- 未展開＝空一屏（logo 是全站殼，置中由 home.css 控）。點底列動態「+」→ html.news-open 展開這份清單
-         （MOCK 示意；後台抓到＝換成首頁的 news（後台「首頁」資料夾）的，cms-pages.js homeNews()，user 2026-11-23 跟動態頁拆開）。背景先白底黑字（user 2026-11-03） -->
+         （後台首頁的 news（「首頁」資料夾），cms-pages.js homeNews() 填進空的清單；user 2026-11-23 跟動態頁拆開、2026-11-26 起不放示意）。背景先白底黑字（user 2026-11-03） -->
     <section class="home-news-list site-container" aria-label="最新動態" data-en-label="News">
-      <ul>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-1/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-2/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-3/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-4/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-5/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Program website launched">學程網站上線</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-6/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</p></li>
-      </ul>
+      <ul></ul>
     </section>
   </main>
 

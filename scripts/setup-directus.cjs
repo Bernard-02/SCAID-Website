@@ -37,7 +37,8 @@ const date = (field, label) => ({ field, type: 'date', meta: { interface: 'datet
 // 動態、入學的時間（user 2026-11-24：用選的、不要手動輸入）：日期必填（排序用），跨天才填結束日期。
 // 沒有開始／結束時間（user 同一天：「後臺不需要有 time 的設定」——動態的在後台刪掉，入學的「也拿掉，留下日期即可」）
 const when = [{ ...date('date', '日期'), schema: { is_nullable: false } }, date('end_date', '結束日期（選填，跨天才填）')];
-const bool = (field, label, text) => ({ field, type: 'boolean', meta: { interface: 'boolean', width: 'half', translations: zh(label), options: { label: text } }, schema: { default_value: false } });
+// special cast-boolean：MySQL 的 boolean 是 tinyint，沒有它 API 回 1／0＝後台的勾選框只認 true、存完看起來還是沒勾，前台 === true 也不成立（2026-11-26 即將推出踩過）
+const bool = (field, label, text) => ({ field, type: 'boolean', meta: { interface: 'boolean', special: ['cast-boolean'], width: 'half', translations: zh(label), options: { label: text } }, schema: { default_value: false } });
 const dropdown = (field, label, choices) => ({ field, type: 'string', meta: { interface: 'select-dropdown', width: 'half', translations: zh(label), options: { choices }, display: 'labels', display_options: { choices } }, schema: {} });
 const url = (field, label, note) => str(field, label, { note: note || '只接受 https://、mailto:、tel: 開頭' }, 'full');
 // 前台照 key 找的那一格（介面文字、網頁 icon）：唯讀、等寬字
@@ -70,6 +71,11 @@ const pick = (field, label, pool, note) => ({ field, type: 'integer', pool, meta
   options: { template: '{{name_zh}} {{name_en}}', enableCreate: true, enableSelect: true }, display: 'related-values', display_options: { template: '{{name_zh}}' } }, schema: { is_nullable: true } });
 const usedIn = (field, label, template) => ({ field, type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', readonly: true, width: 'full', translations: zh(`用在：${label}`), options: { template, enableCreate: false, enableSelect: false } } });
 const poolName = [str('name_zh', '中文名'), str('name_en', '英文名', { note: EN_NOTE })];
+// 人名庫、單位庫的國家（user 2026-11-26：「這個list的内容是從人名跟單位，他們的國家也是以（）跟在名字後面」；同 SCCD 的 people／organizations.country）：
+// 選項同紀錄的國家（COUNTRIES，在下面 require）；只用在動態的參與者／參與單位＝名字後面接（國家）——中文全形、英文 (Country)。
+// 師資、合作企業、紀錄的主辦方不接（同一天：「這裏應該是不會有國家，幫我刪掉，都要以後臺爲主」；先做過全部從庫來的名字都接）
+const poolCountry = () => { const d = dropdown('country', '國家（選填）', COUNTRIES);
+  return { ...d, meta: { ...d.meta, options: { choices: COUNTRIES, allowNone: true }, note: '選填。只用在動態的「參與者／參與單位」：有選＝名字後面以（國家）顯示（中文全形、英文半形）；師資、合作企業、紀錄的主辦方照名字、不顯示國家' } }; };
 // 多張圖／多個檔（files M2M）：每個這種欄位要另一張 junction 表 <集合>_<欄位>（下面 junction()）——2026-11-24 前（12 的 Core）集合上限 25 才省著開，v11 沒有上限
 const files = (field, label, note) => ({ field, type: 'alias', meta: { special: ['files'], interface: 'files', width: 'full', translations: zh(label), note } });
 const junction = (parent, field) => ({
@@ -90,6 +96,10 @@ const LABEL_CATS = ['選單與頁名', '底列與共用', '師資', '課程', '�
 // 第三類原本是「業界導師」mentor，user 2026-11-24 改成行政管理、值也改 admin（「key 還是要改，這樣會誤導」）。
 // 這支只加不改＝已經建好的後台是另外改的：下拉的選項（PATCH /fields/faculty/category）、原本那幾筆的 category、介面文字的 key（faculty.type.admin）
 const FACULTY_CATS = [{ text: '兼任教師', value: 'part_time' }, { text: '專任教師', value: 'full_time' }, { text: '行政管理', value: 'admin' }];
+// 動態的類別（user 2026-11-26）＝SCCD 動態的八類（SCCD 是一類一個集合、字在 ui_labels act.*）；前台的字在介面文字 activities.type.<值>（2026-11-26 用一次性腳本補進後台，同 records.type.*；加新類別＝這裡加一個值、後台介面文字加同名的 key）。
+// 值照意思取（SCCD 的 conferences 字是「論壇」＝forums、students-present＝students）
+const ACTIVITY_CATS = [{ text: '展演', value: 'exhibitions' }, { text: '工作營', value: 'workshops' }, { text: '講座', value: 'lectures' }, { text: '參訪', value: 'visits' },
+  { text: '競賽', value: 'competitions' }, { text: '論壇', value: 'forums' }, { text: '學生自主', value: 'students' }, { text: '產學合作', value: 'industry' }];
 const YEARS = [1, 2, 3, 4].map(n => ({ text: `${'一二三四'[n - 1]}年級`, value: n }));
 // 課程的必修／選修＝下拉（user 2026-11-25：「後臺的必選修應該改成dropdown才對，不是checkbox」；原本一格勾選 required，資料搬過來、舊的那格刪了）
 const COURSE_TYPES = [{ text: '必修', value: 'required' }, { text: '選修', value: 'elective' }];
@@ -140,11 +150,11 @@ const SPEC = {
   // 庫（user 2026-11-21，照 SCCD）：全站的人名／單位／媒體只在庫裡打一次，用到的地方從庫選；改一次全站跟著換
   people: {
     meta: { icon: 'person', group: 'pool_folder', translations: zh('人名庫'), display_template: '{{name_zh}} {{name_en}}', note: '全站的人名從這裡選（師資）。還有人用就刪不掉；重複的要合併' },
-    fields: [...poolName, usedIn('faculty', '師資', '{{category}}')],
+    fields: [...poolName, poolCountry(), usedIn('faculty', '師資', '{{category}}')],
   },
   organizations: {
     meta: { icon: 'domain', group: 'pool_folder', translations: zh('單位庫'), display_template: '{{name_zh}} {{name_en}}', note: '全站的單位（公司、學校、主辦方）從這裡選（合作企業、榮譽的主辦方）。還有人用就刪不掉' },
-    fields: [...poolName, usedIn('partners', '合作企業', '{{url}}'), usedIn('records', '榮譽（主辦方）', '{{title_zh}}'),
+    fields: [...poolName, poolCountry(), usedIn('partners', '合作企業', '{{url}}'), usedIn('records', '榮譽（主辦方）', '{{title_zh}}'),
       // 師資的校外單位（多選、經過 junction faculty_external_units）＝反向的 M2M，看得到哪幾位老師在用
       { field: 'faculty_units', type: 'alias', meta: { special: ['m2m'], interface: 'list-m2m', readonly: true, width: 'full', translations: zh('用在：師資（校外單位）'),
         options: { template: '{{faculty_id.person.name_zh}}', enableCreate: false, enableSelect: false } } }],
@@ -166,6 +176,19 @@ const SPEC = {
   site_icons: {
     meta: { icon: 'interests', translations: zh('網頁 icon'), display_template: '{{key}}', sort_field: 'sort', note: '全站的 icon（SVG）；換圖＝在那一筆換檔，畫在跟原本一樣的框裡（高 70、寬照原本那張），不然會被縮。key 不要改' },
     fields: [sort, keyField, { ...image('file', '檔案（SVG）'), meta: { ...image('file', '檔案（SVG）').meta, display: 'image' } }, str('note', '用在哪裡')],
+  },
+  // 網址 slug（user 2026-11-26：「slug幫我開個後臺，需要跟sccd的後臺做法一致」＝照 SCCD scripts/setup-site-slugs.cjs，欄位、說明、驗證都同）：
+  // 一個頁面一列，key＝page.<route 名>、slug＝網址上的用字。前台 js/config/slugs.js 的 SLUG_DEFAULTS 是預設，這裡同 key 的列蓋過去；
+  // 列由下面 ensureSlugs 照 SLUG_DEFAULTS 補（只補沒有的、不動後台改過的）
+  site_slugs: {
+    meta: { icon: 'link', sort_field: 'sort', display_template: '{{name}}　→　{{slug}}', translations: zh('網址 slug'), note: '網址 slug：每個頁面在網址上的用字。改了舊網址就失效。' },
+    fields: [sort,
+      { field: 'name', type: 'string', schema: {}, meta: { interface: 'input', readonly: true, width: 'half', translations: zh('頁面'), note: '這一列是哪一頁（說明用，改了不影響網站）' } },
+      { field: 'key', type: 'string', schema: { is_unique: true, is_nullable: false }, meta: { interface: 'input', readonly: true, width: 'half', translations: zh('key'), note: '程式用的代號，請勿更改' } },
+      { field: 'slug', type: 'string', schema: { is_nullable: false },
+        meta: { interface: 'input', width: 'full', required: true, translations: zh('slug'), options: { trim: true, font: 'monospace' },
+          note: '網址上的用字。只能用小寫英文、數字、連字號（-）；頁面之間不能重複。⚠️ 改了之後舊網址就失效（已分享的連結、QR code）。',
+          validation: { _and: [{ slug: { _regex: '^[a-z0-9-]+$' } }] }, validation_message: '只能用小寫英文、數字、連字號（-）' } }],
   },
   footer: {
     meta: { icon: 'call_to_action', singleton: true, translations: zh('聯絡'), note: '聯絡頁（原本的頁尾）；只有這一筆，欄位留空＝前台那一塊不顯示' },
@@ -194,23 +217,43 @@ const SPEC = {
   // 原本動態＋入學共用 news、勾「入學」才列在入學頁，首頁那串叫 home_news）。日期、時間都用選的（同一天：不要手動輸入）
   activities: {
     meta: { icon: 'event', translations: zh('動態'), display_template: '{{title_zh}}', note: '動態頁，前台照「日期」第一段的開始新到舊' },
-    // 副標（user 2026-11-24：「參照 sccd 的設計…不會有什麼分類…這應該是改成副標才對」）＝同 SCCD 活動的 subtitles、同這站師資／合作企業的那種重複列：
-    // 標題下面一筆一行、沒填＝只有標題。原本是一格「分類」category_zh／_en（招生、講座、參訪…）：後台的欄位刪了——別再寫回來，重跑這支會把它建回去
+    // 類別＝下拉（user 2026-11-26：「動態的list，我想要它的副標是改成dropdown，決定它的類別，不是手key的」）：選項＝SCCD 動態的八類（展演、工作營…，ACTIVITY_CATS），
+    // 前台標題下面一行、字在介面文字 activities.type.<值>（後台「介面文字」分類「動態」，中英分開改）。
+    // 原本是副標（subtitles，2026-11-24：「參照 sccd 的設計…這應該是改成副標才對」）＝重複列手打；那一格 2026-11-26 刪了（唯一填過的「講座」搬成類別）——別寫回來。
+    // 更早是一格手打的「分類」category_zh／_en，也刪了
     // 日期照 SCCD 的活動（user 2026-11-25：「動態的日期，前臺跟後臺都調整跟sccd的一樣」）：重複列 dates、取消 cancelled（見上面 activityDates）。
     // 原本是 date＋end_date（同入學的 when）：資料搬進 dates、那兩格 2026-11-25 從後台刪了（別寫回來）
     fields: [activityDates, bool('cancelled', '取消', '活動取消（勾了＝前台日期那行換成「取消／Canceled」）'), str('title_zh', '標題（中）', {}, 'full'), strEn('title_en', '標題（英）'),
-      subtitles,
+      { ...dropdown('category', '類別', ACTIVITY_CATS), meta: { ...dropdown('category', '類別', ACTIVITY_CATS).meta, options: { choices: ACTIVITY_CATS, allowNone: true },
+        note: '標題下面那一行；沒選＝只有標題。選項的中英文字在「介面文字」activities.type.*（要加新的類別：這裡的選項加一個值、介面文字加一筆同名的 key）' } },
       // 地點可以好幾個、影片連結（user 2026-11-24，照 SCCD 活動的 locations／videoLinks：「影片要有，因爲要做影片渲染，如果有的話。地點也是可以先做吧」）。
       // 地點原本是一格 place_zh／_en：搬成第一筆、舊欄位刪了（同上，別寫回來）
       // 城市（user 2026-11-25：「地點加上城市中英，是一個slot。渲染就是跟在地點後面，（）半型全型再根據語言調整」「城市的是手動key的文字」「動態不需要國家」）：
       // 前台中文「地點（城市）」全形、英文「place (city)」半形。這支只加不改＝已經建好的後台那一格是另外 PATCH /fields/activities/locations 補的子欄位
       repeater('locations', '地點（選填）', [['name_zh', '地點（中）'], ['name_en', '地點（英）'], ['city_zh', '城市（中，選填）'], ['city_en', '城市（英，選填）']],
         '{{name_zh}} {{city_zh}}', '一筆＝點開後時間下面的一行，可以好幾個、可拖曳排序。城市有填＝接在地點後面的括號裡：中文「地點（城市）」全形、英文「place (city)」半形。' + EN_NOTE),
-      image('image', '圖片（那一列的縮圖）'), files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序'),
+      image('image', '圖片（那一列的縮圖）'),
+      // 參與者／參與單位（user 2026-11-26：「在相簿上可以增加一個section是無限加list，這個list的内容是從人名跟單位」「新增的那個section幫我叫：參與者/參與單位」）：
+      // 一筆＝從人名庫或單位庫選一個（M2A，junction activities_participants；同 SCCD faculty.occupationItems 那種「職稱庫或單位庫」），可以一直加、拖曳排序；
+      // 前台點開後排在相簿上面，名字後面接（國家）（庫裡有選國家的話）
+      { field: 'participants', type: 'alias', meta: { special: ['m2a'], interface: 'list-m2a', width: 'full', translations: zh('參與者／參與單位'),
+        note: '按「Add Existing」選人名庫或單位庫再搜尋；找不到才「Create New」（會一起加進那個庫）。可以一直加、拖曳排序；點開那則時排在相簿上面',
+        options: { enableCreate: true, enableSelect: true } } },
+      files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序'),
       repeater('videos', '影片（選填）', [['url', '影片連結']], '{{url}}',
         '一列一支：YouTube 連結（https://youtu.be/…、https://www.youtube.com/watch?v=…），也可以貼直連的影片檔（.mp4、.m3u8）。排在相簿的照片前面、點了在放大畫面播')],
   },
   activities_album: junction('activities', 'album'),
+  // 動態的參與者／參與單位（activities.participants）的 junction：一列＝人名庫或單位庫的一筆（M2A：collection＝哪個庫、item＝那一筆的 id），照拖曳順序
+  activities_participants: {
+    meta: { hidden: true, icon: 'import_export' },
+    fields: [{ field: 'activities_id', type: 'integer', meta: { hidden: true }, schema: {} }, { field: 'item', type: 'string', meta: { hidden: true }, schema: {} },
+      { field: 'collection', type: 'string', meta: { hidden: true }, schema: {} }, sort],
+    relations: [
+      { collection: 'activities_participants', field: 'item', related_collection: null, meta: { one_allowed_collections: ['people', 'organizations'], one_collection_field: 'collection', junction_field: 'activities_id' }, schema: null },
+      { collection: 'activities_participants', field: 'activities_id', related_collection: 'activities', meta: { one_field: 'participants', junction_field: 'item', sort_field: 'sort', one_deselect_action: 'delete' }, schema: { on_delete: 'CASCADE' } },
+    ],
+  },
   admission: {
     meta: { icon: 'school', translations: zh('入學'), display_template: '{{date}} {{title_zh}}', note: '入學頁，依日期新到舊；首頁的 news 可以連到這裡的某一則' },
     fields: [...when, str('title_zh', '標題（中）', {}, 'full'), strEn('title_en', '標題（英）'),
@@ -240,23 +283,30 @@ const SPEC = {
     fields: [str('url', '影片連結', { note: 'YouTube 連結（例 https://youtu.be/xxxxxxxxxxx、https://www.youtube.com/watch?v=…）；也可以貼直連的影片檔網址（.mp4、.m3u8）' }, 'full')],
   },
   faculty: {
-    meta: { icon: 'school', group: 'faculty_folder', translations: zh('師資名單'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', note: '列表依「類別」分段；名字從人名庫選；副標跟語言切（英文留空＝英文版顯示中文）' },
-    fields: [sort, dropdown('category', '類別', FACULTY_CATS), image('photo', '照片'),
-      pick('person', '姓名（人名庫）', 'people'),
+    meta: { icon: 'school', group: 'faculty_folder', translations: zh('師資名單'), display_template: '{{person.name_zh}} {{person.name_en}}', sort_field: 'sort', note: '列表依「類別」分段、只列在職的；名字從人名庫選；結構同 SCCD（學歷、經歷那些是下面的「清單」，可以自己加）' },
+    // 結構同 SCCD 的 faculty（user 2026-11-26：「除了sccd的placeholder圖片以外，剩下的結構要一樣，但是學歷那些保持目前的做法，不是寫死的」）：
+    // 表單照 SCCD 的順序——照片、姓名、類別、在職狀態、（SCCD 的學歷／經歷／榮譽＝這裡的清單）、聯絡（只有行政管理）、校內職級、校外單位。
+    // 跟 SCCD 不一樣的：沒有三張佔位圖（placeholder*）、學歷那些是自己加的清單、校外單位只有單位庫（SCCD 是職稱庫或單位庫，問過＝照舊）；
+    // 副標（subtitles）同一天拿掉（SCCD 沒有；那一位老師的副標＝他在 SCCD 的校內職級，搬過去了）
+    fields: [sort, image('photo', '照片'), pick('person', '姓名（人名庫）', 'people'), dropdown('category', '類別', FACULTY_CATS),
+      { ...dropdown('status', '在職狀態', [{ text: '在職', value: 'active' }, { text: '離職', value: 'former' }]), schema: { default_value: 'active' } },
+      // 詳細頁的清單（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）＝子集合 faculty_sections，一個清單＝標題＋一筆一筆。
+      // 原本是寫死的六格重複列 education／experience／expertise／exhibitions／awards／publications、標題在介面文字 faculty.cv.*：
+      // 學歷、經歷搬成每位老師的前兩個清單，其餘四格 user 說刪掉（後台的欄位、那六個介面文字都刪了）。
+      // 2026-11-26 從 SCCD 搬來的老師＝學歷 → 經歷 → 榮譽三個清單（同 SCCD 詳細頁的順序；SCCD 的「歷程」user 同一天說拿掉、刪了）
+      { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('清單（學歷、經歷…可以自己加）'),
+        note: '詳細頁名字下面的清單：一個清單＝標題＋一筆一筆（年份＋說明），可以自己新增、拖曳排序；裡面一筆都沒有的清單前台不出', options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } },
+      // 聯絡＝SCCD 行政管理的那一格（user 2026-11-26：「同 SCCD 加一格「聯絡」」）：類別不是行政管理就藏起來；詳細頁排在清單前面、一行一行，Email／網址可以點
+      multi('contact', '聯絡', { note: '純文字、可多行，例 Email／電話（只有行政管理用，同 SCCD）；詳細頁一行一行顯示、Email 可以點',
+        conditions: [{ name: '只有行政管理', rule: { category: { _neq: 'admin' } }, hidden: true }] }),
       // 職稱分兩格（user 2026-11-25：「老師要加上校内職級及校外單位兩個選項，前者是key的，後者是從庫裏面選，跟sccd一樣」＝SCCD 的 internalTitles／occupationItems）：
-      // 校內職級＝手打清單；校外單位＝從單位庫多選（SCCD 是職業庫或單位庫，這站只有單位庫）。前台名字下面一行一個：校內職級 → 校外單位 → 副標
+      // 校內職級＝手打清單；校外單位＝從單位庫多選（SCCD 是職業庫或單位庫，這站只有單位庫）。前台名字下面一行一個：校內職級 → 校外單位
       repeater('internal_titles', '校內職級', [['title_zh', '職級（中）'], ['title_en', '職級（英）']], '{{title_zh}} {{title_en}}',
         '手打（教授、副教授、主任…），可多筆、可拖曳排序；前台照這個順序、接在名字下面。' + EN_NOTE),
       { field: 'external_units', type: 'alias', meta: { special: ['m2m'], interface: 'list-m2m', width: 'full', translations: zh('校外單位（單位庫）'),
         note: '從單位庫選，可多選、可拖曳排序；沒有就在選單裡新增（會一起加進庫）。前台接在校內職級下面',
         options: { template: '{{organizations_id.name_zh}} {{organizations_id.name_en}}', enableCreate: true, enableSelect: true },
-        display: 'related-values', display_options: { template: '{{organizations_id.name_zh}}' } } },
-      subtitles,   // 原本是單一欄位 affiliation_zh／_en（任職單位）
-      // 詳細頁的清單（user 2026-11-24：「跟關於一樣，我們可以自己加 list，然後自己去編輯裏面的內容」）＝子集合 faculty_sections，一個清單＝標題＋一筆一筆。
-      // 原本是寫死的六格重複列 education／experience／expertise／exhibitions／awards／publications、標題在介面文字 faculty.cv.*：
-      // 學歷、經歷搬成每位老師的前兩個清單，其餘四格 user 說刪掉（後台的欄位、那六個介面文字都刪了）
-      { field: 'sections', type: 'alias', meta: { special: ['o2m'], interface: 'list-o2m', width: 'full', translations: zh('清單（學歷、經歷…可以自己加）'),
-        note: '詳細頁名字下面的清單：一個清單＝標題＋一筆一筆（年份＋說明），可以自己新增、拖曳排序；裡面一筆都沒有的清單前台不出', options: { template: '{{title_zh}}', enableCreate: true, enableSelect: false } } }],
+        display: 'related-values', display_options: { template: '{{organizations_id.name_zh}}' } } }],
   },
   // 校外單位（faculty.external_units）的 junction：老師 ↔ 單位庫，照拖曳順序。單位那邊 RESTRICT＝還有老師用就刪不掉（同其他庫）
   faculty_external_units: {
@@ -411,7 +461,7 @@ const META = ['faculty', 'partners', 'footer', 'people', 'organizations', 'media
 // 後台側欄的順序＝前台選單（user 2026-11-23）：首頁 → 主選單 → 次選單 → 庫（資料夾）、介面文字；資料夾裡＝頁面的 Hero（導言）→ 名單／段落。
 // 網站地圖沒有內容；藏起來的（段落、小節、junction）不用排
 const NAV = ['home_folder', 'news', 'home_video', 'about_folder', 'about_page', 'about', 'partners_folder', 'partners_page', 'partners', 'faculty_folder', 'faculty_page', 'faculty', 'courses', 'works', 'activities', 'records',
-  'admission', 'regulations', 'donate_folder', 'donate_page', 'donate', 'footer', 'pool_folder', 'people', 'organizations', 'media_outlets', 'ui_labels', 'site_icons', 'coming_soon'];
+  'admission', 'regulations', 'donate_folder', 'donate_page', 'donate', 'footer', 'pool_folder', 'people', 'organizations', 'media_outlets', 'ui_labels', 'site_icons', 'site_slugs', 'coming_soon'];
 const ICON_FOLDER = '網頁 icon';   // 網頁 icon 的檔放這個資料夾
 // 網頁 icon 每一筆的「用在哪裡」（後台看的；沒寫＝空白）
 const ICON_NOTES = { play: '播放（底列 play 鈕、作品影片）', back: '返回鈕、上一個', next: '下一個', pause: '暫停', loud: '音量鈕（大聲）', half: '音量鈕（一半以下）',
@@ -442,7 +492,7 @@ async function ensureCollection(name, s) {
   if (await get(`/collections/${name}`)) console.log(`= ${name} 已存在`);
   else { console.log(`+ 建 ${name}`); await api('POST', '/collections', s.folder ? { collection: name, meta: s.meta, schema: null } : { collection: name, meta: s.meta, schema: {}, fields: [pk] }); }
   if (s.folder) return;
-  const have = DRY ? new Set() : new Set(((await get(`/fields/${name}`)) || []).map(f => f.field));
+  const have = new Set(((await get(`/fields/${name}`)) || []).map(f => f.field));   // dry run 也讀（只是 GET）＝列出來的才是真的會補的
   for (const { pool, ...f } of s.fields) if (!have.has(f.field)) { console.log(`  + 欄位 ${name}.${f.field}`); await api('POST', `/fields/${name}`, f); }
   // 圖片／檔案欄位要掛到 directus_files 才會顯示選圖器
   for (const f of s.fields) if (f.meta?.special?.includes('file')) await ensureRelation({ collection: name, field: f.field, related_collection: 'directus_files', schema: { on_delete: 'SET NULL' } });
@@ -492,6 +542,23 @@ async function ensureIcons(folder) {
     await api('POST', '/items/site_icons', { key, file: (await res.json()).data.id, note: ICON_NOTES[key] || '', sort: i + 1 });
   }
 }
+// 網址 slug：前台 js/config/slugs.js 的 SLUG_DEFAULTS（純物件字面值，直接取出來）有、後台還沒有的 key 才補（後台改過的 slug 不動；同 SCCD setup-site-slugs.cjs）
+const SLUG_NAMES = { about: 'About 關於', partners: 'Partners 合作企業', faculty: 'Faculty 師資', 'faculty-detail': 'Faculty Profile 老師個人頁（師資點進去）',
+  curriculum: 'Curriculum 課程', works: 'Works 作品', activities: 'Activities 動態', records: 'Records 紀錄', admission: 'Admission 入學', donate: 'Donate 捐款',
+  regulations: 'Regulations & Policies 規章與政策', sitemap: 'Site Map 網站地圖', contact: 'Contact 聯絡' };
+async function ensureSlugs() {
+  const m = fs.readFileSync('js/config/slugs.js', 'utf8').match(/export const SLUG_DEFAULTS = (\{[\s\S]*?\n\});/);
+  if (!m) throw new Error('js/config/slugs.js 裡找不到 SLUG_DEFAULTS');
+  const defaults = Function(`return (${m[1]});`)();
+  const have = new Map(((await get('/items/site_slugs?fields=key,slug&limit=-1')) || []).map(r => [r.key, r.slug]));
+  for (const [i, [key, slug]] of Object.entries(defaults).entries()) {
+    if (have.has(key)) continue;
+    console.log(`  + slug ${key} → ${slug}`);
+    await api('POST', '/items/site_slugs', { key, name: `頁面｜${SLUG_NAMES[key.slice(5)] || key}`, slug, sort: i + 1 });
+  }
+  const changed = [...have].filter(([k, v]) => k in defaults && v !== defaults[k]);
+  if (changed.length) console.log('  後台改過的 slug（跟預設不同，沒動）：' + changed.map(([k, v]) => `${k}＝${v}`).join('、'));
+}
 async function ensurePresets() {
   for (const [collection, layout_query] of Object.entries(PRESETS)) {
     const cur = ((await get(`/presets?filter[collection][_eq]=${collection}&filter[user][_null]=true&filter[role][_null]=true&filter[bookmark][_null]=true`)) || [])[0];
@@ -527,6 +594,8 @@ async function ensurePublicRead() {
   // 網頁 icon：本地加了新的（CSS 有用到）就補上傳
   const iconFolder = await ensureFolder(ICON_FOLDER, 'site_icons', 'file');
   if (iconFolder) await ensureIcons(iconFolder);
+  console.log('網址 slug');
+  await ensureSlugs();
   console.log('預設檢視');
   await ensurePresets();
   // footer 單例：還是空的才塞示意值（已經有人填過就不碰）

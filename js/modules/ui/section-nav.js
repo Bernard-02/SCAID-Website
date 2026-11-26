@@ -12,7 +12,8 @@ import { registerPageCleanup } from './page-cleanup.js';
 export function initSectionNav() {
   const nav = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .section-nav'));
   const titles = /** @type {HTMLElement[]} */ ([...document.querySelectorAll('#page-content .section-title')]);
-  if (!nav || !titles.length) return;
+  if (!nav) return;
+  if (!titles.length) { nav.innerHTML = ''; return; }   // 段落都收掉了（後台沒東西，main.js settle）＝之前排的矩形也拿掉
 
   titles.forEach((t, i) => { if (!t.id) t.id = `section-${i + 1}`; });
   const h1 = document.querySelector('#page-content .page-lead') && document.querySelector('#page-content h1');   // 有導言才有最上面那一格

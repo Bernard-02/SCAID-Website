@@ -43,3 +43,12 @@ export const YT_API_KEY = 'AIzaSyBU-muAPWSpX6hn4gKw4fec6yM1Yqd4lFA';
 // sessionStorage last-known-good：上次成功的真資料，後台失敗時退這份（存不進去／壞快取都當沒有）
 export function saveLKG(key, data) { try { sessionStorage.setItem(`scaid:${key}`, JSON.stringify(data)); } catch {} }
 export function readLKG(key) { try { const s = sessionStorage.getItem(`scaid:${key}`); return s ? JSON.parse(s) : null; } catch { return null; } }
+
+// 各頁內容一律走這支（照 SCCD，user 2026-11-26：「我們不需要假資料，收不到後臺也不需要render假的」）：
+// 抓到＝存一份；抓不到（逾時、HTTP 錯、連不上）＝退這個分頁上次抓到的那份；連那份都沒有＝丟錯（呼叫端那一塊就不畫）。
+// 整個連不上（cmsDown）時每頁只剩「即將推出」（main.js），這份只墊逾時、HTTP 錯那種偶發的。path＝/items/ 後面那段（含 query），也是 LKG 的 key
+/** @param {string} path */
+export async function cmsGet(path) {
+  try { const d = await fetchCmsJson(`${CMS_API_BASE}/${path}`); saveLKG(path, d); return d; }
+  catch (e) { const lkg = readLKG(path); if (lkg != null) return lkg; throw e; }
+}

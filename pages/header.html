@@ -72,18 +72,19 @@
         <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
         <span class="bar-rect"></span><span data-label="bar.menu" class="bar-label" data-zh="選單" data-en="menu">選單</span>
       </button>
-      <!-- TODO intro 影片：data-video 填網址才會開 dialog 播（YouTube 連結，例 https://youtu.be/xxxxxxxxxxx；直連的影片檔也行）。
+      <!-- intro 影片：data-video＝後台「首頁影片」的連結（cms-pages.js loadIntroVideo 填；YouTube 連結或直連的影片檔），有網址才會開 dialog 播；
+           空的＝這顆不出（chrome.css，user 2026-11-26）。
            名字（簡介）不出、只當報讀名稱（user 2026-11-23，同 menu 鈕） -->
       <button type="button" class="bar-btn play-btn" data-video="">
         <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
       </button>
     </div>
-    <!-- MOCK 首頁的動態（跟 index.html 清單同一份示意、同一個順序；後台 cms-pages.js loadBarNews 換掉 .bar-news-copy 裡的 span 再叫 fitBar）：
+    <!-- 首頁的動態（後台首頁的 news、跟首頁清單同一個順序；cms-pages.js loadBarNews 填進空的 .bar-news-copy 再叫 fitBar；一則都沒有＝這塊不出，chrome.css）：
          一次只顯示一則（user 2026-11-23：拿掉＋、只剩跑馬燈；原本好幾則排成一排一直跑）——放得下停 3 秒、放不下跑一趟馬燈，跑完 fade 換下一則（chrome.js runNews）。
          永遠在畫面正中、寬＝--col-w＝logo 寬。首頁：點了原地展開清單、定位到看到的那則（chrome.js 攔）；內頁：整塊淡掉。
          是鈕、不是連結（user 2026-11-25：「hover這個news為什麽是admission呢？應該是news才對，兩者不要搞混了」；原本 a href="admission.html"＝沒 JS 的備援、hover 顯示入學的網址） -->
     <button type="button" class="bar-news">
-      <span class="bar-news-track"><span class="bar-news-copy"><span data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</span><span data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</span><span data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</span><span data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</span><span data-en="Program website launched">學程網站上線</span><span data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</span></span></span>
+      <span class="bar-news-track"><span class="bar-news-copy"></span></span>
     </button>
     <!-- 作品頁的兩種排法（user 2026-11-23）：放映（slideshow）／總覽（bento）。只在作品頁、跟首頁的動態同一格（畫面正中；css/components/works.css）。
          一顆鈕、點了在兩種之間切（user 2026-11-25：「我想要將作品的兩個 icon 合并，點了會切換」；原本兩顆、目前那個 aria-pressed）：

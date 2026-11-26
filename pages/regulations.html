@@ -6,7 +6,15 @@
   <meta name="format-detection" content="telephone=no, email=no, address=no">
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
-  <title>規章與政策 - SCAID</title>
+  <meta name="description" content="SCAID - Regulations &amp; Policies 實踐大學 AI 設計職人學士學位學程 - 規章與政策">
+  <link rel="canonical" href="https://scaid.usc.edu.tw/regulations-and-policies">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:title" content="Regulations &amp; Policies 規章與政策">
+  <meta property="og:description" content="SCAID - Regulations &amp; Policies 實踐大學 AI 設計職人學士學位學程 - 規章與政策">
+  <meta property="og:url" content="https://scaid.usc.edu.tw/regulations-and-policies">
+  <meta name="twitter:card" content="summary">
+  <title>Regulations &amp; Policies 規章與政策</title>
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -20,7 +28,7 @@
        （後台 file 優先、沒有就 url；都沒有＝那列用 div、不能點）。副標一行一個 p、沒有就不出（後台 subtitles）。
        使用條款、隱私權政策＝同關於的段落（user 2026-11-24；後台 regulations_sections，裡面可以加小節）：標題下面的 p＝說明（第一段 mt-md、之後每段 mt-sm），
        有小節的話照 about.html 包 .subsections／.subsection。
-       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+       內容只從後台來（user 2026-11-26，照 SCCD：不放假資料）：這裡只放空的容器、由模組填；抓不到又沒有上次抓到的＝不畫（main.js settle）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <nav class="section-nav flex" aria-label="本頁段落" data-en-label="Sections on this page"></nav>
@@ -28,49 +36,6 @@
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
         <h1 class="sr-only" data-label="nav.regulations" data-en="Regulations & Policies">規章與政策</h1>
         <p class="coming-soon" data-label="page.coming-soon" data-en="Coming soon">即將推出</p>   <!-- 後台「即將推出」勾了這一頁才出、在 Hero 下面那塊的正中（coming-soon.js；user 2026-11-25） -->
-
-      <section class="page-section">
-        <h2 class="section-title" data-en="Program Regulations">學程規章</h2>
-        <ul class="item-list">
-          <li><a class="item-row" href="https://example.com/regulations/establishment.pdf" target="_blank" rel="noopener">
-            <h3 data-en="Program establishment guidelines">學位學程設置辦法</h3>
-            <p data-en="Amended Aug 2026">2026.08 修訂</p>
-          </a></li>
-          <li><a class="item-row" href="https://example.com/regulations/study-rules.pdf" target="_blank" rel="noopener">
-            <h3 data-en="Study regulations">修業規定</h3>
-            <p data-en="For students admitted from 2026">115 學年度入學起適用</p>
-          </a></li>
-          <li><a class="item-row" href="https://example.com/regulations/internship.pdf" target="_blank" rel="noopener">
-            <h3 data-en="Industry internship guidelines">企業實習實施要點</h3>
-            <p data-en="Amended Jun 2026">2026.06 修訂</p>
-          </a></li>
-        </ul>
-      </section>
-
-      <section class="page-section">
-        <h2 class="section-title" data-en="Forms">表單下載</h2>
-        <ul class="item-list">
-          <li><a class="item-row" href="https://example.com/forms/internship-application.docx" target="_blank" rel="noopener">
-            <h3 data-en="Internship application form">實習申請表</h3>
-            <p data-en="Word file">Word 檔</p>
-          </a></li>
-          <li><a class="item-row" href="https://example.com/forms/scholarship-receipt.pdf" target="_blank" rel="noopener">
-            <h3 data-en="Scholarship receipt form">助學金領據</h3>
-            <p data-en="PDF file">PDF 檔</p>
-          </a></li>
-        </ul>
-      </section>
-
-      <section class="page-section">
-        <h2 class="section-title" data-en="Terms of Use">使用條款</h2>
-        <p class="mt-md" data-en="This site is provided by the program for information only; courses, faculty and dates are subject to the official announcements of the program.">本網站內容由實踐大學 AI 設計職人學位學程提供，僅供參考；課程、師資與日程以學程正式公告為準。</p>
-        <p class="mt-sm" data-en="Text and images on this site may not be reproduced without permission.">網站文字與圖片未經同意請勿轉載。</p>
-      </section>
-
-      <section class="page-section">
-        <h2 class="section-title" data-en="Privacy Policy">隱私權政策</h2>
-        <p class="mt-md" data-en="This site collects no personal data; it only uses browser storage to remember your language preference.">本網站不蒐集個人資料，僅使用瀏覽器儲存記住語言偏好。</p>
-      </section>
       </article>
 
       <!-- TODO 圖片待 user 給 -->

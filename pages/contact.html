@@ -6,7 +6,15 @@
   <meta name="format-detection" content="telephone=no, email=no, address=no">
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
-  <title>聯絡 - SCAID</title>
+  <meta name="description" content="SCAID - Contact 實踐大學 AI 設計職人學士學位學程 - 聯絡">
+  <link rel="canonical" href="https://scaid.usc.edu.tw/contact">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:title" content="Contact 聯絡">
+  <meta property="og:description" content="SCAID - Contact 實踐大學 AI 設計職人學士學位學程 - 聯絡">
+  <meta property="og:url" content="https://scaid.usc.edu.tw/contact">
+  <meta name="twitter:card" content="summary">
+  <title>Contact 聯絡</title>
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -16,7 +24,7 @@
 
   <!-- 內頁：只有 <main> 會被 SPA swap 進去；直接開 /pages/contact.html 也能獨立跑。版型同 about（css/components/page.css）。
        原本的 footer 覆蓋層搬成選單最後一頁（user 2026-11-21）；不分段＝沒有段落導覽。頁標題不出、只給報讀（user 2026-11-25）。
-       內容走後台：footer-cms.js 抓 Directus 單例 footer 換掉下面的 MOCK（抓不到就留著）；class 名（.footer-*）JS 也在用。
+       內容走後台：footer-cms.js 抓 Directus 單例 footer 填進下面空的容器（user 2026-11-26：不放假資料；抓不到＝那幾塊收掉、只剩標章與版權）；class 名（.footer-*）JS 也在用。
        文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
@@ -24,32 +32,12 @@
         <h1 class="sr-only" data-label="nav.contact" data-en="Contact">聯絡</h1>
 
         <div class="footer-body text-md">
-          <!-- 社群＝IG、YouTube 兩個 icon，YT 在 IG 右邊（user 2026-11-24）；網址走後台 footer.instagram／footer.youtube（這裡是佔位） -->
-          <div class="footer-social">
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram"><span class="icon icon-ig" aria-hidden="true"></span></a>
-            <a href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube"><span class="icon icon-yt" aria-hidden="true"></span></a>
-          </div>
+          <!-- 社群＝IG、YouTube 兩個 icon，YT 在 IG 右邊（user 2026-11-24）；網址走後台 footer.instagram／footer.youtube -->
+          <div class="footer-social"></div>
           <!-- 聯絡資訊＝清單，同師資詳細頁（user 2026-11-24：「聯絡的這個幫我做成跟老師內頁一樣，然後後臺可以 custom」「每個都有個 url，有寫就可以 jump 到那個 url」）：
                一個清單＝標題（h3）＋一筆一筆（li），標記同那邊的 .subsections > .subsection > h3 + ul、字級 text-s；連結有填的那筆＝整筆是 a（http(s) 另開新視窗、mailto:、tel:）。
                後台＝footer 的子集合 footer_sections（標題＋entries：文字＋選填的連結），可以自己加；標題是內容、不是介面文字（不標 data-label） -->
-          <div class="footer-contact subsections text-s">
-            <div class="subsection"><h3 data-en="E-Mail">電子郵件</h3><ul><li><a href="mailto:scaid@g2.usc.edu.tw">scaid@g2.usc.edu.tw</a></li></ul></div>
-            <div class="subsection"><h3 data-en="Tel">電話</h3><ul><li data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</li></ul></div>
-            <div class="subsection"><h3 data-en="Fax">傳真</h3><ul><li data-en="02 0000 0000 (placeholder)">02 0000 0000（示意）</li></ul></div>
-            <div class="subsection"><h3 data-en="Address">地址</h3><ul><li data-en="Address (placeholder)">地址（示意）</li></ul></div>
-            <!-- 單位（設計學院、姊妹系所…；user 2026-11-25：「聯絡的這些單位改成跟上面的一樣，就是如果有 link 的話，就會導航到別的 page」）＝同一種清單的最後一個、沒有標題：
-                 有連結的那筆＝a（另開新視窗）、沒有＝純文字。後台 footer.links 一列一筆（label_zh／label_en／url）。原本另一塊連結清單（ul.footer-links.link-list、字級 md）。
-                 SCA 建築系、SCAC 建築職人學程共用建築系網站（user 2026-11-10）；TODO 全名待 user 確認，SCAC 的正式名稱還不確定 -->
-            <div class="subsection"><ul>
-              <li><a href="https://www.scdesign.usc.edu.tw/" target="_blank" rel="noopener" data-en="College of Design">設計學院</a></li>
-              <li><a href="https://sccd.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Communications Design">媒體傳達設計學系</a></li>
-              <li><a href="https://scfd.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Fashion Design">服裝設計學系</a></li>
-              <li><a href="https://scid.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Industrial Design">工業產品設計學系</a></li>
-              <li><a href="https://www.arch.usc.edu.tw/" target="_blank" rel="noopener" data-en="Department of Architecture">建築設計學系</a></li>
-              <li><a href="https://www.arch.usc.edu.tw/" target="_blank" rel="noopener" data-en="SCAC program">建築職人學程</a></li>
-              <li><a href="https://www.usc.edu.tw/" target="_blank" rel="noopener" data-en="Shih Chien University">實踐大學</a></li>
-            </ul></div>
-          </div>
+          <div class="footer-contact subsections text-s"></div>
           <!-- 無障礙標章＋版權＝一組、接在單位之後（user 2026-11-25）：跟上面隔 xl＝地址到單位那一段（page.css .footer-legal）。
                標章：後台 badge 有圖就換成 <img class="footer-badge">，還沒有＝灰色佔位。版權的年份＝今年（footer-cms.js，換年自動跟著），中英都是這一行 -->
           <div class="footer-legal">

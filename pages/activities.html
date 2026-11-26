@@ -6,7 +6,15 @@
   <meta name="format-detection" content="telephone=no, email=no, address=no">
   <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
-  <title>動態 - SCAID</title>
+  <meta name="description" content="SCAID - Activities 實踐大學 AI 設計職人學士學位學程 - 動態">
+  <link rel="canonical" href="https://scaid.usc.edu.tw/activities">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
+  <meta property="og:title" content="Activities 動態">
+  <meta property="og:description" content="SCAID - Activities 實踐大學 AI 設計職人學士學位學程 - 動態">
+  <meta property="og:url" content="https://scaid.usc.edu.tw/activities">
+  <meta name="twitter:card" content="summary">
+  <title>Activities 動態</title>
   <link rel="stylesheet" href="../fonts/glow-sans-tc-compressed/font.css?v=f67c9f10">
   <link rel="stylesheet" href="../css/output.css">
 </head>
@@ -19,11 +27,11 @@
        每則＝一個摺疊（原生 <details>，user 2026-11-18）：收著的樣子同師資那一列（縮圖＋標題＋副標），時間不寫在外面；
        點了展開＝時間、地點（沒有就不出那一行），下面相簿（沒有就不出）；點相簿的圖放大到整個畫面（chrome.js openFigure）。
        後台照 SCCD 的活動（user 2026-11-24）：標題下面是副標（一筆一行、可以沒有；原本一行「分類」）、地點可以好幾個（一個一行）、
-       影片（button.album-video[data-video]）排在相簿的照片前面＝YouTube 的縮圖＋一顆 play，點了在放大畫面播（示意的那支是 Blender 的開放影片 Big Buck Bunny，同作品頁的示意）。
+       影片（button.album-video[data-video]）排在相簿的照片前面＝YouTube 的縮圖＋一顆 play，點了在放大畫面播。
        樣式見 page.css「摺疊」「動態」。相簿圖暫時是 Lorem Picsum stock（彩色，user 2026-11-19）。
        相簿的 <img> 一定要寫原圖 width／height（user 2026-11-19）：圖還沒載進來就知道寬 → 一打開就排好、chevron 當下就決定出不出
        （沒寫＝寬 0，載完才跳出 chevron）。接 Directus 後從檔案的 width／height 帶。
-       內容為 MOCK 示意，接 Directus 後改由模組渲染。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
+       內容只從後台來（user 2026-11-26，照 SCCD：不放假資料）：這裡只放空的容器、由模組填；抓不到又沒有上次抓到的＝不畫（main.js settle）。文字依語言切換：中文寫內文、英文寫 data-en（lang.js） -->
   <main id="page-content">
     <div class="site-container site-grid">
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
@@ -31,125 +39,7 @@
         <p class="coming-soon" data-label="page.coming-soon" data-en="Coming soon">即將推出</p>   <!-- 後台「即將推出」勾了這一頁才出、在 Hero 下面那塊的正中（coming-soon.js；user 2026-11-25） -->
 
       <section class="page-section">
-        <ul class="item-list mt-0">
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-1-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</h3>
-                <p data-en="Online info session">線上說明會</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2026/11/22 (placeholder)">2026/11/22（示意）</p>
-                <p data-en="Online (placeholder)">線上（示意）</p>
-              </div>
-              <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-1-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-              </div>
-            </div>
-          </details></li>
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-2-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</h3>
-                <p data-en="Year 2 field trip">二年級校外教學</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2026/10/20 (placeholder)">2026/10/20（示意）</p>
-                <p data-en="Placeholder Animation Studio">示意動畫工作室</p>
-              </div>
-              <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-4/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-5/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-2-6/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-              </div>
-            </div>
-          </details></li>
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-3-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</h3>
-                <p data-en="Speaker: Wang Da-Ming (placeholder)">講者：王大明（示意）</p>
-                <p data-en="Director, Placeholder Animation Studio">示意動畫工作室 導演</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2026/10/01 (placeholder)">2026/10/01（示意）</p>
-                <p data-en="College of Design lecture hall">設計學院演講廳</p>
-              </div>
-              <div class="album">
-                <button type="button" class="album-video" data-video="https://www.youtube.com/watch?v=aqz-KE-bpKQ"><img src="https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg" alt="" width="480" height="360" loading="lazy"><span class="icon icon-play" aria-hidden="true"></span><span data-label="common.play_video" class="sr-only" data-en="Play video">播放影片</span></button>
-              </div>
-            </div>
-          </details></li>
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-4-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</h3>
-                <p data-en="Year 1 end-of-term group show">一年級期末作品聯展</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2025/12/20 - 12/27 (placeholder)">2025/12/20 - 12/27（示意）</p>
-                <p data-en="Campus gallery">校內展覽空間</p>
-                <p data-en="College of Design lobby">設計學院大廳</p>
-              </div>
-              <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-4-4/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-              </div>
-            </div>
-          </details></li>
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-5-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="Program website launched">學程網站上線</h3>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2025/11/01 (placeholder)">2025/11/01（示意）</p>
-              </div>
-            </div>
-          </details></li>
-          <li><details>
-            <summary class="item-row">
-              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-news-6-cover/800/800" alt="" loading="lazy"></div>
-              <div>
-                <h3 data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</h3>
-                <p data-en="Orientation for new students and parents">新生與家長座談</p>
-              </div>
-            </summary>
-            <div class="fold-body">
-              <div class="fold-meta">
-                <p data-en="2025/10/01 (placeholder)">2025/10/01（示意）</p>
-                <p data-en="College of Design">設計學院</p>
-              </div>
-              <div class="album">
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-1/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-2/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-                <button type="button"><img src="https://picsum.photos/seed/scaid-news-6-3/1200/800" alt="" width="1200" height="800" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
-              </div>
-            </div>
-          </details></li>
-        </ul>
+        <ul class="item-list mt-0"></ul>
       </section>
       </article>
 

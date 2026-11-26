@@ -1,16 +1,18 @@
 /**
  * 縮圖＋標題＋副標的列表（.item-list .item-row）← Directus（欄位與後台建法：docs/Directus-後台欄位.md）。
- * 師資、合作企業共用這一種（user 2026-11-21）：標題 h3、副標＝`subtitles` repeater 一筆一行 p、沒填就只有標題。
+ * 師資、合作企業共用這一種（user 2026-11-21）：標題 h3、下面一行一個 p（師資＝校內職級 → 校外單位；合作企業＝`subtitles` repeater）、沒填就只有標題。
  * 頁面上每個 ul.item-list 掛 data-cms="集合" 或 "集合:類別"（師資的專任／兼任／行政管理段落寫死在 HTML，順序不看後台），段內照 sort。
- * 抓不到（斷線／集合沒建）或後台還沒任何一筆＝留 HTML 的 MOCK；某一類沒人＝那段整段收掉（段落導覽重做）。
+ * HTML 的清單是空的（user 2026-11-26：不放假資料）；抓不到＝退上次抓到的（config/api.js cmsGet），連那份都沒有或後台還沒任何一筆＝不畫
+ * （空的段落 main.js 收掉）；某一類沒人＝那段整段收掉（段落導覽重做）。
  */
-import { CMS_API_BASE, assetUrl, fetchCmsJson } from '../../config/api.js';
+import { assetUrl, cmsGet } from '../../config/api.js';
 import { escapeHtml } from './escape-html.js';
 import { applyLang } from './lang.js';
 import { initSectionNav } from './section-nav.js';
 
 // 師資名字下面那幾行（user 2026-11-25 照 SCCD：「老師要加上校内職級及校外單位兩個選項，前者是key的，後者是從庫裏面選」）：
-// 校內職級（手打）→ 校外單位（單位庫，照拖曳順序）→ 副標，一筆一行；合作企業只有副標。詳細頁（cms-pages.js facultyDetail）同一支
+// 校內職級（手打）→ 校外單位（單位庫，照拖曳順序），一筆一行；合作企業只有副標（師資的副標 user 2026-11-26 拿掉了＝同 SCCD）。詳細頁（cms-pages.js facultyDetail）同一支。
+// 名字照後台、不接（國家）（user 2026-11-26：「這裏應該是不會有國家，幫我刪掉，都要以後臺爲主」——庫的國家只給動態的參與者用，cms-pages.js named）
 export const FACULTY_LINES = 'internal_titles,external_units.sort,external_units.organizations_id.name_zh,external_units.organizations_id.name_en';
 /** @param {any} r @returns {[any, any][]} [中, 英] */
 export const subLines = (r) => /** @type {[any, any][]} */ ([
@@ -20,12 +22,13 @@ export const subLines = (r) => /** @type {[any, any][]} */ ([
   ...(Array.isArray(r.subtitles) ? r.subtitles : []).map((/** @type {any} */ x) => [x?.text_zh, x?.text_en]),
 ]).filter(([z, e]) => z || e);
 
-// 各集合：要抓的欄位、縮圖欄位、標題（名字從人名庫／單位庫來，user 2026-11-21）、整列連到哪（回 '' ＝那列不可點、用 div）
+// 各集合：要抓的欄位（＋篩選）、縮圖欄位、標題（名字從人名庫／單位庫來，user 2026-11-21）、整列連到哪（回 '' ＝那列不可點、用 div）
 /** @type {Record<string, { fields: string, thumb: (r: any) => unknown, name: (r: any) => any, link: (r: any) => string }>} */
 const SPEC = {
-  faculty: { fields: `id,category,photo,person.name_zh,person.name_en,${FACULTY_LINES}`, thumb: r => r.photo, name: r => r.person, link: r => `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` },
+  // 師資的結構同 SCCD（user 2026-11-26）：只列在職的（status，離職的不出）；副標拿掉了（名字下面＝校內職級 → 校外單位）
+  faculty: { fields: `id,category,photo,person.name_zh,person.name_en,${FACULTY_LINES}&filter[status][_neq]=former`, thumb: r => r.photo, name: r => r.person, link: r => `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` },
   // 企業官網：另開新視窗；只放行 http(s)，空的或其他＝不可點
-  partners: { fields: 'id,logo,url,organization.name_zh,organization.name_en', thumb: r => r.logo, name: r => r.organization,
+  partners: { fields: 'id,logo,url,organization.name_zh,organization.name_en,subtitles', thumb: r => r.logo, name: r => r.organization,
     link: r => (/^https?:\/\//i.test(r.url || '') ? `href="${escapeHtml(r.url)}" target="_blank" rel="noopener"` : '') },
 };
 
@@ -47,9 +50,8 @@ export async function loadItemListCms() {
     const s = SPEC[col];
     if (!s) continue;
     let rows;
-    try { rows = await fetchCmsJson(`${CMS_API_BASE}/${col}?sort=sort&limit=-1&fields=${s.fields},subtitles`); }
-    catch (e) { console.warn(`[${col}] 後台抓不到，維持示意：`, e instanceof Error ? e.message : e); continue; }
-    // ponytail: 一筆都沒有＝後台還沒開始填，留示意；之後真的要整頁清空再改
+    try { rows = await cmsGet(`${col}?sort=sort&limit=-1&fields=${s.fields}`); }
+    catch (e) { console.warn(`[${col}] 後台抓不到：`, e instanceof Error ? e.message : e); continue; }
     if (!Array.isArray(rows) || !rows.length || !lists[0].isConnected) continue;
     for (const ul of lists) {
       const [c, cat] = (ul.dataset.cms || '').split(':');
