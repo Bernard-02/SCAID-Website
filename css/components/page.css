@@ -229,14 +229,13 @@
      Windows 的 WebKit 整頁當掉（2026-11-24 實測：框跟著圖長＝當、圖寫死大小或關掉 View Transition＝不當） */
   .item-thumb:has(img) { width: var(--item-thumb-w); height: var(--item-thumb-w); aspect-ratio: auto; }
   /* 清單列的縮圖上一直有一片中空板在流（user 2026-11-27；thumb-board.js 用 WebGL 畫；先做的是 hover 才出，同一天：「預設一開始就是有這個效果，hover則不影響它」）。
-     畫布疊在縮圖裡真的看得到的那張圖上（列裡絕對定位、JS 每幀對齊）；貼圖載好、第一次畫出來＝淡出來（只淡、不糊） */
+     畫布疊在縮圖裡真的看得到的那張圖上（列裡絕對定位、JS 每幀對齊）；貼圖載好、第一次畫出來＝直接蓋上、不自己淡
+     （user 2026-11-27：「老師的圖片濾鏡，好像每次進來這個頁面都會抖動refresh效果」——原本自己淡 0.4 秒，跟換頁的淡入疊在一起＝原圖和錯開的條同時半透明、看起來在抖；
+     蓋上之後跟著頁面一起淡；圖自己還在淡入（img-fade.js）＝照抄圖的透明度與模糊（thumb-board.js placeOf）。沒畫出來之前畫布是空的＝不用藏 */
   .thumb-board {
     position: absolute;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity var(--dur-fade) var(--ease-standard);
   }
-  .thumb-board.is-on { opacity: 1; }
   /* 清單列與摺疊 hover／鍵盤聚焦＝蓋黑收圓點（item-marquee.js strike；user 2026-11-22 定的是蓋黑收直條、取代更早的圓點）：每行字先被一條字高的帶蓋住（.item-cover，
      左 → 右長出來），再一起往右收到字尾、沒有了；帶收完、游標還在，再等一下才在這一列的最右緣、字那一塊的正中從左到右切出一顆圓點（.item-dot），
      hover 著就留著、離開從左往右切出去（進出場都是 clip、不淡，user 2026-11-24）。

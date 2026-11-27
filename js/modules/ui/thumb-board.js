@@ -145,14 +145,15 @@ function placeOf(b) {
     const [px, py] = cs.objectPosition.split(' ').map(v => (parseFloat(v) || 0) / 100);   // ponytail: 只認 %（全站都是 %／left、bottom 這種關鍵字＝算成 %）
     x = (r.width - w) * px; y = (r.height - h) * py;
   }
-  return { left: r.left - o.left + x, top: r.top - o.top + y, width: w, height: h };
+  // 圖自己的淡入（img-fade.js：透明＋糊）照抄過來：板子蓋在圖上、不跟的話圖還在淡、板子已經整片冒出來
+  return { left: r.left - o.left + x, top: r.top - o.top + y, width: w, height: h, opacity: cs.opacity, filter: cs.filter };
 }
 
-/** 隔著板子畫一次（t 秒）；回傳畫出來了沒（貼圖還沒到＝沒有） @param {Board} b @param {number} t @param {{ left: number, top: number, width: number, height: number }} at 這一幀先量好的位置 */
+/** 隔著板子畫一次（t 秒）；回傳畫出來了沒（貼圖還沒到＝沒有） @param {Board} b @param {number} t @param {{ left: number, top: number, width: number, height: number, opacity: string, filter: string }} at 這一幀先量好的位置與圖的淡入 */
 function draw(b, t, at) {
   const G = gl(), dpr = devicePixelRatio || 1;
-  const key = `left:${at.left}px;top:${at.top}px;width:${at.width}px;height:${at.height}px`;
-  if (key !== b.at) { b.canvas.style.cssText = b.at = key; }   // 位置沒變不寫
+  const key = `left:${at.left}px;top:${at.top}px;width:${at.width}px;height:${at.height}px;opacity:${at.opacity};filter:${at.filter}`;
+  if (key !== b.at) { b.canvas.style.cssText = b.at = key; }   // 位置、淡入沒變不寫
   const cw = Math.max(1, Math.round(at.width * dpr)), ch = Math.max(1, Math.round(at.height * dpr));
   if (b.canvas.width !== cw || b.canvas.height !== ch) { b.canvas.width = cw; b.canvas.height = ch; }
   const tex = G && textureOf(b.img.currentSrc || b.img.src).tex;
@@ -166,7 +167,7 @@ function draw(b, t, at) {
   g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
   b.ctx.clearRect(0, 0, cw, ch);
   b.ctx.drawImage(G.canvas, 0, G.canvas.height - ch, cw, ch, 0, 0, cw, ch);
-  b.canvas.classList.add('is-on');   // 第一次畫出來＝淡出來（CSS）
+  b.canvas.classList.add('is-on');   // 第一次畫出來了（煙霧測試看這個）
   return true;
 }
 

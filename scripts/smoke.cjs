@@ -2299,7 +2299,7 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
       await ev('pointerup', 30);
       assert(during && await lg(p, 'obj', 'stroke') && await p.$eval('#figure-dialog', d => d.open), `手機：拖著 object＝露出名字、放開回到 stroke、dialog 不關（拖著的時候露了：${during}）`); }
     await p.tap('.figure-obj-close');   // object 沒有 ‹ X ›，關閉＝右下角那顆骨牌（user 2026-11-24）
-    assert(await lg(p, 'dept', 'stroke') && await p.$eval('.object-canvas', c => c.parentElement.classList.contains('site-chrome')), '手機：點右下角的骨牌關掉後畫布搬回殼上、logo 回系名');
+    assert(await lg(p, 'obj', 'stroke') && await p.$eval('.object-canvas', c => c.parentElement.classList.contains('site-chrome')), '手機：點右下角的骨牌關掉後畫布搬回殼上、logo 照樣輪物件名字的 stroke（user 2026-11-27）');
     await p.close();
   }
 

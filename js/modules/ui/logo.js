@@ -37,6 +37,7 @@ let VW = 0, VH = 0, SH = 0, DEPT = 0;          // 文字版 viewBox 的寬、高
 /** @type {{ text: string, zh: boolean, reveal: boolean } | null} */ let obj = null;   // 右圖的 object（object.js 回報；null＝現在沒有）
 /** @type {'stroke' | 'text'} */ let homeMode = 'stroke';
 /** @type {Promise<void> | null} */ let busy = null;
+let again = false;   // 演的途中又被叫：演完再對一次（settle）
 let loop = 0, timer = 0;
 const widths = new Map();                       // 名字 → 長度（量過的）
 const still = () => prefersReducedMotion() || root.hasAttribute('data-logo-still');
@@ -127,8 +128,12 @@ async function play(/** @type {Look} */ a, /** @type {Look} */ b, slow = false) 
   shown = b; draw(b);
 }
 // 一直演到「畫面上的樣子＝現在該有的樣子」；同時只跑一個。被叫停＝硬切到現在該有的樣子（同 logo 換內容本來就是硬切）
+// 沒事做的那一輪也是同步就結束、busy 卻要到下一個 microtask 才清＝同一個 task 裡接著叫的（換頁：logoPage 之後 object 回報看不到了）會被吞掉、
+// 之後被別的硬切過去（2026-11-27 user：別的頁到作品頁 logo 沒有演回完整長度）→ 被叫的時候正在忙＝記著、演完再叫一次
 function settle() {
-  if (!busy) busy = (async () => {
+  if (busy) { again = true; return busy; }
+  again = false;
+  busy = (async () => {
     for (;;) {
       const w = want(), c = cut;
       if (same(shown, w)) break;
@@ -136,7 +141,7 @@ function settle() {
       await play(shown, w);
       if (c !== cut) { shown = want(); draw(shown); break; }
     }
-  })().finally(() => { busy = null; });
+  })().finally(() => { busy = null; if (again) settle(); });
   return busy;
 }
 
@@ -166,7 +171,8 @@ export function initLogo() {
   // （換語言本身是整個畫面 fade 過去，chrome.js fadeSwap；lang.js 改 <html lang>）
   const refit = () => { geometry(); widths.clear(); if (shown) { shown = want(); draw(shown); } };
   matchMedia('(min-width: 768px)').addEventListener('change', refit);
-  new MutationObserver(refit).observe(root, { attributes: true, attributeFilter: ['lang'] });
+  // 只認真的換了語言：lang.js 每一頁都會重設一次（同一個值也算一筆異動）＝換頁時正在演的會被硬切
+  new MutationObserver((ms) => { if (ms.some(m => m.oldValue !== root.lang)) refit(); }).observe(root, { attributes: true, attributeFilter: ['lang'], attributeOldValue: true });
   // 首頁動態展開／收起（chrome.js setNews 掛 html.news-open）：展開＝變回 stroke、收起＝接著來回（want）
   let newsWas = root.classList.contains('news-open');
   new MutationObserver(() => {
