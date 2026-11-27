@@ -1,0 +1,45 @@
+name: 後台圖片轉 WebP（每日）
+
+# 把後台檔案庫的 JPG／PNG 原地轉成 WebP（同一個檔案 id、前台不用改；scripts/convert-images-to-webp.cjs，照 SCCD 的 generate-covers.yml）。
+# 在 GitHub 的機器上跑：本機連 AWS 首爾太慢（user 2026-11-27）。轉過的會跳過＝沒有新圖就什麼都不做。
+on:
+  schedule:
+    - cron: '0 18 * * *'   # 每天 UTC 18:00＝台北 02:00（離峰）
+  workflow_dispatch: {}    # Actions 頁面手動按「Run workflow」立刻跑
+
+jobs:
+  webp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # 腳本只靠 playwright＋Node 內建的 fetch／FormData／Blob，不用整包 npm ci
+      - run: npm install --no-save playwright@1.61.1
+      - run: npx playwright install --with-deps chromium
+      # 一個 node 一批 12 張、一批一批開新的（SCCD：小主機同一個 process 傳到十幾張連線就會出問題），
+      # 跑到全部轉完（連續 5 批沒有轉到任何一張）或 5 小時為止；沒跑完隔天接著轉
+      - run: |
+          deadline=$(( $(date +%s) + 18000 ))
+          zero=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            out=$(node scripts/convert-images-to-webp.cjs --limit 12 2>&1 || true)
+            echo "$out"
+            conv=$(echo "$out" | grep -c '✓' || true)
+            if [ "$conv" -eq 0 ]; then zero=$((zero + 1)); else zero=0; fi
+            if [ "$zero" -ge 5 ]; then echo "連續 5 批沒有可以轉的＝都轉完了"; break; fi
+            sleep 5
+          done
+        env:
+          DIRECTUS_TOKEN: ${{ secrets.DIRECTUS_TOKEN }}
+          BACKUP: webp-originals
+      # 換掉之前的原圖打包留 90 天（要還原＝Actions 那一次的頁面下載）
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webp-originals
+          path: webp-originals
+          if-no-files-found: ignore
+          retention-days: 90
