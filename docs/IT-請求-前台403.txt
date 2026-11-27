@@ -1,0 +1,101 @@
+【IT 協助請求】scaid.usc.edu.tw 檔案已上傳，但 CloudFront 所有路徑都回 403 AccessDenied
+提出單位：AI設計職人學位學程（SCAID）
+日期：2026-11-27
+
+前言：
+・學程已用 IT 提供的金鑰（IAM 使用者 scaid）把網站上傳到 S3 bucket「scaid.usc.edu.tw」（ap-northeast-2），
+  共 431 個檔案，也已經清過 CloudFront（distribution E3CYJ5880KIXQ3）的快取，清快取狀態 Completed。
+・檔案確實在 bucket 裡（例：index.html，4147 bytes，加密方式 SSE-S3／AES256，不是 KMS）。
+・但瀏覽 https://scaid.usc.edu.tw/ 的任何路徑（包括確定存在的 /index.html）都回：
+
+    HTTP/1.1 403 Forbidden
+    Server: AmazonS3
+    X-Cache: Error from cloudfront
+    <Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>
+
+  ＝CloudFront 去 S3 拿檔案時被 S3 拒絕，應該是「CloudFront 讀 bucket 的權限」還沒設好。
+・學程這組金鑰沒有讀取 bucket policy、distribution 設定的權限，看不到設定，只能請 IT 檢查。
+・最簡單的做法：比照 sccd.usc.edu.tw 那個 distribution 和它的 bucket 的設定（SCCD 現在正常）。
+・金鑰請勿寫進信件或文件。文中 <…> 為待填值。
+
+
+════════════════════════════════════════════════
+請檢查一：CloudFront 讀 S3 的權限（最可能的原因）
+════════════════════════════════════════════════
+
+  (1) distribution E3CYJ5880KIXQ3 的 S3 origin：
+        ・Origin domain＝scaid.usc.edu.tw.s3.ap-northeast-2.amazonaws.com（S3 的一般端點，不是 s3-website 端點）
+        ・Origin path＝空的（不要填 /Directus11 之類的子資料夾）
+        ・Origin access＝Origin access control（OAC），簽署方式 Sign requests
+
+  (2) bucket「scaid.usc.edu.tw」的 bucket policy 要允許這個 distribution 讀檔。
+      在 CloudFront 的 origin 設定頁選好 OAC 後，Console 會提供可以直接複製的 policy，內容大致如下：
+
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowCloudFrontRead",
+          "Effect": "Allow",
+          "Principal": { "Service": "cloudfront.amazonaws.com" },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::scaid.usc.edu.tw/*",
+          "Condition": {
+            "StringEquals": { "AWS:SourceArn": "arn:aws:cloudfront::<帳號ID>:distribution/E3CYJ5880KIXQ3" }
+          }
+        }
+      ]
+    }
+
+      ・這條加進既有的 policy（不要蓋掉 bucket 原本給其他用途的條目）。
+      ・Block Public Access 可以維持全開（用 OAC 不需要讓 bucket 公開）。
+
+  ⚠️ 注意 bucket 裡的 backup/ 資料夾：
+      上面那條 policy 允許讀整個 bucket（/*），設好之後 backup/ 裡的檔案也能從
+      https://scaid.usc.edu.tw/backup/… 直接下載。backup/ 是後台（Directus）舊檔案的備份，
+      若不想公開，請把它搬到別的 bucket，或把 Resource 改成只允許網站用到的路徑。
+
+
+════════════════════════════════════════════════
+請檢查二：上次請求的 CloudFront 設定（2026-11-26「前台上線」請求三）
+════════════════════════════════════════════════
+
+  因為目前每個路徑都讀不到，這幾項還驗不出來，請一併確認有設：
+
+  (1) Default root object：index.html
+  (2) Custom Error Response 兩條：
+        403 → /index.html → HTTP 200
+        404 → /index.html → HTTP 200
+        Error caching minimum TTL：0（或 5 秒以內）
+  (3) 快取標頭不用設：學程上傳時已經在檔案上加了 Cache-Control: no-cache（字體是長期快取）。
+
+  設定完成、distribution 狀態為 Deployed 後，請建立一次 invalidation（paths：/*）。
+
+
+════════════════════════════════════════════════
+（選填）讓學程之後能自己查設定
+════════════════════════════════════════════════
+
+  若方便，請給 IAM 使用者 scaid 加上唯讀權限，之後出問題學程可以先自己查：
+    ・s3:GetBucketPolicy（bucket scaid.usc.edu.tw）
+    ・cloudfront:GetDistribution、cloudfront:GetDistributionConfig（distribution E3CYJ5880KIXQ3）
+
+
+════════════════════════════════════════════════
+驗證（IT 或學程都可以執行）
+════════════════════════════════════════════════
+
+    curl -sI https://scaid.usc.edu.tw/                  → HTTP 200
+    curl -sI https://scaid.usc.edu.tw/css/output.css    → HTTP 200，帶有 Cache-Control: no-cache
+    curl -s  https://scaid.usc.edu.tw/about | head      → 內容是網站的 HTML，不是 <Error><Code>AccessDenied
+
+
+════════════════════════════════════════════════
+需要 IT 回覆
+════════════════════════════════════════════════
+
+  1. 請檢查一（OAC＋bucket policy）已設定完成
+  2. 請檢查二的 (1)(2) 有設定
+  3. backup/ 要不要搬走（或已限制路徑）
+
+聯絡窗口：AI設計職人學位學程網站負責人（此文件由學程提供）。
