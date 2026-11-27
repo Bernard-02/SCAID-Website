@@ -411,11 +411,9 @@
   /* 首頁的 play 鈕＝首頁的內容（手機 user 2026-11-24 起、桌面同一天跟進：「play 就不需要移動，只需要被模糊即可」）：選單開著同 #page-content、動態模糊＋疊 60% 白，
      原地不動；不吃指標＝按下去落在底列本身＝只收選單（chrome.js，同動態） */
   html.menu-open body[data-page="index"] .play-btn { filter: blur(var(--blur)); opacity: 0.4; pointer-events: none; }
-  /* 首頁展開動態＝清單在前、其他是背景（user 2026-11-24：「點擊 news 的時候，讓背景加上 blur，那 menu 跟 play 就沒辦法點擊」；
-     原本照常點得到＝選單疊在糊掉的清單上、play 開 intro）：底列的 menu、play 同上面選單開著時的 play——模糊＋疊 60% 白、不吃指標＝
-     按下去落在底列本身＝點動態以外的地方＝收回去（chrome.js）。跟底列的動態一起：展開就糊、清單滑走了（news-closing 拿掉）才回來。
-     logo 照常（同其他蓋上來的東西）。鍵盤照常按得到：Tab 到 menu 開選單＝選單開著時 menu 鈕照常清楚 */
-  html:is(.news-open, .news-closing):not(.menu-open) body[data-page="index"] .menu-btn,
+  /* 首頁展開動態＝清單在前、play 是背景（user 2026-11-24：「點擊 news 的時候，讓背景加上 blur，那 menu 跟 play 就沒辦法點擊」）：同上面選單開著時的 play——
+     模糊＋疊 60% 白、不吃指標＝按下去＝點動態以外的地方＝收回去（chrome.js）。跟底列的動態一起：展開就糊、清單滑走了（news-closing 拿掉）才回來。
+     **menu 鈕照常清楚、點得到**（user 2026-11-27：「我想要news打開的時候，menu不會blur，還是可以點擊」；11-24 起跟 play 一起糊、點不到）＝開選單、清單留著（糊＋疊白，見上）。logo 照常 */
   html:is(.news-open, .news-closing) body[data-page="index"] .play-btn { filter: blur(var(--blur)); opacity: 0.4; pointer-events: none; }
   /* 首頁展開動態：底列正中浮一顆骨牌、中央圓點常駐＝active（user 2026-11-25：「會有一個 icon 懸浮在畫面底部，就跟作品的那一頁一樣，但只有一個 icon，
      暫時先用點來表示 active，一樣背後要加上 blur」；背後＝作品頁那塊 .fs-blur，下面）。點了＝收回去（chrome.js；同 menu 鈕：開著圓點常駐、再點就關）。
@@ -426,6 +424,10 @@
   /* 展開著（含滑走那段）底列在清單底下（user 2026-11-25：「這個news在手機上，應該是z index在play上面」）：糊掉的 menu、play 是背景，被清單蓋到的地方看不到。
      z 0＝跟 #page-content 同一層、DOM 在前面＝畫在它底下。選單開著照舊浮在上面（menu 鈕要清楚、點得到） */
   html:is(.news-open, .news-closing):not(.menu-open) body[data-page="index"] .site-bar { z-index: 0; }
+  /* 底列在清單底下、main 整塊（滿版）又蓋在它上面＝menu 鈕點不到 → 展開著 main 不吃指標、只有清單那一欄（.page-body）吃：
+     點清單以外的地方落到底下＝menu 鈕，或 body（＝點動態以外的地方＝收回去，chrome.js）；捲動照常（滾輪落在 body＝捲整頁）。選單開著照舊整個不吃（上面 menu-open 那條） */
+  html:is(.news-open, .news-closing) body[data-page="index"] #page-content { pointer-events: none; }
+  html:is(.news-open, .news-closing):not(.menu-open) body[data-page="index"] .home-news-list .page-body { pointer-events: auto; }
   /* icon＝news.svg（user 2026-11-25 給的；先做的是骨牌＋中央圓點常駐＝暫代 active）：大小同其他 icon＝骨牌的高；hover＝下方一顆圓點（icon hover 那條） */
   .news-btn .icon { font-size: var(--block-h); opacity: 0; filter: blur(var(--blur)); transition: var(--transition-fade); }
   .news-btn .fs-blur > i { opacity: 0; }

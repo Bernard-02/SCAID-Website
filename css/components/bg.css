@@ -7,7 +7,9 @@
   body { isolation: isolate; }   /* body 自己一個 stacking context：z -1 的畫布才會在 body 底色上面、不是掉到它後面 */
   /* 白天 80%（user 2026-11-27：「白天的顔色濃度，我覺得可以調整多一點，目前是70%？可以改成80%」）、夜晚照舊 70% */
   html[data-theme="dark"] .bg { --bg-dense: 0.7; }
-  .bg { --bg-dense: 0.8; position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; opacity: var(--bg-dense); transition: var(--transition-fade); }
+  /* 高＝網址列收起來時的畫面高（lvh），不是 inset: 0（user 2026-11-27 手機回報「滑動的時候，畫面會閃，且這個筆刷在滑動時沒有連續性」：
+     手機一捲網址列就收放＝畫布跟著變高、bg.js 整張重建＝光清空、這一筆斷掉）。網址列在的時候底下多出來的那截被它蓋著。vh 是不認 lvh 的瀏覽器的備援 */
+  .bg { --bg-dense: 0.8; position: fixed; top: 0; left: 0; z-index: -1; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; opacity: var(--bg-dense); transition: var(--transition-fade); }
   /* 選單或放大 dialog 開著：背景當內容處理（同 chrome.css #page-content 那兩條：模糊＋疊白；user 2026-11-21）。選單開著照樣可以畫（user 2026-11-22），
      dialog 開著 bg.js 不畫新的。selector 的寫法同 chrome.css .top-blur::after 那條 */
   html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .bg { filter: blur(var(--blur)); opacity: calc(var(--bg-dense) * 0.4); }

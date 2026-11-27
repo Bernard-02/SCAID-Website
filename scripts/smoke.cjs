@@ -158,7 +158,7 @@ const swap = async (page, sel) => {
   await page.waitForFunction(`(${vt})().length > 0`, null, { timeout: 2000 }).catch(() => {});
   return page.evaluate(`(${vt})()`);
 };
-// key＝用鍵盤開：首頁動態展開著 menu 鈕點不到（chrome.css，user 2026-11-24），鍵盤照常按得到
+// key＝用鍵盤開（Enter；焦點移進選單＝chrome.js setMenu 的 keyboard）
 const openMenu = async (page, key = false) => { if (!(await has(page, 'menu-open'))) { if (key) { await page.focus('.menu-btn'); await page.keyboard.press('Enter'); } else await page.click('.menu-btn'); await page.waitForFunction(() => document.documentElement.classList.contains('menu-open')); } };
 // 桌面從選單換頁：選項的捲動框放不下全部選項、打開時又捲到當前頁（user 2026-11-25）→ 要點的那一項先捲到框的正中再點。
 // Playwright 自己捲只會捲到框的邊＝落在糊掉的那段，糊掉的選項不能點（user 同一天）＝點了沒反應
@@ -895,7 +895,7 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
   await m.click('.bar-news');
   await m.waitForFunction(() => document.documentElement.classList.contains('news-open'));
   await m.waitForTimeout(1100);   // 跑馬燈淡出（0.4s）＋ logo 上移（0.6s）
-  await openMenu(m, true);   // 展開著 menu 鈕點不到（user 2026-11-24）＝鍵盤開
+  await openMenu(m, true);   // 鍵盤開（展開著 menu 鈕也點得到，user 2026-11-27；這裡順便測鍵盤）
   await m.waitForTimeout(600);
   {
     const tops = await m.evaluate(() => new Promise(res => {
@@ -1270,9 +1270,10 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
     await d.evaluate(() => document.querySelector('[data-t]')?.removeAttribute('data-t'));
     assert(band > 100 && st === '0,rgb(0, 0, 0)', `首頁展開：hover 一則＝帶蓋上、收掉、不留東西，空心點變實心（帶 ${band}、${st}）`);
   }
-  // 首頁展開＝清單在前、底列的 menu、play 是背景（user 2026-11-24：「點擊 news 的時候，讓背景加上 blur，那 menu 跟 play 就沒辦法點擊」）：模糊＋疊白、不吃指標
-  assert(await d.$$eval('.site-bar :is(.menu-btn, .play-btn)', bs => bs.length === 2 && bs.every(b => { const s = getComputedStyle(b); return s.filter === 'blur(4px)' && s.opacity === '0.4' && s.pointerEvents === 'none'; })),
-    '首頁展開：底列 menu、play 模糊＋疊白、點不到');
+  // 首頁展開＝清單在前、底列的 play 是背景（user 2026-11-24）：模糊＋疊白、不吃指標；menu 鈕照常清楚、點得到（user 2026-11-27：「news打開的時候，menu不會blur，還是可以點擊」）
+  assert(await d.$eval('.site-bar .play-btn', b => { const s = getComputedStyle(b); return s.filter === 'blur(4px)' && s.opacity === '0.4' && s.pointerEvents === 'none'; })
+    && await d.$eval('.site-bar .menu-btn', b => { const s = getComputedStyle(b), r = b.getBoundingClientRect(); return s.filter === 'none' && s.opacity === '1' && b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }),
+    '首頁展開：底列 play 模糊＋疊白、點不到；menu 鈕清楚、點得到');
   // 首頁展開：底列正中浮一顆 icon（news.svg，user 2026-11-25 給的；先做的是骨牌＋圓點常駐）、高＝骨牌、背後毛玻璃（user 同一天：「跟作品的那一頁一樣，但只有一個 icon…一樣背後要加上 blur」）
   { const nb = await d.evaluate(() => { const n = /** @type {Element} */ (document.querySelector('.news-btn')), r = n.getBoundingClientRect(), b = /** @type {Element} */ (n.querySelector('.fs-blur'));
       const ic = /** @type {Element} */ (n.querySelector('.icon-news')), mb = /** @type {Element} */ (document.querySelector('.menu-btn .bar-rect'));
@@ -1281,8 +1282,9 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
         Math.abs(ic.getBoundingClientRect().top - mb.getBoundingClientRect().top) < 0.5, getComputedStyle(/** @type {Element} */ (document.querySelector('.site-bar'))).zIndex].join(); });
     // 對在底列那一排（同 menu 鈕的高度）；底列降到清單底下＝z 0（user 2026-11-25：「這個news在手機上，應該是z index在play上面」）
     assert(nb === 'visible,1,true,block,1,0.6,true,true,0', `首頁展開：底列正中一顆 news icon（高＝骨牌、沒有骨牌）、背後毛玻璃（${nb}）`); }
-  // 首頁展開＋選單開（user 2026-11-21）：展開的動態不右推——清單留在 logo 底下（左緣 384），只模糊＋疊白（原本跟內容一起右推）。menu 鈕點不到＝鍵盤開
-  await openMenu(d, true);
+  // 首頁展開＋選單開（user 2026-11-21）：展開的動態不右推——清單留在 logo 底下（左緣 384），只模糊＋疊白（原本跟內容一起右推）。滑鼠點 menu 鈕開（user 2026-11-27 起點得到）
+  await openMenu(d);
+  assert(await has(d, 'news-open'), '首頁展開：點 menu 鈕＝開選單、清單還開著');
   await d.mouse.move(640, 300);
   await d.waitForTimeout(700);
   {
@@ -1295,10 +1297,10 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
   await d.waitForTimeout(300);
   assert(!(await has(d, 'menu-open')) && await has(d, 'news-open'), '首頁展開＋選單開：點內容＝只收選單、清單還開著');
   await d.waitForTimeout(500);
-  // 點在糊掉的 menu 鈕上也算動態以外（user 2026-11-24：menu 點不到＝落在底列本身）：收回去、不開選單
-  { const mb = await rect(d, '.menu-btn'); await d.mouse.click(mb.left + mb.width / 2, mb.top + mb.height / 2); }
+  // 點清單以外的地方＝收回去（main 展開著不吃指標、只有清單那一欄吃＝落在 body）
+  await d.mouse.click(1100, 400);
   assert(await d.waitForFunction(() => !document.documentElement.classList.contains('news-open'), null, { timeout: 2000 }).then(() => true, () => false) && !(await has(d, 'menu-open')),
-    '首頁展開：點動態以外的地方＝收回去（點在糊掉的 menu 鈕上也是、不開選單）');
+    '首頁展開：點動態以外的地方＝收回去');
   // 捲軸跟著清單淡掉、滑完才藏（user 2026-11-23：「news 離開的時候，scrollbar 的消失也是 fade out 才對」）：逐幀記 opacity，藏起來了＝null
   { const fo = await d.evaluate(() => new Promise(res => { const t = /** @type {HTMLElement} */ (document.getElementById('custom-scrollbar-thumb')), out = /** @type {(number | null)[]} */ ([]);
       const tick = () => { const cs = getComputedStyle(t); out.push(cs.display === 'none' ? null : Number(cs.opacity)); if (out.at(-1) !== null && out.length < 150) requestAnimationFrame(tick); else res(out); }; tick(); }));
@@ -2267,13 +2269,13 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
       const home = diff(await ink(), was);
       assert(full < 0.08 && home < 0.02 && await name(r) === n1, `object：直拖一整圈＝翻過去、回到原來的樣子（差 ${full.toFixed(3)}）；拖半圈放開＝回到正面（差 ${home.toFixed(3)}）`);
       await r.close(); }
-    // 手機：平常不出、也不載模型；右緣的鈕點了才搬進 dialog、一打開就露出名字、露著照樣換下一個（logo 跟著換名字），點它收起／再露，關掉搬回殼上
+    // 手機：平常不出、也不載模型，只輪名字給 logo（user 2026-11-27：原本一直是系名的完整長度）；右緣的鈕點了才搬進 dialog、一打開就露出名字、露著照樣換下一個（logo 跟著換名字），點它收起／再露，關掉搬回殼上
     // （user 2026-11-27：「打開時就是直接reveal這個圖的名字」「頂部的logo應該要一直改變長度，根據圖片的變化」；原本打開是 stroke、點了才露、露著就停住不換）
     const p = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
     await watch(p, { logo: true });
     let bins = 0; p.on('request', r => { if (/\/objects\/.+\.bin/.test(r.url())) bins++; });
     await p.goto(base + '/pages/about.html');
-    assert(await lg(p, 'dept', 'stroke'), '手機：object 沒打開，logo 是系名的 stroke');
+    assert(await lg(p, 'obj', 'stroke'), '手機：object 沒打開，logo 照樣是物件名字的 stroke');
     await p.waitForTimeout(1500);
     assert(bins === 0, `手機：object 沒打開就不載模型（抓了 ${bins} 個）`);
     await p.waitForFunction(() => getComputedStyle(document.querySelector('.figure-btn')).opacity === '1');
@@ -2481,6 +2483,7 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
       return { open: d.open, tag: b?.tagName || '', src: b?.getAttribute('src') || '', nav: d.classList.contains('has-nav'), mode: /** @type {HTMLElement} */ (document.querySelector('.works')).dataset.mode }; });
     await w.click('.work:has(img[src$="/f3"]) .work-hit'); await w.waitForTimeout(600);
     let box = await lb();
+    const y0 = await w.evaluate(() => scrollY);
     assert(box.open && box.tag === 'IMG' && /\/f3$/.test(box.src) && box.nav && box.mode === 'bento', `作品總覽：點一個＝就地開 lightbox（不切到放映）、一組可以左右切（${JSON.stringify(box)}）`);
     // 切換＝淡出 → 換 → 淡入（user 2026-11-24：「作品頁面中的影片跟圖片切換，要用 fade in out」）：一按先淡掉、還是原本那張，淡完才換成影片
     await w.keyboard.press('ArrowRight'); await w.waitForTimeout(150);
@@ -2493,14 +2496,9 @@ const menuGo = async (page, href) => { await openMenu(page); await page.waitForT
     await w.keyboard.press('Escape'); await w.waitForTimeout(700);
     box = await lb();
     assert(!box.open && !box.tag && box.mode === 'bento', `作品總覽：關 lightbox＝影片拿掉（不留在背景播）、還在總覽（${JSON.stringify(box)}）`);
-    // lightbox 切到別的作品再關＝背景的總覽對齊最後看的那一個（user 2026-11-24：「離開時應該要讓背景的 grid 對齊到之前查看的那個作品」）：
-    // 那一個在畫面正中；捲不到（在頁頭／頁尾附近）＝捲到頭為止（scrollIntoView center 的規矩）
-    const aligned = await w.evaluate(() => {
-      const r = /** @type {Element} */ (document.querySelector('.work[data-vid="PLaaa-v"]')).getBoundingClientRect(), mid = r.top + r.height / 2 - innerHeight / 2;
-      const max = document.documentElement.scrollHeight - innerHeight;
-      return Math.abs(mid) < 2 || (scrollY <= 0 && mid > 0) || (scrollY >= max - 1 && mid < 0) ? true : `mid ${mid} scrollY ${scrollY}/${max}`;
-    });
-    assert(aligned === true, `作品總覽：lightbox 切到別的再關＝背景對齊最後看的那一個（${aligned}）`);
+    // lightbox 切到別的作品再關＝背景的總覽不動（user 2026-11-27 拿掉 11-24 的「背景對齊最後看的那一個」）
+    const y1 = await w.evaluate(() => scrollY);
+    assert(y1 === y0, `作品總覽：lightbox 切到別的再關＝背景不跟著捲（${y0} → ${y1}）`);
     // 切回放映＝從總覽最後看的那一個開始（兩種排法同一個順序、同一個 active；lightbox 裡切到哪就記到哪）
     await w.click('.bar-works [data-works-mode="slideshow"]'); await w.waitForTimeout(800);
     s = await works();

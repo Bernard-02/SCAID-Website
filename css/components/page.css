@@ -145,7 +145,7 @@
   img.footer-badge { width: auto; max-width: 100%; background: none; }   /* 後台標章圖：高同佔位、寬照比例 */
 
   /* 師資詳細頁的照片：寬同列表縮圖，下面接名字＋副標（user 2026-11-21：上下排） */
-  .profile-photo { width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-md); }
+  .profile-photo { position: relative; width: var(--item-thumb-w); aspect-ratio: 1; background: var(--light-gray); margin-bottom: var(--spacing-md); }
   /* 學歷／經歷…一筆一筆：筆與筆之間 sm（上面年表那條；user 2026-11-23 原本不空、看不出是一筆一筆 → 標題到第一筆的距離 xs → 2026-11-24 sm）。
      一組（標題＋那幾筆）＝一塊 .subsection、包在 .subsections（上面關於的小節那幾條）：組與組之間＝gap xl（同關於的小節，user 2026-11-25）
      （user 2026-11-24：「所有的 list 的 gap 都調整跟 activities 的一樣」；原本組之間＝h3 的上距 md） */
@@ -373,10 +373,11 @@
      負 margin 抵掉 md − sm。上面沒東西（相簿排第一個）不動 */
   .fold-body > * + .album.is-ready { margin-top: calc(var(--spacing-sm) + var(--lead) - var(--spacing-md)); }
   /* 圖 ↔ 字補半個行距（--lead，variables.css；user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」）：
-     上面那條＝字 → 相簿；這條＝相簿 → 下面的字（入學的附件）；PC 摘要的底是縮圖（有圖的列）→ 展開的第一行字。
-     手機圖在上、字在下＝摘要的底是字，不用補 */
+     上面那條＝字 → 相簿；這條＝相簿 → 下面的字（首頁 news 的附件）；PC 摘要的底是縮圖框 → 展開的第一行字。
+     縮圖框沒有圖（直條跑馬燈的佔位）也算（user 2026-11-27：「pt那邊要加上line height，視覺上才會跟title跟副標那邊對齊」——原本只認有 img 的框，
+     佔位框的列少了這半個行距）。手機圖在上、字在下＝摘要的底是字，不用補 */
   .fold-body > .album.is-ready + * { margin-top: var(--lead); }
-  @media (min-width: 768px) { details:has(> summary > .item-thumb img) > .fold-body { padding-top: calc(var(--spacing-sm) + var(--lead)); } }
+  @media (min-width: 768px) { details:has(> summary > .item-thumb) > .fold-body { padding-top: calc(var(--spacing-sm) + var(--lead)); } }
   /* 內容整片模糊＋疊白的時候（選單、放大 dialog 開著；條件同 chrome.css）：相簿、輪播（關於、作品放映）兩側的模糊那層淡掉——
      它是 backdrop-filter，包在有 filter／opacity 的內容裡，有的瀏覽器會畫成沒疊到白（user 2026-11-24：「點擊 gallery 的時候，這個 blur 會去掉白色的 overlay」）；
      整片都糊了也用不著 */
@@ -467,7 +468,8 @@
      換掉的做法——2026-11-25 稍早：旁邊的圖橫向擠扁＋目前那張以外整段糊 2px、再之前框寬一成的平模糊；
      11-23：左右各伸出框外一個 gutter（「blur 是包含整個 box 的邊緣要有，不只是往內加上 blur」——2026-11-25 晚改成框邊對齊文字欄、從邊往內淡）；
      11-24：上下各伸 1.5rem 讓模糊往照片的上下暈出去（「左右的 fade，是會延伸到上下的區塊」） */
-  .slide-strip { position: absolute; inset: 0; overflow: clip; }
+  /* 手機左右拖＝跟著手指走（slideshow.js；user 2026-11-27）；上下照常捲、捏合照常縮放 */
+  .slide-strip { position: absolute; inset: 0; overflow: clip; touch-action: pan-y pinch-zoom; }
   .slide-strip:not(:has(.slide + .slide)) { --edge-start: 0; --edge-end: 0; }
   /* 位置＝slideshow.js 每幀寫 transform（跑馬燈，user 2026-11-26；原本 left／width 的 CSS 過場） */
   .slide { position: absolute; top: 0; left: 0; height: 100%; padding: 0; border: 0; background: var(--light-gray); cursor: pointer; }

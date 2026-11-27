@@ -206,7 +206,7 @@ function openObjectDialog(e) {
 // 同一組「封面（第一張）＋相簿」可左右切（user 2026-11-19；原本點封面只有那一張）。多於一張才出 ‹ ›（.has-nav）；到頭的那邊 disabled
 // 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕；關閉＝‹ X › 正中那顆）、開著＝關燈
 let figureItems = /** @type {Element[]} */ ([]), figureIndex = 0;
-let figureStep = /** @type {((i: number) => void) | null} */ (null);   // 切到第幾個時叫（openFigure 給；作品總覽：背景跟著捲過去）
+let figureStep = /** @type {((i: number) => void) | null} */ (null);   // 切到第幾個時叫（openFigure 給；作品總覽：記住看到哪一個）
 // 多細長的圖才撐寬往下捲：高 ≥ 寬 × TALL（user 2026-11-25：「要決定一個適合的長寬比，才需要觸發scroll的行爲」→ 2＝比 1:2 還細長）。
 // 一般直式照片（4:5、3:4、2:3）整張塞進框；手機截圖（約 1:2.2）、動態裡報導的長截圖撐寬。原本只要是直式就撐寬＝桌面上直式照片也要捲
 const TALL = 2;
@@ -269,7 +269,7 @@ function fadeInIcons(d) {
 }
 /** 作品頁的總覽也用它（user 2026-11-23：點了就地開 lightbox，一組＝總覽全部；影片的節點＝youtubeFrame，切到才載、切走就停）
  *  @param {Element | null} node @param {MouseEvent} e @param {Element[]} [items] 這一組（不給＝只有這一張）
- *  @param {(i: number) => void} [onStep] 上一個／下一個切到第 i 個時叫（作品總覽：背景的總覽跟著捲到那一個） */
+ *  @param {(i: number) => void} [onStep] 上一個／下一個切到第 i 個時叫（作品總覽：記住看到哪一個＝切回放映從它開始） */
 export function openFigure(node, e, items, onStep) {
   const dialog = figureDialog();
   if (!dialog || !node) return;

@@ -15,7 +15,8 @@
  *   - 游標在 object 上（觸控：點一下、或拖著的時候）＝logo 露出它的名字，而且不換下一個；移開後從頭等一輪。
  *   - 放在殼上＝換頁不重來。PC：疊在當頁右圖那一格（page.css .page-figure > *）上，每一幀照它的位置擺；首頁沒有那一格＝不顯示。
  *     首頁 → 內頁（user 2026-11-23）：logo 上移的途中（html.logo-moving，router.js）先不出場、只先抓第一個模型，移完跟 logo 變形同時出場。
- *     PC 以外（手機、iPad；user 2026-11-23）：平常不出、也不跑（不載模型），底列右下角那顆鈕點了才搬進放大 dialog（chrome.js 叫 openObject／closeObject）。
+ *     PC 以外（手機、iPad；user 2026-11-23）：平常不出、不畫、不載模型，底列右下角那顆鈕點了才搬進放大 dialog（chrome.js 叫 openObject／closeObject）；
+ *     沒打開的時候只輪名字（names）＝logo 照樣跟著一個一個物件換 stroke 的長度（user 2026-11-27：手機上 logo 一直是系名的完整長度），打開＝接著從那一個開始。
  *   - 名字跟著網站語言（中／英）回報給 logo（logo.js logoObject）：內頁 logo 的 stroke 長度＝名字的長度。
  * 減少動態＝不換、不自己轉，只畫第一個的正面（照樣可以拖著轉、放開直接回正面）。<html data-logo-still>（煙霧測試其他段落）＝整個不跑。
  */
@@ -65,6 +66,8 @@ const off = () => root.hasAttribute('data-logo-still');   // 煙霧測試：整�
 const still = () => prefersReducedMotion();
 const slot = () => document.querySelector('#page-content .page-figure > *');
 const visible = () => !off() && !root.classList.contains('logo-moving') && (inDialog || (wide.matches && !!slot()));
+const names = () => !off() && !root.classList.contains('logo-moving') && !inDialog && !wide.matches && !!slot();   // PC 以外、有右圖的頁、沒打開：不畫，只輪名字給 logo
+let nameTimer = 0;
 const dark = () => root.dataset.theme === 'dark';
 
 // 目前的姿態再繞畫面的直軸轉 a、橫軸轉 b（弧度）：每次都是接著轉＝沒有盡頭、可以翻到任何一面。
@@ -183,7 +186,7 @@ function load(/** @type {Item} */ o) {
 function report() {
   const o = nxt || cur, zh = !root.lang.startsWith('en');
   if (canvas) canvas.setAttribute('aria-label', o ? (zh ? o.zh : o.en) : '');
-  logoObject(o && visible() ? { text: zh ? o.zh : o.en, zh, reveal } : null);
+  logoObject(o && (visible() || names()) ? { text: zh ? o.zh : o.en, zh, reveal } : null);
 }
 // 換成 o：舊的出場、新的進場，兩個都照當下的姿態一直轉（user 2026-11-27：「我想要3d模型在切換的時候不停下旋轉，下一個應該銜接上一個模型，它們是不會停止旋轉的」；
 // 原本換的途中兩個都停住、舊的停在當下的角度、新的從正面進場，換完歸回正面）。每一根什麼時候開始淡＝照它落在哪一格（列 × 橫向的格）各抽一個時間點：
@@ -240,7 +243,7 @@ function frame(/** @type {number} */ now) {
     if (back && !still()) { const t = back.t = Math.min(1, back.t + dt / BACK); R = blend(back.q, quat(spun(spin)), t * t * (3 - 2 * t)); if (t >= 1) back = null; }
     else { R = spun(spin); back = null; }
   }
-  const key = nxt ? '' : `${cur?.slug}|${dark()}|${R.join()}`;
+  const key = nxt ? '' : `${cur?.slug}|${!!cur?.model}|${dark()}|${R.join()}`;
   if (key && key === drawn) return;   // 沒在換、視角也沒變：不重畫
   if (!drag && !nxt && now - drewAt < FRAME_MS) return;
   drewAt = now; drawn = key;
@@ -272,6 +275,13 @@ function sync() {
   canvas.classList.toggle('is-on', on && !inDialog);
   if (on && !cur && !nxt) advance();   // 第一個模型已經抓好（logo 上移的途中先抓了）＝馬上開始進場，名字同時給 logo
   if (on && !raf) { last = performance.now(); drawn = ''; raf = requestAnimationFrame(frame); }
+  if (on && cur && !cur.model) load(cur);   // 沒打開時輪到的那一個只有名字＝打開才抓
+  if (names()) {
+    if (!cur && !nxt) cur = list[order[at = (at + 1) % order.length]];
+    // 一個停多久同畫得出來的時候（轉一圈＋換一次）；減少動態＝不換
+    const tick = () => { nameTimer = 0; if (!names() || still()) return; nxt = swap = pending = null; cur = list[order[at = (at + 1) % order.length]]; report(); nameTimer = window.setTimeout(tick, HOLD + SWAP); };
+    if (!nameTimer && !still()) nameTimer = window.setTimeout(tick, HOLD + SWAP);
+  }
   report();
 }
 
@@ -332,7 +342,7 @@ export function openObject(box) {
   if (!canvas) return;
   canvas.style.cssText = placed = '';
   box.replaceChildren(canvas);
-  inDialog = true; reveal = true; sync(); report();   // 打開就露出名字（user 2026-11-27：「打開時就是直接reveal這個圖的名字」）；點一下照舊收起來／再露
+  inDialog = true; reveal = true; hold = HOLD; clearTimeout(nameTimer); nameTimer = 0; sync(); report();   // 打開就露出名字（user 2026-11-27：「打開時就是直接reveal這個圖的名字」）；點一下照舊收起來／再露
 }
 export function closeObject() {
   if (!canvas || !inDialog) return;

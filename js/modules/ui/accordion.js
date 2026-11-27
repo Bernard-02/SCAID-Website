@@ -75,7 +75,7 @@ function tween(d, closing, easing, snap = false) {
     anims.forEach(a => a.cancel());
     running.delete(d);
   }, () => {});
-  return { anims, to };
+  return { anims, from, to };
 }
 
 export function initAccordion() {
@@ -102,14 +102,20 @@ export function initAccordion() {
       return;
     }
     e.preventDefault();   // 開合自己來（鍵盤 Enter／空白鍵也是走 click）
-    for (const o of others) tween(/** @type {HTMLDetailsElement} */ (o), true, easing, true);
+    // 只有在點的這一則上面的，縮掉的量會把它往上帶
+    const above = others.map(o => ({ o, ...tween(/** @type {HTMLDetailsElement} */ (o), true, easing, true) }))
+      .filter(f => f.o.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING);
     const { anims, to } = tween(d, closing, easing);
     if (closing) return;   // 收起＝不捲（一次只開一個＝收的時候沒有別則在動）
-    const y1 = goal(to);
-    // 跟著這一則的高度補間滑到 y1（同進度、同曲線）；高度長完了、上面那幾則還在縮＝停在 y1 繼續補。這一則被掉頭／又點了別則＝交給新的那一組
+    const y1 = goal(to), s0 = scrollY;
+    const at = (/** @type {Animation} */ a) => a.effect?.getComputedTiming().progress ?? 1;
+    // 跟著這一則的高度補間滑到 y1（同進度、同曲線）；高度長完了、上面那幾則還在縮＝停在 y1 繼續補。這一則被掉頭／又點了別則＝交給新的那一組。
+    // 捲動照算的寫、每一幀不量那一列在哪（user 2026-11-27 手機回報「對齊效果都會有個抖動」：手機的捲動在另一條執行緒，JS 讀回來的位置會慢一拍，
+    // 照量的補＝補過頭又拉回來；模擬器量不出來）。上面那幾則縮掉的量＝snap 寫進去的同一個整數
     requestAnimationFrame(function glide() {
       if (running.has(d) && running.get(d) !== anims) return;
-      put(y0 + (y1 - y0) * (anims[0].effect?.getComputedTiming().progress ?? 1));
+      const shift = above.reduce((s, f) => s + Math.round((f.to - f.from) * at(f.anims[0])), 0);
+      window.scrollTo({ top: s0 + shift - (y1 - y0) * at(anims[0]), behavior: 'instant' });
       if (running.has(d) || others.some(o => running.has(/** @type {HTMLDetailsElement} */ (o)))) requestAnimationFrame(glide);
     });
   });

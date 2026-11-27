@@ -55,7 +55,8 @@ export function initSlideshow() {
     const items = [...slides];   // 原本那幾張＋複製的
     /** @type {number[]} */ let w = [];   // 每張的寬
     /** @type {number[]} */ let b = [];   // 每張排在整圈的哪裡（第一張的左緣＝0）
-    let box = 0, M = 0, T = 1, o = NaN, v = 0, focus = false, last = 0, raf = 0, inView = false;
+    let box = 0, M = 0, T = 1, o = NaN, v = 0, focus = false, last = 0, raf = 0, inView = false, dragged = false;
+    /** @type {{ x: number, y: number, o: number, on: boolean, t: number, vx: number } | null} */ let drag = null;
     /** @type {{ from: number, to: number, t0: number } | null} */ let glide = null;
     // 第 j 張的左緣在框的哪裡：整圈長 T、往左走了 o；左邊留 M（最寬一張＋gutter）＝走出框才繞到最後面
     const xOf = (/** @type {number} */ j) => n < 2 ? (box - w[j]) / 2 : mod(b[j] - o + M, T) - M;
@@ -94,7 +95,7 @@ export function initSlideshow() {
     const run = () => { if (!raf && inView && n > 1) { last = 0; raf = requestAnimationFrame(tick); } };
     const tick = (/** @type {number} */ now) => {
       raf = 0;
-      if (!inView) return;
+      if (!inView || drag?.on) return;   // 拖著＝位置交給手指（pointermove），放開再叫 run
       const dt = Math.min(0.1, (now - (last || now)) / 1000);   // 分頁切走再回來＝不一下子跳一大段
       last = now;
       if (glide) {
@@ -128,7 +129,32 @@ export function initSlideshow() {
       if (focus) center(items.indexOf(/** @type {HTMLButtonElement} */ (e.target)));
     });
     root.addEventListener('focusout', () => { focus = false; run(); });
+    // 手機左右拖＝整列跟著手指走（user 2026-11-27：「about的輪播，在手機上也可以drag」）；放開＝帶著手指的速度滑出去、慢慢回到跑馬燈的速度（BRAKE）。
+    // 滑鼠不算（同作品頁的放映）；上下照常捲（page.css touch-action）；拖過的那一下不算點
+    strip.addEventListener('pointerdown', e => {
+      dragged = false;
+      if (e.pointerType !== 'mouse' && e.isPrimary && n > 1) drag = { x: e.clientX, y: e.clientY, o, on: false, t: e.timeStamp, vx: 0 };
+    });
+    strip.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.on && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - drag.y)) { drag.on = true; drag.x = e.clientX; glide = null; }
+      if (!drag.on) return;
+      const dt = Math.max(1, e.timeStamp - drag.t), no = drag.o - (e.clientX - drag.x);
+      drag.vx = 0.7 * ((no - o) / dt * 1000) + 0.3 * drag.vx;   // 手指的速度（px/s，順一下）
+      drag.t = e.timeStamp; o = no; place();
+    });
+    const release = (/** @type {PointerEvent} */ e) => {
+      if (!drag) return;
+      // 停住才放手（最後一次移動超過 0.1 秒前）＝不帶速度；甩得再快也最多 3000px/s
+      if (drag.on) { dragged = true; v = e.timeStamp - drag.t > 100 ? 0 : Math.max(-3000, Math.min(3000, drag.vx)); }
+      drag = null;
+      run();
+    };
+    strip.addEventListener('pointerup', release);
+    strip.addEventListener('pointercancel', release);
     strip.addEventListener('click', e => {
+      if (dragged) { dragged = false; return; }
       const s = e.target instanceof Element ? e.target.closest('.slide') : null;
       center(items.indexOf(/** @type {HTMLButtonElement} */ (s)));
     });

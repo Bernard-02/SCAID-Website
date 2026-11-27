@@ -28,7 +28,7 @@
 import { prefersReducedMotion } from './reduce-motion.js';
 
 // 有板子的縮圖：清單列（整列連結、摺疊、師資／合作企業不能點的那種列）裡有圖的縮圖；沒圖的佔位不做
-const THUMBS = ':is(a.item-row, .page-body summary.item-row, .item-list[data-cms] div.item-row) > .item-thumb:has(img)';
+const THUMBS = ':is(a.item-row, .page-body summary.item-row, .item-list[data-cms] div.item-row) > .item-thumb:has(img), .profile-photo:has(img)';   // 老師詳細頁的照片也有（user 2026-11-27）
 const LOOP = 1.6;      // 一輪（3 條）多長＝幾個圖寬（user 2026-11-27：「板子的寬度都可以再大一點」；原本 1）
 const WMIN = 0.35;     // 一輪 3 條的寬＝各抽 WMIN～WMIN＋1 再照比例撐滿一個圖寬（WMIN 越小，寬窄差越多；0.35＝最寬最多約最窄的 3.9 倍）
 const GAP = 0.18;      // 條與條之間的空隙：每一格兩邊各讓出這一格寬的幾成（背景是 0.15～0.21 之間慢慢變）
@@ -183,8 +183,8 @@ function frame(ts) {
 
 /** 縮圖一出現就建板子（還不畫：捲進畫面才畫） @param {HTMLElement} thumb @param {IntersectionObserver} io */
 function build(thumb, io) {
-  if (boards.has(thumb) || !gl()) return;
-  const img = thumb.querySelector('img'), row = /** @type {HTMLElement | null} */ (thumb.closest('.item-row'));
+  if (boards.get(thumb)?.canvas.isConnected || !gl()) return;   // 詳細頁重畫照片（innerHTML 換掉）＝畫布跟著沒了、重建
+  const img = thumb.querySelector('img'), row = /** @type {HTMLElement | null} */ (thumb.closest('.item-row') || thumb);   // 詳細頁的照片不在列裡＝畫布掛在照片框自己裡面
   const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
   if (!img || !row || !ctx) return;
   canvas.className = 'thumb-board';

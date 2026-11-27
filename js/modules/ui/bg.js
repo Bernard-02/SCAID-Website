@@ -841,7 +841,9 @@ void main() {
   // 兩指（捏合縮放）不畫
   let tap = null;
   const touchAt = (e) => (e.touches.length === 1 && !hold() ? e.touches[0] : null);
-  addEventListener('touchstart', (e) => { const t = touchAt(e); tap = t && { x: t.clientX, y: t.clientY, at: e.timeStamp }; if (t) { point(t.clientX, t.clientY, e.timeStamp); wake(); } }, { passive: true });
+  // 手指按下去＝新的一筆（S = null）：上一下滴的漆還在流的時候 draw 會再拿起一支筆（停在漆那裡），不斷開的話這一點會從那裡連一條線過來
+  // （user 2026-11-27：「點畫面兩個不同的spot時，會發現這些spot會彼此連綫」）
+  addEventListener('touchstart', (e) => { const t = touchAt(e); tap = t && { x: t.clientX, y: t.clientY, at: e.timeStamp }; if (t) { S = null; point(t.clientX, t.clientY, e.timeStamp); wake(); } }, { passive: true });
   addEventListener('touchmove', (e) => {
     const t = touchAt(e); if (!t) return;
     if (tap && Math.hypot(t.clientX - tap.x, t.clientY - tap.y) > 10) tap = null;

@@ -229,16 +229,13 @@ export function initWorks() {
   };
   /** 總覽點了＝就地開 lightbox（user 2026-11-23；原本切到放映）：chrome.js 的放大 dialog，一組＝總覽全部、照排的順序，可以左右切；
    *  圖＝那張圖、影片＝YouTube 播放器（切到那一個才載、切走就停）。看到哪一個就記成 active＝之後切到放映從它開始；
-   *  切一個，背景的總覽就把那一個捲到畫面中間（user 2026-11-24：「離開時應該要讓背景的 grid 對齊到之前查看的那個作品」；背景這時是糊的，關掉就對好了）
+   *  背景的總覽不跟著捲（user 2026-11-27：「去掉那個打開lightbox時，後面的grid會自動對齊當前查看的圖片的效果」；11-24 做的是切一個就把那一個捲到畫面中間）
    *  @param {HTMLElement} w @param {MouseEvent} e */
   const lightbox = (w, e) => {
     const ws = works(), items = ws.map(x => x.dataset.kind === 'video' && x.dataset.vid ? youtubeFrame(x.dataset.vid, x.querySelector('img')?.alt || 'YouTube') : x.querySelector('img'));
     const shown = ws.filter((_, i) => items[i]);   // 跟 dialog 那一組同一個順序（沒圖的不在裡面）
     active = ws.indexOf(w);
-    openFigure(items[active], e, /** @type {Element[]} */ (items.filter(Boolean)), (i) => {
-      active = ws.indexOf(shown[i]);
-      shown[i]?.scrollIntoView({ block: 'center', behavior: 'instant' });
-    });
+    openFigure(items[active], e, /** @type {Element[]} */ (items.filter(Boolean)), (i) => { active = ws.indexOf(shown[i]); });
   };
   /** 換排法（底列那組鈕；兩種排法同一個順序、同一個 active＝放映剛剛那一個、總覽剛剛點開的那一個）：作品淡出 → 換 → 淡入（網站 fade，works.css .is-switching），位置不補間（兩套版型，補了會滿畫面亂飛）。
    *  不走 fadeSwap（View Transition）：Windows 的 WebKit 換這兩套版型時整頁當掉（2026-11-23 實測；直接換、減少動態都沒事） @param {string} mode @param {number} [at] */
