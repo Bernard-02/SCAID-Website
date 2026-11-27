@@ -16,13 +16,6 @@
     flex-shrink: 0;
   }
 
-  /* size tier：XL 32 強調主操作；L 24 主控按鈕；M 20 箭頭／chevron；S 16 inline；XS 14 輔助 */
-  .icon-xl { font-size: 2rem; }
-  .icon-l  { font-size: 1.5rem; }
-  .icon-m  { font-size: 1.25rem; }
-  .icon-s  { font-size: 1rem; }
-  .icon-xs { font-size: 0.875rem; }
-
   /* user 2026-11-24 給的那套（docs/SCAID icon.ai，檔名照 ai 裡每個 icon 下面的名字）：每個都畫在高 70 的框裡（＝logo 骨牌的高），
      play、day、slideshow、grid 跟骨牌一樣 45×70。重出圖＝scripts/build-icons.cjs 重抽、蓋同名檔，它印出來的寬高抄進這裡的 --ar。
      站上的大小一律＝menu 鈕那顆骨牌的高（font-size: var(--block-h)；user 2026-11-24：「icon 的高度都跟 menu 的那個一樣」）：
@@ -40,7 +33,8 @@
   .icon-news        { --icon: url('../website-icons/news.svg'); --ar: 45.08 / 70; }   /* 首頁展開動態時底部正中那顆（user 2026-11-25 自己加的；chrome.css .news-btn） */
   .icon-shrink      { --icon: url('../website-icons/shrink.svg'); --ar: 45.08 / 70; }   /* 全螢幕中那顆鈕換成這張（user 2026-11-25 自己加的；chrome.css .media-fs） */
   .icon-close       { --icon: url('../website-icons/close.svg'); --ar: 32.675 / 70; }
-  .icon-theme       { --icon: url('../website-icons/day.svg'); --ar: 45.084 / 70; }   /* 深色模式鈕：ai 的 night＝day 轉半圈 → 深色時轉（chrome.css） */
+  .icon-day         { --icon: url('../website-icons/day.svg'); --ar: 45 / 70; }     /* 深色模式鈕：淺色時（兩張疊在同一格、hover 淡成另一張，chrome.css；user 2026-11-27 給的 day、night） */
+  .icon-night       { --icon: url('../website-icons/night.svg'); --ar: 45 / 70; }   /* 深色模式鈕：深色時 */
   .icon-slideshow   { --icon: url('../website-icons/slideshow.svg'); --ar: 45.084 / 70; }   /* 作品頁的排法：放映／總覽 */
   .icon-grid        { --icon: url('../website-icons/grid.svg'); --ar: 45.084 / 70; }
   .icon-ig          { --icon: url('../website-icons/ig.svg'); --ar: 45.08 / 70; }   /* 聯絡頁的 Instagram（user 2026-11-24 給的 SCAID IG＝骨牌挖一個鏡頭） */

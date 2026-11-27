@@ -25,8 +25,6 @@ export const PAGE_FILES = {
   curriculum: 'pages/curriculum.html',
   works: 'pages/works.html',
   activities: 'pages/activities.html',
-  records: 'pages/records.html',
-  admission: 'pages/admission.html',
   donate: 'pages/donate.html',
   regulations: 'pages/regulations.html',
   sitemap: 'pages/sitemap.html',
@@ -44,8 +42,6 @@ export const SLUG_DEFAULTS = {
   'page.curriculum': 'curriculum',
   'page.works': 'works',
   'page.activities': 'activities',
-  'page.records': 'records',
-  'page.admission': 'admission',
   'page.donate': 'donate',
   'page.regulations': 'regulations-and-policies',
   'page.sitemap': 'site-map',
@@ -98,7 +94,7 @@ export const pageSlug = (page) => (page === 'index' ? '' : page === '404' ? '404
 export const pageOfSlug = (slug) => (slug === '404' ? '404' : reverse[slug] || null);
 
 // 正式站（已設 SPA fallback：CloudFront 403/404→index.html）網址列才用乾淨 slug；其餘（本機、預覽）用真實檔案路徑，
-// 任何 server 都找得到實體檔、refresh 不 404。⚠️ 把網域加進來「之前」該站的 fallback 必須先設好（docs/IT-請求-前台上線.txt）
+// 任何 server 都找得到實體檔、refresh 不 404。⚠️ 把網域加進來「之前」該站的 fallback 必須先設好（CloudFront 的 403／404 → /index.html；ROADMAP「上線」）
 export const CLEAN_URL_HOSTS = [];
 /** route 名 → 寫進網址列的 pathname @param {string} page */
 export function pagePath(page) {

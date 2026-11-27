@@ -10,15 +10,11 @@
 import { assetUrl, cmsGet } from '../../config/api.js';
 import { escapeHtml as esc } from '../ui/escape-html.js';
 import { applyUiLabels } from '../ui/ui-labels.js';
-import { applyLang } from '../ui/lang.js';
+import { applyLang, getLang } from '../ui/lang.js';
 import { initSectionNav } from '../ui/section-nav.js';
 import { initAlbums } from '../ui/album.js';
 import { initSlideshow } from '../ui/slideshow.js';
 import { fitBar, youtubeId } from '../ui/chrome.js';
-import { hover } from '../ui/item-marquee.js';
-import { DUR } from '../ui/motion.js';
-import { prefersReducedMotion } from '../ui/reduce-motion.js';
-import { sitePath } from '../ui/site-base.js';
 import { FACULTY_LINES, subLines } from '../ui/item-list-cms.js';
 
 // ── 小工具 ──
@@ -34,7 +30,7 @@ const filesOf = (list) => (Array.isArray(list) ? list : []).slice().sort(bySort)
 const FILE = (/** @type {string} */ f) => `${f}.sort,${f}.directus_files_id.id,${f}.directus_files_id.width,${f}.directus_files_id.height,${f}.directus_files_id.title,${f}.directus_files_id.filename_download`;
 const p2 = (/** @type {number} */ x) => String(x).padStart(2, '0');
 const EN_DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-/** 入學的時間（動態 2026-11-25 起照 SCCD＝上面的 datesOf）；後台用選的（user 2026-11-24）：日期［–結束日期］，沒有幾點（user 同一天：動態、入學的開始／結束時間都拿掉，「留下日期即可」）。
+/** 首頁 news 的時間（原本入學的；動態 2026-11-25 起照 SCCD＝上面的 datesOf）；後台用選的（user 2026-11-24）：日期［–結束日期］，沒有幾點（user 同一天：動態、入學的開始／結束時間都拿掉，「留下日期即可」）。
  *  中文 2025.12.20–12.27（跨年才再寫年）、英文 20–27 Dec 2025 @param {any} n */
 const timeOf = (n) => {
   if (!n.date) return '';
@@ -93,7 +89,12 @@ async function single(collection, fields) {
 /** 段落有幾段（關於、捐款、規章的條款：子集合，照 sort 的陣列；還沒填＝空的） @param {any} p */
 const sectionsOf = (p) => Array.isArray(p?.sections) ? p.sections.filter((/** @type {any} */ s) => s?.title_zh || s?.title_en || s?.description_zh || s?.description_en || s?.subsections?.length || s?.timeline?.length) : [];
 
-const imgAttrs = (/** @type {any} */ f) => `src="${esc(assetUrl(f))}" alt=""${f.width && f.height ? ` width="${f.width}" height="${f.height}"` : ''} loading="lazy"`;
+/** 後台的圖：alt＝它屬於的那一則／那一段的標題（同 SCCD：後台不另外寫圖的名字；WCAG 1.1.1），中英各記一份、換語言 lang.js 換；沒有標題＝alt 空的
+ *  @param {any} f @param {any[]} [t] [中文, 英文] */
+const imgAttrs = (f, [zh, en] = []) => {
+  const z = String(zh || en || ''), e = String(en || zh || '');
+  return `src="${esc(assetUrl(f))}" alt="${esc(getLang() === 'en' ? e : z)}"${z ? ` data-zh-alt="${esc(z)}" data-en-alt="${esc(e)}"` : ''}${f.width && f.height ? ` width="${f.width}" height="${f.height}"` : ''} loading="lazy"`;
+};
 /** 相簿裡的一支影片（動態；user 2026-11-24：「影片要有，因爲要做影片渲染」，照 SCCD 活動的 videoLinks）：一格 16:9＝YouTube 的縮圖（hqdefault 是 4:3、
  *  上下帶黑邊 → page.css cover 裁掉）＋正中一顆 play；直連的影片檔（.mp4、.m3u8）沒有縮圖＝灰底＋play。點了在放大 dialog 播（chrome.js openGallery）
  *  @param {string} url */
@@ -104,11 +105,14 @@ const videoShot = (url) => {
 };
 /** 後台的影片連結（重複列 [{ url }]）：只收 http(s) @param {any} rows */
 const videosOf = (rows) => (Array.isArray(rows) ? rows : []).map(v => String(v?.url || '').trim()).filter(u => /^https?:\/\//i.test(u));
-/** 相簿（動態、入學）：寬高照後台檔案＝一打開就排好、chevron 當下決定。影片排在照片前面（同 SCCD：影片 → 圖） @param {any[]} fs @param {string[]} [videos] */
-const album = (fs, videos = []) => fs.length || videos.length ? `<div class="album">${videos.map(videoShot).join('')}${
-  fs.map(f => `<button type="button"><img ${imgAttrs(f)}>${lbl('span', 'common.enlarge', '放大圖片', 'Enlarge image', ' class="sr-only"')}</button>`).join('')}</div>` : '';
-/** 段落圖片輪播（關於；小節放多張也是這個） @param {any[]} fs @param {string} [c] 多掛的 class（小節裡的間距） */
-const slideshow = (fs, c = '') => fs.length ? `<div class="slideshow${c ? ` ${c}` : ''}" aria-label="段落圖片" data-en-label="Section images">${fs.map(f => `<button type="button" class="slide"><img ${imgAttrs(f)}></button>`).join('')}</div>` : '';
+/** 相簿（動態、首頁 news）：寬高照後台檔案＝一打開就排好。影片排在照片前面（同 SCCD：影片 → 圖） @param {any[]} fs @param {any[]} t 那一則的標題 @param {string[]} [videos] */
+const album = (fs, t, videos = []) => fs.length || videos.length ? `<div class="album">${videos.map(videoShot).join('')}${
+  fs.map(f => `<button type="button"><img ${imgAttrs(f, t)}>${lbl('span', 'common.enlarge', '放大圖片', 'Enlarge image', ' class="sr-only"')}</button>`).join('')}</div>` : '';
+/** 打亂（Fisher–Yates，同作品頁 works.js） @template T @param {T[]} a */
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+/** 段落圖片輪播（關於、捐款；小節放多張也是這個）：每次進來順序都打亂（user 2026-11-27：「about的輪播圖片，我想要random這個圖片的順序，不一定照著後臺的」）
+ * @param {any[]} fs @param {any[]} t 那一段／小節的標題 @param {string} [c] 多掛的 class（小節裡的間距） */
+const slideshow = (fs, t, c = '') => fs.length ? `<div class="slideshow${c ? ` ${c}` : ''}" role="group" aria-label="段落圖片" data-en-label="Section images">${shuffle([...fs]).map(f => `<button type="button" class="slide"><img ${imgAttrs(f, t)}></button>`).join('')}</div>` : '';
 /** 多行純文字 → 一段一個 p（換行照留、空一行＝分段；中英照段的順序對），回傳每段的產生器、class 由呼叫端給 @param {any} zh @param {any} en */
 const paras = (zh, en) => {
   const split = (/** @type {any} */ s) => String(s || '').trim().split(/\n\s*\n/), z = split(zh), e = split(en);
@@ -123,9 +127,9 @@ const paras = (zh, en) => {
  *  塊裡隔 sm（同分段）、第一塊不留上距；圖的最高 page.css @param {any} it */
 const subsection = (it) => {
   /** @type {((c: string) => string)[]} */
-  const blocks = [], fs = filesOf(it.images);
-  if (fs.length > 1) blocks.push(c => slideshow(fs, c));
-  else if (fs.length) blocks.push(c => `<img${c ? ` class="${c}"` : ''} ${imgAttrs(fs[0])}>`);
+  const blocks = [], fs = filesOf(it.images), t = [it.title_zh, it.title_en];
+  if (fs.length > 1) blocks.push(c => slideshow(fs, t, c));
+  else if (fs.length) blocks.push(c => `<img${c ? ` class="${c}"` : ''} ${imgAttrs(fs[0], t)}>`);
   blocks.push(...paras(it.text_zh, it.text_en));
   if (it.note_zh || it.note_en) blocks.push(c => text(it.note_zh, it.note_en, `${c} text-xs`.trim()));
   return `<div class="subsection">${bi('h3', it.title_zh, it.title_en)}${blocks.map((b, i) => b(i ? 'mt-sm' : '')).join('')}</div>`;
@@ -145,11 +149,11 @@ const entryList = (rows, attrs = '') => {
  *  捐款、規章原本的內文是一段 rich text，2026-11-24 都改成這個（user：「使用條款就是跟 about 的一樣」） @param {any} s */
 const textSection = (s) => {
   const subs = (Array.isArray(s.subsections) ? s.subsections : []).slice().sort(bySort).map(subsection).join('');
-  return `<section class="page-section">${bi('h2', s.title_zh, s.title_en, ' class="section-title"')}${slideshow(filesOf(s.images))}${
+  return `<section class="page-section">${bi('h2', s.title_zh, s.title_en, ' class="section-title"')}${slideshow(filesOf(s.images), [s.title_zh, s.title_en])}${
     paras(s.description_zh, s.description_en).map((b, i) => b(i ? 'mt-sm' : 'mt-md')).join('')}${
     subs && `<div class="subsections">${subs}</div>`}${entryList(s.timeline, ' class="timeline mt-xl"')}</section>`;
 };
-/** 依分類分段（qa、規章）：照第一次出現的順序 @param {any[]} rows */
+/** 依分類分段（規章）：照第一次出現的順序 @param {any[]} rows */
 const groups = (rows) => {
   /** @type {Map<string, { zh: string, en: string, items: any[] }>} */
   const m = new Map();
@@ -170,34 +174,39 @@ function refresh() {
   initSlideshow();
   return applyUiLabels(document.getElementById('page-content') || document);
 }
-/** 導言（.page-lead；404 那種掛 data-label 的是介面文字，不是這個） @param {any} p */
+/** 導言（.page-lead） @param {any} p */
 function setLead(p) {
-  const el = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .page-lead:not([data-label])'));
+  const el = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .page-lead'));
   if (!el || !(p?.lead_zh || p?.lead_en)) return;
   el.dataset.zh = p.lead_zh || p.lead_en;
   el.dataset.en = p.lead_en || p.lead_zh;
 }
 
-// ── 動態（activities）、入學（admission）：各一個集合（user 2026-11-24；原本共用 news、勾「入學」）。首頁那串與底列跑馬燈是 news（下面） ──
+// ── 動態（activities；user 2026-11-24 跟 news 拆開）。首頁那串與底列跑馬燈是 news（下面；入學 2026-11-27 併進去） ──
 // 欄位用 *（這個集合現在有的都拿）＋相簿、附件那幾層，不一個一個點名：後台刪掉不要的欄位（user 2026-11-24 刪了動態的開始／結束時間）前台照樣讀得到——
-// 點名一個已經不存在的欄位，Directus 整串回 403、前台退回示意。沒有的欄位這裡本來就當空的（timeOf、bi）
-// 國名（瀏覽器內建，照 ISO 兩碼）：紀錄的國旗給報讀、動態的參與者。代碼不對＝''
+// 點名一個已經不存在的欄位，Directus 整串回 403＝那一塊不畫。沒有的欄位這裡本來就當空的（timeOf、bi）
+// 國名（瀏覽器內建，照 ISO 兩碼）：動態的參與者。代碼不對＝''
 const REGION = { zh: new Intl.DisplayNames(['zh-Hant'], { type: 'region' }), en: new Intl.DisplayNames(['en'], { type: 'region' }) };
 /** @param {unknown} code @param {'zh' | 'en'} lang */
 const countryName = (code, lang) => { try { return code ? REGION[lang].of(String(code).toUpperCase()) || '' : ''; } catch { return ''; } };
 /** 動態的參與者（人名庫／單位庫的一筆）→ [中, 英]：有國家＝名字後面接（國家）——中文全形「名字（國家）」、英文半形「name (Country)」（user 2026-11-26：
  *  「這個list的内容是從人名跟單位，他們的國家也是以（）跟在名字後面」）；英文空退中文；沒選國家＝只有名字；沒有名字＝['', '']。
- *  只有這裡接國家：師資、合作企業、紀錄的主辦方照後台的名字（同一天：「這裏應該是不會有國家，幫我刪掉，都要以後臺爲主」） @param {any} o @returns {[string, string]} */
+ *  只有這裡接國家：師資、合作企業、榮譽的主辦方照後台的名字（同一天：「這裏應該是不會有國家，幫我刪掉，都要以後臺爲主」） @param {any} o @returns {[string, string]} */
 const named = (o) => {
   const z = o?.name_zh || o?.name_en || '', e = o?.name_en || o?.name_zh || '', cz = countryName(o?.country, 'zh'), ce = countryName(o?.country, 'en');
   return [z && cz ? `${z}（${cz}）` : z, e && ce ? `${e} (${ce})` : e];
 };
 // 參與者／參與單位（M2A：人名庫或單位庫）要一層一層點名（* 只給 junction 的 id）：每個庫的名字＋國家
 const WHO = ['people', 'organizations'].flatMap(c => ['name_zh', 'name_en', 'country'].map(f => `participants.item:${c}.${f}`)).join(',');
-const FIELDS = { activities: `*,${FILE('album')},participants.sort,participants.collection,${WHO}`, admission: `*,${FILE('album')},${FILE('attachments')}` };
+// 縮圖帶寬高（手機的縮圖框照圖的比例、載入前就要知道，page.css；user 2026-11-27）
+const IMAGE = 'image.id,image.width,image.height';
+/** 清單列的縮圖（動態、首頁 news）；沒圖＝空的框＝直條跑馬燈的佔位（page.css） @param {any} f @param {any[]} t 那一則的標題 */
+const thumb = (f, t) => `<div class="item-thumb">${assetUrl(f) ? `<img ${imgAttrs(f, t)}>` : ''}</div>`;
+const FIELDS = `*,${IMAGE},${FILE('album')},participants.sort,participants.collection,${WHO},organizer.name_zh,organizer.name_en,media.name_zh,media.name_en`;
 // 動態的類別（user 2026-11-26：「副標是改成dropdown，決定它的類別」）＝SCCD 動態的八類；字在介面文字 activities.type.<值>（這裡是後台抓不到時的原文）
 const ACTIVITY_TYPES = { exhibitions: ['展演', 'Exhibitions'], workshops: ['工作營', 'Workshops'], lectures: ['講座', 'Lectures'], visits: ['參訪', 'Visits'],
-  competitions: ['競賽', 'Competitions'], forums: ['論壇', 'Forums'], students: ['學生自主', 'Students Present'], industry: ['產學合作', 'Industry Partnerships'] };
+  competitions: ['競賽', 'Competitions'], forums: ['論壇', 'Forums'], students: ['學生自主', 'Students Present'], industry: ['產學合作', 'Industry Partnerships'],
+  award: ['榮譽', 'Award'], press: ['報導', 'Press'] };   // 紀錄頁併進來（user 2026-11-27）
 /** 一個地點：城市（手打）有填＝接在後面的括號裡——中文「地點（城市）」全形、英文「place (city)」半形（user 2026-11-25：「渲染就是跟在地點後面，
  *  （）半型全型再根據語言調整」「城市的是手動key的文字」「動態不需要國家」）。英文空退中文 @param {any} x */
 const place = (x) => {
@@ -208,75 +217,57 @@ const place = (x) => {
 /** 動態頁那一列（後台照 SCCD 的活動，user 2026-11-24）：縮圖＋標題＋類別（下拉，user 2026-11-26；原本副標重複列、再原本一格手打的「分類」）；
  *  展開＝時間、地點（可以好幾個、一個一行；原本一格 place_*）、參與者／參與單位（一筆一行）→ 相簿（影片在前）。
  *  參與者／參與單位（user 2026-11-26：「在相簿上可以增加一個section是無限加list，這個list的内容是從人名跟單位」；後台的欄位叫「參與者／參與單位」）：
- *  照拖曳順序、名字有國家＝（國家）（named）；不出標題、接在地點下面往下排（同一天：「不需要渲染title，往下排列即可」——先做過標題＋清單一塊，同師資詳細頁的清單） @param {any} n */
+ *  照拖曳順序、名字有國家＝（國家）（named）；不出標題、接在地點下面往下排（同一天：「不需要渲染title，往下排列即可」——先做過標題＋清單一塊，同師資詳細頁的清單）。
+ *  紀錄（榮譽、報導）2026-11-27 併進來（user：「我想要將紀錄放進動態裏面，都比照動態的list進行渲染。然後後臺設定如果沒有填寫的slot就預設不渲染」）＝類別 award／press：
+ *  報導＝標題是媒體的名字（從媒體庫選；同原本的紀錄頁），榮譽＝主辦方（單位庫，照後台的名字、不接國家）排在參與者後面，內容（得獎人、獎別、報導標題…）一筆一行排最後。
+ *  國旗不出（同一天：「獎項也不需要有國旗，我們會給一個placeholder」；縮圖＝榮譽沒圖放灰底佔位框，同一天：「這個榮譽應該要加上一個placeholder的位置，不是直接沒有渲染」）；每一格沒填＝那一行不出 @param {any} n */
 const newsRow = (n) => {
-  const type = ACTIVITY_TYPES[/** @type {keyof typeof ACTIVITY_TYPES} */ (n.category)];
-  const head = `${n.image ? `<div class="item-thumb"><img src="${esc(assetUrl(n.image))}" alt="" loading="lazy"></div>` : ''}<div>${bi('h3', n.title_zh, n.title_en)}${type ? lbl('p', `activities.type.${n.category}`, type[0], type[1]) : ''}</div>`;
+  const type = ACTIVITY_TYPES[/** @type {keyof typeof ACTIVITY_TYPES} */ (n.category)], media = n.media?.name_zh || n.media?.name_en;
+  const t = media ? [n.media.name_zh, n.media.name_en] : [n.title_zh, n.title_en], title = bi('h3', t[0], t[1]);
+  // 沒圖＝空的縮圖框＝直條跑馬燈的佔位（page.css）：原本只有榮譽放（user 2026-11-27：「這個榮譽應該要加上一個placeholder的位置」），
+  // 同一天每一類都放（user：「動態也要有，目前工作營的那個沒有」）
+  const head = `${thumb(n.image, t)}<div>${title}${type ? lbl('p', `activities.type.${n.category}`, type[0], type[1]) : ''}</div>`;
   const meta = datesOf(n) + (Array.isArray(n.locations) ? n.locations : []).map(place).join('')
-    + (Array.isArray(n.participants) ? n.participants : []).slice().sort(bySort).map((/** @type {any} */ p) => bi('p', ...named(p?.item))).join('');
-  return fold(head, (meta ? `<div class="fold-meta">${meta}</div>` : '') + album(filesOf(n.album), videosOf(n.videos)));
+    + (Array.isArray(n.participants) ? n.participants : []).slice().sort(bySort).map((/** @type {any} */ p) => bi('p', ...named(p?.item))).join('')
+    + bi('p', n.organizer?.name_zh, n.organizer?.name_en)
+    + (Array.isArray(n.details) ? n.details : []).map((/** @type {any} */ x) => bi('p', x?.text_zh, x?.text_en)).join('');
+  return fold(head, (meta ? `<div class="fold-meta">${meta}</div>` : '') + album(filesOf(n.album), t, videosOf(n.videos)));
 };
-/** 入學頁那一列：標題＋時間（沒縮圖、沒分類）；展開＝說明 → 相簿 → 附件 @param {any} n */
-const admissionRow = (n) => {
+/** 動態頁的清單 */
+async function newsList() {
+  // 抓之前先記住這一頁的清單：後台慢、抓完已經換到別頁（同樣有 .item-list）＝不畫到那一頁去
+  const ul = document.querySelector('#page-content .page-section .item-list');
+  if (!ul) return;
+  // 日期是重複列（dates，照 SCCD）＝後台排不了 → 這裡排（dateKey）
+  const rows = await list('activities', `limit=-1&fields=${FIELDS}`);
+  if (!rows || !ul.isConnected) return;
+  rows.sort((a, b) => (dateKey(b) - dateKey(a)) || 0);   // || 0：兩個都沒日期（-Infinity − -Infinity＝NaN）
+  ul.innerHTML = rows.map(newsRow).join('');
+  await refresh();
+}
+
+// ── 首頁那串＋底列跑馬燈＝首頁的 news（user 2026-11-24：「news 是 news」；原本叫 home_news）。
+// 日期新到舊（user 2026-11-27：「排列順序是倒敘排列，最新會在最上面」；原本照拖曳順序）：同一天＝後建的在上面。兩支同一個排法＝底列第 i 則＝清單第 i 則（chrome.js openNewsAt） ──
+const NEWEST = 'sort=-date,-id';
+/** 首頁那串的一則＝原本入學頁那一列（user 2026-11-27：「我想要將入學跟news頁面結合，入學頁面可以刪掉，然後news就是入學頁面…可以打開，是個accordion」）：
+ *  外面＝縮圖（沒圖＝直條跑馬燈的佔位框，2026-11-27）＋標題＋日期；點開＝說明 → 相簿 → 附件，都有才出；點開的東西都沒有＝不能點的一列（fold）。
+ *  原本整則是連結（入學頁的那一則／外部網址），後台那兩格同一天刪了 @param {any} n */
+const homeRow = (n) => {
   // 附件點了＝下載、不開新頁（user 2026-11-25：「點擊admission的檔案應該是下載，不是開新的page」）：檔在後台的網域＝跨網域，a 的 download 屬性瀏覽器不理，
   // 要 Directus 自己回 attachment（assets 網址加 ?download）；download 屬性留著＝同網域時也是下載
   const files = filesOf(n.attachments);
   const links = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(`${assetUrl(f)}?download`)}" download>${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
-  return fold(bi('h3', n.title_zh, n.title_en) + timeOf(n), text(n.summary_zh, n.summary_en) + album(filesOf(n.album)) + links);
-};
-/** 動態頁／入學頁的清單。item＝首頁連過來的那一則（入學頁 ?item=<id>，user 2026-11-23 照 SCCD）：打開、捲到內容的起始線（同段落導覽的對齊） @param {boolean} [admission] @param {string} [item] */
-async function newsList(admission = false, item = '') {
-  // 抓之前先記住這一頁的清單：後台慢、抓完已經換到動態／入學另一頁（同樣有 .item-list）＝不畫到那一頁去
-  const ul = document.querySelector('#page-content .page-section .item-list');
-  if (!ul) return;
-  const col = admission ? 'admission' : 'activities';
-  // 動態：日期是重複列（dates，照 SCCD）＝後台排不了 → 這裡排（dateKey）；入學照舊後台照 date 排
-  const rows = await list(col, `${admission ? 'sort=-date&' : ''}limit=-1&fields=${FIELDS[col]}`);
-  if (!rows || !ul.isConnected) return;
-  if (!admission) rows.sort((a, b) => (dateKey(b) - dateKey(a)) || 0);   // || 0：兩個都沒日期（-Infinity − -Infinity＝NaN）
-  ul.innerHTML = rows.map(admission ? admissionRow : newsRow).join('');
-  await refresh();
-  if (!item || !ul.isConnected) return;   // 等介面文字的時候換頁了，同上
-  const li = ul.children[rows.findIndex(n => String(n.id) === item)], body = ul.closest('.page-body');
-  if (!li) return;
-  // 那一則捲到內容的起始線（＝內文欄的頂；原本量 h1，標題 2026-11-25 起只給報讀）。兩個都是畫面座標＝相減跟目前捲到哪無關（同 section-nav 的 target）
-  if (body) window.scrollTo({ top: li.getBoundingClientRect().top - body.getBoundingClientRect().top, behavior: 'instant' });
-  void reveal(li, ul);   // 不等它：router 等這支換好內容才淡入
-}
-/** deep link 到的那一則（user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」；原本一到就直接打開＋聚焦＝hover 跟著同時跑）：
- *  等這一頁看得到了（換頁的淡入、第一次載入的 logo 進場都演完）→ hover 的效果（帶蓋上、收掉）做完 → 照手風琴自己的開法打開（高度補間、一次只開一個；空心點變實心）
- *  → 焦點放到它（鍵盤從這一則接著走，同網址的 #錨點；不然第一下 Tab 從頁首開始、把它捲走） @param {Element} li @param {Element} ul */
-async function reveal(li, ul) {
-  const html = document.documentElement;
-  await new Promise(r => { const tick = () => (ul.isConnected && html.matches('.page-leaving, .is-intro') ? requestAnimationFrame(tick) : r(undefined)); tick(); });
-  await new Promise(r => setTimeout(r, prefersReducedMotion() ? 0 : DUR.fade * 1000));   // 淡入那段（--dur-fade）
-  const summary = li.querySelector('summary');
-  if (!(summary instanceof HTMLElement) || !ul.isConnected) return;
-  await hover(summary);
-  if (!ul.isConnected) return;
-  if (!summary.parentElement?.hasAttribute('open')) summary.click();   // accordion.js 接手（減少動態＝原生瞬間開）
-  summary.focus({ preventScroll: true });
-}
-
-// ── 首頁那串＋底列跑馬燈＝首頁的 news（user 2026-11-24：「news 是 news」；原本叫 home_news）：照拖曳順序前 8 則 ──
-/** 點了去哪（照 SCCD 的首頁 news）→ <a> 的屬性：入學頁的某一則（?item=，到了打開那一則）優先；那則被刪掉＝後台那格自己變空；
- *  再來外部網址（只放 http(s)、另開新視窗）；都沒有＝''（不能點） @param {any} n */
-const homeLink = (n) => {
-  const a = n.admission_item;
-  if (a?.id) return `href="${esc(sitePath(`pages/admission.html?item=${encodeURIComponent(a.id)}`))}"`;
-  return /^https?:\/\//i.test(n.url || '') ? `href="${esc(n.url)}" target="_blank" rel="noopener"` : '';
+  // 沒圖＝放空的縮圖框＝直條跑馬燈的佔位（page.css；user 2026-11-27：「我發現news的圖片沒有」；原本 11-24 定的是沒圖不放框）
+  const t = [n.title_zh, n.title_en], head = `${thumb(n.image, t)}<div>${bi('h3', t[0], t[1])}${timeOf(n)}</div>`;
+  return fold(head, text(n.summary_zh, n.summary_en) + album(filesOf(n.album), t) + links);
 };
 async function homeNews() {
-  // 只點名用得到的欄位：後台刪掉的欄位還點名＝整串 403（user 2026-11-24 拿掉了說明 summary）
-  const rows = await list('news', 'sort=sort&limit=8&fields=title_zh,title_en,image,url,admission_item.id');
+  // 全部（底列的跑馬燈只跑最新的 8 則）。抓之前先記住這一頁的清單（同 newsList）：抓完已經換到別頁又回首頁＝不畫到新的那份去
   const ul = document.querySelector('#page-content .home-news-list ul');
-  if (!rows || !ul?.isConnected) return;
-  ul.innerHTML = rows.map(n => {
-    // 圖在上、標題在下（user 2026-11-24）；後台沒有圖＝不放圖框（user 2026-11-24，原本灰底佔位）；只有標題（說明拿掉了，user 2026-11-24）
-    const body = (n.image ? `<div class="home-news-box"><img src="${esc(assetUrl(n.image))}" alt="" loading="lazy"></div>` : '') + bi('p', n.title_zh, n.title_en, ' class="text-md"');
-    const link = homeLink(n);
-    return `<li>${link ? `<a class="block" ${link}>${body}</a>` : body}</li>`;
-  }).join('');
+  if (!ul) return;
+  const rows = await list('news', `${NEWEST}&limit=-1&fields=*,${IMAGE},${FILE('album')},${FILE('attachments')}`);
+  if (!rows || !ul.isConnected) return;
+  ul.innerHTML = rows.map(homeRow).join('');
   await refresh();
 }
 /** 首頁影片（後台「首頁」資料夾裡的單例 home_video，user 2026-11-23）：底列 ▶ 鈕的 data-video ← 後台的連結（chrome.js openIntro 照它開）。
@@ -288,7 +279,7 @@ export async function loadIntroVideo() {
 /** 底列的 news（殼裡、只在首頁看得到）：首頁 news 的標題，一則一個 span（順序同首頁清單＝點了定位到同一則）；
  *  換完叫 fitBar＝從第一則重來（chrome.js：一次顯示一則，user 2026-11-23） */
 export async function loadBarNews() {
-  const rows = await list('news', 'sort=sort&limit=8&fields=title_zh,title_en');
+  const rows = await list('news', `${NEWEST}&limit=8&fields=title_zh,title_en`);
   const copy = document.querySelector('.site-bar .bar-news-copy');
   if (!rows || !copy) return;
   copy.innerHTML = rows.map(n => bi('span', n.title_zh, n.title_en)).join('');
@@ -315,32 +306,6 @@ async function curriculum() {
   await refresh();
 }
 
-// ── 榮譽（榮譽、報導合在一個集合 records；user 2026-11-25：「後臺資料庫上，將榮譽跟報導兩者合在一起，要可以上傳圖片，但兩者打開來都會是accordion」）：
-//    一筆一個摺疊＝動態那種列的變體（縮圖＝國旗、小一號，page.css .record）；收著＝國旗＋標題＋類型（榮譽／報導，介面文字 records.type.*），
-//    點開＝主辦方（榮譽，從單位庫選）＋內容（重複列 details，一筆一行：得獎人、獎別、報導標題、刊出日期…）＋圖片（album，同動態的相簿、點了放大）。
-//    類型不是後台選的（user 2026-11-25：「如果是寫標題的話，就會是award，如果是從庫裏面選的話，則是press，二選一」）：從媒體庫選了媒體＝報導、那一列的標題＝媒體的名字；
-//    沒選＝榮譽、標題＝寫的獎項名稱。後台那兩格互鎖；原本另外有一格「類型」category、報導的標題是自己打的 ──
-const RECORD_TYPES = { award: ['榮譽', 'Award'], press: ['報導', 'Press'] };
-// 國旗給報讀的國名（user 2026-11-25：「這個報讀是指無障礙嗎？這個不需要寫在後臺」）＝瀏覽器內建的國名、照國家代碼自己生（countryName；原本後台一格 country_zh／country_en 要人填，刪了）
-async function records() {
-  // 欄位用 *：舊的那幾格（award_*、winner_*…）藏起來了還在，之後後台刪掉也不會整串 403（同動態）
-  const rows = await list('records', `sort=sort&limit=-1&fields=*,organizer.name_zh,organizer.name_en,media.name_zh,media.name_en,${FILE('album')}`);
-  const ul = document.querySelector('#page-content .page-section .item-list');
-  if (!rows || !ul?.isConnected) return;
-  ul.innerHTML = rows.map(r => {
-    const code = /^[a-z]{2}$/.test(r.country_code || '') ? r.country_code : '';
-    const flag = code ? `<div class="item-thumb"><img src="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${code}.svg" alt="" loading="lazy"></div>` : '';   // 同動態的縮圖標記；大小在 page.css .record
-    const press = !!(r.media?.name_zh || r.media?.name_en), type = press ? 'press' : 'award', [typeZh, typeEn] = RECORD_TYPES[type];
-    const title = press ? bi('h3', r.media.name_zh, r.media.name_en) : bi('h3', r.title_zh, r.title_en);   // 報導＝媒體的名字、榮譽＝獎項名稱
-    const words = `${(code ? bi('span', countryName(code, 'zh'), countryName(code, 'en'), ' class="sr-only"') : '')}${title}${lbl('p', `records.type.${type}`, typeZh, typeEn)}`;
-    const head = flag ? `${flag}<div>${words}</div>` : words;   // 沒國旗＝純文字的列（不放圖框，同動態沒圖的那則）：字直接放在列裡，標題、副標之間的 gap 才吃得到（page.css）
-    // 點開後的第一行：榮譽＝主辦方（單位庫；user 2026-11-25：「要，從庫裏面選」；照後台的名字、不接國家）；報導的媒體已經是標題了＝不再重複
-    const lines = (press ? '' : bi('p', r.organizer?.name_zh, r.organizer?.name_en)) + (Array.isArray(r.details) ? r.details : []).map((/** @type {any} */ x) => bi('p', x?.text_zh, x?.text_en)).join('');
-    // .record＝國旗不是封面（chrome.js：打開了點它照常收合、不放大，相簿放大的那一組也不含它）；點開沒東西也照樣是摺疊
-    return `<li><details class="record"><summary class="item-row">${head}</summary><div class="fold-body">${lines ? `<div class="fold-meta">${lines}</div>` : ''}${album(filesOf(r.album))}</div></details></li>`;
-  }).join('');
-  await refresh();
-}
 
 // ── 規章與政策（單例 regulations）：規章、表單（重複列 items）依分類分段、整列外連（只放 http(s)，沒有＝不能點；副標一行一個）
 // ＋文字段落（使用條款、隱私權政策）＝同關於的段落：子集合 regulations_sections、裡面有小節（user 2026-11-24；原本是重複列＋一整段 rich text） ──
@@ -361,7 +326,7 @@ async function regulations() {
   if (items.length || secs.length) await refresh();
 }
 
-// ── 文字頁（關於、捐款）＋列表頁的導言（師資、合作企業） ──
+// ── 文字頁（關於、捐款）＋其他頁的導言（師資、合作企業、課程、動態、規章；loadPage 看 HTML 有沒有放 .page-lead） ──
 // 導言（後台叫 Hero）每一頁自己一個單例 <slug>_page，跟那一頁的其他內容分開（user 2026-11-25：「後臺我想要每個頁面的hero文字都分開，不要混在一起」；
 // 師資、合作企業本來就是，關於、捐款原本導言跟段落在同一個單例）。
 // 關於、捐款的段落在單例 <slug>＝子集合（要放輪播圖；輪播下面一段說明、再來是小節，小節也是子集合：要放圖）——捐款 user 2026-11-24「比照 about」，
@@ -421,9 +386,10 @@ async function facultyDetail(params) {
 export function loadPage(page, params) {
   /** @type {Record<string, () => Promise<void>>} */
   const run = {
-    index: homeNews, activities: () => newsList(), admission: () => newsList(true, params.get('item') || ''), curriculum, records, regulations,
-    about: () => textPage('about'), donate: () => textPage('donate'), faculty: () => textPage('faculty'), partners: () => textPage('partners'),
+    index: homeNews, activities: newsList, curriculum, regulations,
     'faculty-detail': () => facultyDetail(params),
   };
-  return run[page]?.();
+  // HTML 放了導言（.page-lead）的頁＝導言從後台 <slug>_page 來（user 2026-11-27：作品、news、聯絡以外都要有 Hero）；關於、捐款順便抓段落
+  const hero = document.querySelector('#page-content .page-lead') ? textPage(page) : null;
+  return Promise.all([run[page]?.(), hero]).then(() => {});
 }

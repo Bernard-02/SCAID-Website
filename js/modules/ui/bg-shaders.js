@@ -177,7 +177,10 @@ void getNearestEdge(
 // --------------------------------------------------
 
 float readTrail(vec2 uv) {
-    uv = clamp(uv, vec2(0.001), vec2(0.999));
+    // + EDGE: mirror at the canvas edges instead of clamping. The board shift (錯位) pushes taps
+    // past the edge; clamped, every row there repeated the one edge pixel of that row, so a
+    // textured mark drawn at the very edge became rows of horizontal lines.
+    uv = clamp(1.0 - abs(1.0 - abs(uv)), vec2(0.001), vec2(0.999));
     return texture2D(uBufferA, uv).r;
 }
 
@@ -203,7 +206,10 @@ float smoothTrail(vec2 uv) {
 // instead of the sharp trail. Read sharp, each off-point tap showed up as its own copy of
 // the mark; with a fine or textured mark the copies stacked into rows of horizontal lines.
 float softTrail(vec2 uv) {
-    uv = clamp(uv, vec2(0.001), vec2(0.999));
+    // + EDGE: mirror at the canvas edges instead of clamping. The board shift (錯位) pushes taps
+    // past the edge; clamped, every row there repeated the one edge pixel of that row, so a
+    // textured mark drawn at the very edge became rows of horizontal lines.
+    uv = clamp(1.0 - abs(1.0 - abs(uv)), vec2(0.001), vec2(0.999));
     return texture2D(uSoft, uv).r;
 }
 

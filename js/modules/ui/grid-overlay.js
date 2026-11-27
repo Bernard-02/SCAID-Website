@@ -1,5 +1,5 @@
 /**
- * 開發用 grid 疊圖（user 2026-11-03）：按 G 開關、記在 localStorage；網址加 ?grid 也會開。
+ * 開發用 grid 疊圖（user 2026-11-03）：按 G 開關、記在 localStorage；網址加 ?grid 也會開。正式站（usc.edu.tw、github.io）只認 ?grid、不聽 G。
  * 欄位直接用 .site-container＋.site-grid（手機 4／桌面 12），所以疊圖永遠跟實際版面同一套。不吃滑鼠（pointer-events: none）
  */
 const KEY = 'scaid:grid';
@@ -11,6 +11,8 @@ function set(on) {
 }
 
 export function initGridOverlay() {
+  const dev = !/(^|\.)(usc\.edu\.tw|github\.io)$/.test(location.hostname);
+  if (!dev && !new URLSearchParams(location.search).has('grid')) return;
   const el = document.createElement('div');
   el.className = 'grid-overlay';
   el.setAttribute('aria-hidden', 'true');
@@ -18,7 +20,7 @@ export function initGridOverlay() {
   document.body.appendChild(el);
 
   let on = new URLSearchParams(location.search).has('grid');
-  try { on = on || localStorage.getItem(KEY) === '1'; } catch {}
+  try { on = on || (dev && localStorage.getItem(KEY) === '1'); } catch {}
   set(on);
 
   document.addEventListener('keydown', (e) => {

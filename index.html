@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">   <!-- iOS Safari 會自動把電話／email 變成底線連結 -->
-  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
-  <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=2">   <!-- ?v＝換圖就加一（瀏覽器 favicon 快取很頑固）；先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
-  <meta name="description" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">   <!-- metadata：docs/metadata.txt（user 2026-11-26 填的）；網址＝正式站的乾淨網址（js/config/slugs.js 的 slug，改了 slug 這裡要跟著改）。還沒有 og:image（沒有圖＝twitter:card 用 summary） -->
+  <script>(function(){var K='scaid:theme',S,t,a,h=new Date().getHours(),n=h>=6&&h<18?'light':'dark';try{S=sessionStorage;t=S.getItem(K);a=S.getItem(K+'-auto')}catch(e){}if(t!=='dark'&&t!=='light'){t=n;a='1'}else if(a&&t!==n){t=n;a=''}try{S.setItem(K,t);a?S.setItem(K+'-auto','1'):S.removeItem(K+'-auto')}catch(e){}t==='dark'&&(document.documentElement.dataset.theme='dark')})();document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=3">   <!-- ?v＝換圖就加一（瀏覽器 favicon 快取很頑固）；先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
+  <meta name="description" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">   <!-- metadata：user 2026-11-26 給的那份（沒進 repo）；網址＝正式站的乾淨網址（js/config/slugs.js 的 slug，改了 slug 這裡要跟著改）。還沒有 og:image（沒有圖＝twitter:card 用 summary） -->
   <link rel="canonical" href="https://scaid.usc.edu.tw/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">
@@ -21,24 +21,24 @@
 <!-- data-page 靜態先標：home.css 的首頁規則（logo 置中）在 JS 跑前就生效，不閃 -->
 <body data-page="index">
 
-  <!-- 全站殼（pages/header.html，main.js 注入）：logo、全屏選單、底列、intro dialog -->
+  <!-- 全站殼（pages/header.html，main.js 注入）：logo、選單、底列、放大 dialog -->
   <div id="site-header"></div>
 
   <!-- Main：SPA router 只換這裡面 -->
   <main id="page-content">
     <h1 class="sr-only" data-en="Bachelor Program in Advanced Integrated Design, Shih Chien University">實踐大學AI設計職人學位學程</h1>
-    <!-- 未展開＝空一屏（logo 是全站殼，置中由 home.css 控）。點底列動態「+」→ html.news-open 展開這份清單
-         （後台首頁的 news（「首頁」資料夾），cms-pages.js homeNews() 填進空的清單；user 2026-11-23 跟動態頁拆開、2026-11-26 起不放示意）。背景先白底黑字（user 2026-11-03） -->
-    <section class="home-news-list site-container" aria-label="最新動態" data-en-label="News">
-      <ul></ul>
+    <!-- 未展開＝空一屏（logo 是全站殼，置中由 home.css 控）。點底列的動態 → html.news-open 展開這份清單
+         （後台首頁的 news（「首頁」資料夾），cms-pages.js homeNews() 填進空的清單；2026-11-26 起不放示意）。
+         入學頁 2026-11-27 併進來（user：「入學頁面可以刪掉，然後news就是入學頁面。一樣是6col的寬度，然後可以打開，是個accordion」
+         「保持center在畫面中間不變，類似作品第二個版面的排版」）：一則一個摺疊＝同原本的入學頁；寬＝內文 6 欄、置中（同作品頁的總覽：.page-body、md col 4–9） -->
+    <section class="home-news-list" aria-label="最新動態" data-en-label="News">
+      <div class="site-container site-grid">
+        <div class="page-body col-span-full md:col-start-4 md:col-span-6"><ul class="item-list mt-0"></ul></div>
+      </div>
     </section>
   </main>
 
-  <!-- JavaScript：GSAP CDN → helpers（classic，註冊 plugin）→ main（module） -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+  <!-- JavaScript：helpers（classic）→ main（module） -->
   <script src="js/utils/helpers.js"></script>
   <script type="module" src="js/main.js"></script>
 

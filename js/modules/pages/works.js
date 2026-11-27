@@ -1,12 +1,12 @@
 /**
  * 作品頁（user 2026-11-23；版型 css/components/works.css）：像電影院——整頁一律深色（chrome.js syncPageTheme）、沒有右圖、內容置中。
- * 兩種排法（底列中間那組鈕切，header.html .bar-works；切換＝作品淡出、換、淡入）：
- *   放映（slideshow）：一次一個在正中，前後各一個縮小、躲在後面從兩邊露出來；點兩邊那個／方向鍵（←→↑↓）換，環狀。
+ * 兩種排法（底列中間那顆鈕切，header.html .bar-works；切換＝作品淡出、換、淡入）：
+ *   放映（slideshow）：一列、全部一樣高，正中那個在舞台正中、其他往兩邊接；點左右的點擊區／左右那個作品／方向鍵（←→↑↓）換，環狀。
  *     正中是影片＝點了就地播（YouTube 播放器自己的鈕可以全螢幕）；圖片不放大
  *   總覽（bento）：全部照比例排成幾欄、照閱讀順序擺（layoutBento；user 2026-11-23：兩種排法同一個順序＝放映的第 8 個就是總覽的第 8 個，
  *     從放映切過來＝剛剛那一個捲到畫面中間）；點一個＝就地開 lightbox（chrome.js 的放大 dialog，一組＝總覽全部，可以左右切；影片＝YouTube 播放器）。
  *     放映時只有正中那個出 play（works.css）
- * 放映時每個作品照自己的比例與大小、只限最大框，總覽撐滿一欄（works.css）；每次進來順序都打亂（兩種排法共用這一次的順序）。
+ * 放映時全部一樣高、寬照比例，總覽撐滿一欄（works.css）；每次進來順序都打亂（兩種排法共用這一次的順序）。
  * 資料：後台單例 works 的 YouTube 播放清單（可以好幾個；用 Data API 拆成一支一支，照 SCCD about-data-loader）
  * ＋「圖片」欄位的圖（多圖，user 2026-11-24；原本是檔案庫「作品」資料夾裡的圖）。HTML 不放示意（user 2026-11-26：不要假資料）：
  * 都沒有（後台抓不到又沒有上次抓到的、還沒填）＝沒有作品。原本的 TEST_JSON（讀本機的測試資料，2026-11-23 用過）同一天拿掉。
@@ -171,6 +171,8 @@ export function initWorks() {
     });
     jump.forEach(w => w.classList.add('is-jump'));
     at.get(0)?.style.setProperty('--x', '0px');
+    list.style.setProperty('--cw', `${at.has(0) ? size(/** @type {HTMLElement} */ (at.get(0))) : 0}px`);   // 左右點擊區的寬（works.css .works-zone）
+    list.querySelectorAll('.works-zone').forEach(z => { /** @type {HTMLElement} */ (z).hidden = n < 2; });
     for (const dir of [1, -1]) {
       let edge = at.has(0) ? size(at.get(0)) / 2 : 0;
       for (let r = dir; at.has(r); r += dir) { const w = at.get(r), bw = size(w); w.style.setProperty('--x', `${dir * (edge + gap + bw / 2)}px`); edge += gap + bw; }
@@ -186,7 +188,7 @@ export function initWorks() {
   resized.observe(list);
   registerPageCleanup(() => resized.disconnect());
 
-  /** 誰在正中、兩邊、藏著（data-pos -2…2，環狀，同 slideshow.js）；鈕能不能點、報讀名稱跟著排法與位置；總覽重排 */
+  /** 誰在正中、兩邊、藏著（data-pos -2…2，環狀）；鈕能不能點、報讀名稱跟著排法與位置；總覽重排 */
   const render = () => {
     const ws = works(), n = ws.length, half = Math.floor(n / 2), bento = root.dataset.mode === 'bento';
     ws.forEach((w, i) => {
@@ -195,6 +197,7 @@ export function initWorks() {
       const label = bento ? (w.dataset.kind === 'video' ? '播放' : '放大') : pos === 0 ? (w.dataset.kind === 'video' ? '播放' : '') : pos === -1 ? '上一個' : pos === 1 ? '下一個' : '';
       w.dataset.pos = String(pos);
       hit.disabled = !label;
+      if (label) hit.removeAttribute('aria-hidden'); else hit.setAttribute('aria-hidden', 'true');   // 點了沒事的（放映正中的圖片）＝報讀不念這顆沒名字的鈕（WCAG 4.1.2）；圖本身照念 alt
       const en = { 播放: 'Play', 放大: 'Enlarge', 上一個: 'Previous', 下一個: 'Next' }[label] || '';
       setLabel(hit, label && title ? `${label}：${title}` : label, title ? `${en}: ${title}` : en);   // 報讀名稱跟語言走（user 2026-11-25）
       if (!bento && Math.abs(pos) > 1) w.setAttribute('aria-hidden', 'true'); else w.removeAttribute('aria-hidden');   // 放映時藏著的不給讀
@@ -203,6 +206,14 @@ export function initWorks() {
     document.querySelectorAll('.bar-works [data-works-mode]').forEach(b => { /** @type {HTMLElement} */ (b).dataset.worksMode = bento ? 'slideshow' : 'bento'; });
     // 放映時舞台兩側的模糊那一層（同關於的段落輪播 slideshow.js；樣子 page.css「輪播兩側的淡出＋模糊」）：內容整批換掉（打亂、後台）之後都會叫 render → 這裡補回來
     if (!list.querySelector(':scope > .slide-blur')) list.insertAdjacentHTML('beforeend', '<div class="slide-blur" aria-hidden="true"><i></i></div>');
+    // 放映：左右兩塊可以點的區域＝舞台邊緣到正中那個作品的邊緣（寬 --cw，layoutRow 給），點了換上一個／下一個（user 2026-11-27：「左右有個區塊是可以點擊，
+    // 不是現在這樣以圖片為基準」；原本點旁邊那個作品露出來的那段才換＝點到空隙沒反應）。蓋在旁邊的作品上面；正中那個照舊（影片點了就地播）。同上，整批換掉之後補回來
+    if (!list.querySelector(':scope > .works-zone')) for (const [step, zh, en] of [[-1, '上一個作品', 'Previous work'], [1, '下一個作品', 'Next work']]) {
+      const z = document.createElement('button');
+      // 只給滑鼠、觸控：鍵盤與報讀走左右那兩個作品自己的鈕（「上一個：標題」，比較完整），不然 Tab 會走到兩組、念兩次（scaid-97 無障礙稽核提醒）
+      z.type = 'button'; z.className = 'works-zone'; z.dataset.step = String(step); z.tabIndex = -1; z.setAttribute('aria-hidden', 'true'); setLabel(z, String(zh), String(en));
+      list.append(z);
+    }
     layoutBento();
     layoutRow();
   };
@@ -308,6 +319,8 @@ export function initWorks() {
 
   list.addEventListener('click', (e) => {
     if (dragged) { dragged = false; return; }   // 剛拖完放開的那一下
+    const zone = e.target instanceof Element ? e.target.closest('.works-zone') : null;
+    if (zone instanceof HTMLElement) { go(Number(zone.dataset.step)); return; }
     const hit = e.target instanceof Element ? e.target.closest('.work-hit') : null, w = hit?.closest('.work');
     if (!(hit instanceof HTMLButtonElement) || hit.disabled || !(w instanceof HTMLElement)) return;
     if (root.dataset.mode === 'bento') { lightbox(w, e); return; }

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">
-  <script>try{localStorage.getItem('scaid:theme')==='dark'&&(document.documentElement.dataset.theme='dark')}catch(e){}document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
-  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=2">
+  <script>(function(){var K='scaid:theme',S,t,a,h=new Date().getHours(),n=h>=6&&h<18?'light':'dark';try{S=sessionStorage;t=S.getItem(K);a=S.getItem(K+'-auto')}catch(e){}if(t!=='dark'&&t!=='light'){t=n;a='1'}else if(a&&t!==n){t=n;a=''}try{S.setItem(K,t);a?S.setItem(K+'-auto','1'):S.removeItem(K+'-auto')}catch(e){}t==='dark'&&(document.documentElement.dataset.theme='dark')})();document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg?v=3">
   <meta name="description" content="SCAID - Activities 實踐大學 AI 設計職人學士學位學程 - 動態">
   <link rel="canonical" href="https://scaid.usc.edu.tw/activities">
   <meta property="og:type" content="website">
@@ -37,6 +37,7 @@
       <article class="page-body col-span-full md:col-start-4 md:col-span-6 pc:col-start-2">
         <h1 class="sr-only" data-label="nav.activities" data-en="Activities">動態</h1>
         <p class="coming-soon" data-label="page.coming-soon" data-en="Coming soon">即將推出</p>   <!-- 後台「即將推出」勾了這一頁才出、在 Hero 下面那塊的正中（coming-soon.js；user 2026-11-25） -->
+        <p class="page-lead"></p>   <!-- 導言＝後台「動態Hero」（activities_page）；沒填＝main.js settle 收掉 -->
 
       <section class="page-section">
         <ul class="item-list mt-0"></ul>
@@ -44,14 +45,10 @@
       </article>
 
       <!-- TODO 圖片待 user 給 -->
-      <div class="page-figure hidden pc:block md:col-start-8 md:col-span-5"><div data-label="common.image" data-en="Image">圖片</div></div>
+      <div class="page-figure hidden pc:block md:col-start-8 md:col-span-5"><div></div></div>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
   <script src="../js/utils/helpers.js"></script>
   <script type="module" src="../js/main.js"></script>
 

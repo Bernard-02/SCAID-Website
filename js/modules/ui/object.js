@@ -5,17 +5,19 @@
  *     模型面數很低（蛋 24 個頂點）＝輪廓是多邊形 → 載進來先細分、照法線鼓成圓的（refine；user 2026-11-26：「至少圓形物件可以在旋轉之後看出來是圓的」）。
  *   - 排法：每一列從畫布正中往兩邊走、一路累加墨量、每滿 1 放一根（同 logo「從中間往兩邊」）；位置是連續的、不對格子。
  *     淺色模式墨多＝暗面，深色模式反過來。64 列（user 2026-11-26：「grid上要分割更多，才看得出來是什麽」；原本 32 列）。
- *   - 視角：平常停在正面、不動（不跟游標）；在這張圖上按住拖才轉（滑鼠、觸控都一樣）：上下左右都可以一直轉、沒有盡頭
- *     （user 2026-11-26：「不會有拖曳到最極限的情況發生，它應該是可以再翻另外一面的」；原本上下只到正上／正下）——
- *     繞的是畫面的直軸、橫軸（拖哪邊、眼前那一面就往哪邊走），不是模型自己的軸。
+ *   - 視角（user 2026-11-27：「一進場的時候，這個模型會360°在自己旋轉，如果我們drag它的話則是我們決定它的旋轉角度，離開時則回到預設狀態」；
+ *     原本平常停在正面、不動）：預設＝繞模型自己的直軸一直轉、一個轉一圈（SPIN）的時間換下一個；**換的時候也不停**＝新的接著舊的轉到的角度轉下去
+ *     （user 2026-11-27：「我想要3d模型在切換的時候不停下旋轉，下一個應該銜接上一個模型」；原本換的途中停住、換完歸回正面）；
+ *     在這張圖上按住拖（滑鼠、觸控都一樣）＝自己不轉、照拖的轉：上下左右都可以一直轉、沒有盡頭（user 2026-11-26：「它應該是可以再翻另外一面的」）——
+ *     繞的是畫面的直軸、橫軸（拖哪邊、眼前那一面就往哪邊走）；放開＝花 DUR.slow 轉回預設，從按下去時轉到的角度接著轉。不跟游標。
  *   - 換下一個＝stroke 隨機進出場、每一根用淡的（user 2026-11-26：「不是整個fade，是那個stroke做切換時，一個個fade 出場，fade 進場」；
- *     原本每一根是硬切）：舊的停在當下轉到的角度一根一根淡出，新的同時從正面一根一根淡入；拖到一半的角度只留到換下一個為止。
- *   - 游標在 object 上（觸控：點一下）＝logo 露出它的名字，而且不換下一個；移開後從頭等一輪。
+ *     原本每一根是硬切）：舊的一根一根淡出、新的同時一根一根淡入，兩個都照當下的姿態一直轉（每一根什麼時候淡＝照它落在哪一格，go）；拖的角度也接著留給下一個。
+ *   - 游標在 object 上（觸控：點一下、或拖著的時候）＝logo 露出它的名字，而且不換下一個；移開後從頭等一輪。
  *   - 放在殼上＝換頁不重來。PC：疊在當頁右圖那一格（page.css .page-figure > *）上，每一幀照它的位置擺；首頁沒有那一格＝不顯示。
  *     首頁 → 內頁（user 2026-11-23）：logo 上移的途中（html.logo-moving，router.js）先不出場、只先抓第一個模型，移完跟 logo 變形同時出場。
  *     PC 以外（手機、iPad；user 2026-11-23）：平常不出、也不跑（不載模型），底列右下角那顆鈕點了才搬進放大 dialog（chrome.js 叫 openObject／closeObject）。
  *   - 名字跟著網站語言（中／英）回報給 logo（logo.js logoObject）：內頁 logo 的 stroke 長度＝名字的長度。
- * 減少動態＝不換，只畫第一個（照樣可以拖著轉）。<html data-logo-still>（煙霧測試其他段落）＝整個不跑。
+ * 減少動態＝不換、不自己轉，只畫第一個的正面（照樣可以拖著轉、放開直接回正面）。<html data-logo-still>（煙霧測試其他段落）＝整個不跑。
  */
 import { sitePath } from './site-base.js';
 import { prefersReducedMotion } from './reduce-motion.js';
@@ -23,7 +25,8 @@ import { logoObject } from './logo.js';
 import { DUR } from './motion.js';
 
 const COLS = 144, ROWS = 64;          // 排幾列；橫向的解析度（一格＝1.7 根 stroke 寬）。要更細／更粗＝兩個一起乘（比例 9:4＝stroke 的形狀）
-const HOLD = 2600, SWAP = 1600;       // 一個停多久、換一次多久（ms）
+const SPIN = 6000, HOLD = SPIN;       // 自己轉一圈多久＝一個停多久（ms；原本停 2.6 秒）
+const SWAP = 1600, BACK = DUR.slow * 1000;   // 換一次多久、放開之後轉回預設多久（ms）
 const FADE = DUR.fade * 1000 / SWAP;  // 換的時候一根淡多久（佔整段的幾成）＝網站 fade 的時長
 const VIEW = [-.35, .5];              // 正面的視角（左右、上下，弧度）：稍微從左上方看
 const SSX = 4, SSY = 4, AMB = .05;    // 每格再細分幾個點算明暗；最暗的地方還留多少亮度
@@ -50,9 +53,11 @@ let at = -1;
 /** @type {Item | null} */ let cur = null, nxt = null, pending = null;
 /** @type {{ a: Float32Array, b: Float32Array } | null} */ let swap = null;   // 換的途中：舊的、新的每一根從什麼時候開始淡（0～1−FADE）
 let prog = 0, hold = 0, last = 0, raf = 0, W = 0, placed = '', drawn = '';
-let R = FRONT.slice(), restX = 0, restY = 0;   // 畫面上的姿態；拖了還沒轉完的量（橫拖、直拖，弧度）
-/** @type {{ x: number, y: number, px: number, py: number, moved: boolean } | null} */ let drag = null;   // x／y＝按下去的位置、px／py＝上一次的位置
-let reveal = false, inDialog = false;
+let R = FRONT.slice(), spin = 0, restX = 0, restY = 0;   // 畫面上的姿態；預設自己轉到的角度；拖了還沒轉完的量（橫拖、直拖，弧度）
+/** @type {{ q: number[], t: number } | null} */ let back = null;   // 放開之後轉回預設的途中：從哪個姿態（四元數）、走了幾成
+/** @type {{ x: number, y: number, px: number, py: number, moved: boolean, touch: boolean, was: boolean } | null} */ let drag = null;   // x／y＝按下去的位置、px／py＝上一次的位置；touch＝不是滑鼠、was＝按下去之前露不露名字
+let reveal = false, inDialog = false, drewAt = 0, ink = '', inkDark = /** @type {boolean | null} */ (null);
+const FRAME_MS = 30;   // 自己轉的時候多久才重畫一張（60Hz 的螢幕＝隔一幀畫一次＝每秒 30 張；拖著、換的途中照每一幀畫）
 const zb = new Float32Array(BW * BH), sb = new Uint8Array(BW * BH), rho = new Float32Array(BW);
 const strokes = () => /** @type {Strokes} */ ({ n: 0, r: new Uint16Array(N * 2), x: new Float32Array(N * 2) });
 const A = strokes(), B = strokes();
@@ -63,13 +68,31 @@ const visible = () => !off() && !root.classList.contains('logo-moving') && (inDi
 const dark = () => root.dataset.theme === 'dark';
 
 // 目前的姿態再繞畫面的直軸轉 a、橫軸轉 b（弧度）：每次都是接著轉＝沒有盡頭、可以翻到任何一面。
-// ponytail: 一直乘下去會慢慢不正交，沒有重新正交化——換下一個就回到 FRONT，累積不到看得出來
+// ponytail: 一直乘下去會慢慢不正交，沒有重新正交化——放開就回到預設的姿態，累積不到看得出來
 function turn(/** @type {number} */ a, /** @type {number} */ b) {
   const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sinB = Math.sin(b);
   for (let i = 0; i < 3; i++) {
     const x = R[i], y = R[3 + i], z = -x * sa + R[6 + i] * ca;
     R[i] = x * ca + R[6 + i] * sa; R[3 + i] = y * cb - z * sinB; R[6 + i] = y * sinB + z * cb;
   }
+}
+// 預設的姿態＝正面再繞模型自己的直軸轉 a（FRONT × 繞 y 轉 a）
+function spun(/** @type {number} */ a) {
+  const c = Math.cos(a), s = Math.sin(a), F = FRONT;
+  return [0, 3, 6].flatMap(i => [F[i] * c - F[i + 2] * s, F[i + 1], F[i] * s + F[i + 2] * c]);
+}
+// 姿態 ↔ 四元數（放開之後轉回預設要內插；矩陣直接內插會退化）
+function quat(/** @type {number[]} */ [a, b, c, d, e, f, g, h, i]) {
+  const t = a + e + i;
+  if (t > 0) { const s = 2 * Math.sqrt(1 + t); return [s / 4, (h - f) / s, (c - g) / s, (d - b) / s]; }
+  if (a > e && a > i) { const s = 2 * Math.sqrt(1 + a - e - i); return [(h - f) / s, s / 4, (b + d) / s, (c + g) / s]; }
+  if (e > i) { const s = 2 * Math.sqrt(1 + e - a - i); return [(c - g) / s, (b + d) / s, s / 4, (f + h) / s]; }
+  const s = 2 * Math.sqrt(1 + i - a - e); return [(d - b) / s, (c + g) / s, (f + h) / s, s / 4];
+}
+// p → q 走 k 成，回傳姿態。四元數線性內插再正規化、走近的那一邊（點積 ≥ 0 就不會退化）
+function blend(/** @type {number[]} */ p, /** @type {number[]} */ q, /** @type {number} */ k) {
+  const sg = p[0] * q[0] + p[1] * q[1] + p[2] * q[2] + p[3] * q[3] < 0 ? -1 : 1, r = p.map((v, j) => v + (sg * q[j] - v) * k), n = Math.hypot(...r), [w, x, y, z] = r.map(v => v / n);
+  return [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y), 2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x), 2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)];
 }
 // 模型照某個姿態打光，算進 sb（每個點多亮；0＝沒東西）。z-buffer，亮度在三角形裡平滑內插
 function shoot(/** @type {Model} */ m, /** @type {number[]} */ pose) {
@@ -122,7 +145,7 @@ function scatter(/** @type {Strokes} */ out) {
 // 兩個面在同一條邊上法線不同（杯口：側面鼓出去、蓋子是平的）＝鼓的量不同、會裂開 → 兩條邊之間補一條窄帶。
 function refine(/** @type {Model} */ m) {
   const { v, n, f } = m, k = Math.min(4, Math.sqrt(FINE / (f.length / 3)) | 0);
-  if (k < 2) return m;   // 面數本來就夠（動物、機器人）
+  if (k < 2) return m;   // 面數本來就夠（汽車、拖拉機這種）
   /** @type {number[]} */ const V = [], NN = [], F = [];
   /** @type {Map<string, number[][]>} */ const edges = new Map();
   const pos = (/** @type {number} */ i) => `${v[i]},${v[i + 1]},${v[i + 2]}`, steps = Array.from({ length: k + 1 }, (_, s) => s);
@@ -162,18 +185,17 @@ function report() {
   if (canvas) canvas.setAttribute('aria-label', o ? (zh ? o.zh : o.en) : '');
   logoObject(o && visible() ? { text: zh ? o.zh : o.en, zh, reveal } : null);
 }
-// 換成 o：舊的照當下的角度出場、新的從正面進場，每一根各抽一個時間點開始淡
+// 換成 o：舊的出場、新的進場，兩個都照當下的姿態一直轉（user 2026-11-27：「我想要3d模型在切換的時候不停下旋轉，下一個應該銜接上一個模型，它們是不會停止旋轉的」；
+// 原本換的途中兩個都停住、舊的停在當下的角度、新的從正面進場，換完歸回正面）。每一根什麼時候開始淡＝照它落在哪一格（列 × 橫向的格）各抽一個時間點：
+// 轉著的時候每一幀的 stroke 都重排，照第幾根抽的話同一個位置的那一根每幀換一個時間點＝一直閃
 function go(/** @type {Item} */ o) {
-  const rnd = (/** @type {number} */ n) => Float32Array.from({ length: n }, () => Math.random() * (1 - FADE));
-  if (cur?.model) { shoot(cur.model, R); scatter(A); } else A.n = 0;
-  shoot(/** @type {Model} */ (o.model), FRONT); scatter(B);
-  swap = { a: rnd(A.n), b: rnd(B.n) };
+  const rnd = () => Float32Array.from({ length: ROWS * COLS }, () => Math.random() * (1 - FADE));
+  swap = { a: rnd(), b: rnd() };
   nxt = o; prog = still() ? 1 : 0;
   report();
 }
 function endSwap() {
-  R = FRONT.slice(); restX = restY = 0; drawn = '';   // 新的回到正面
-  cur = nxt; nxt = null; swap = null; hold = HOLD;
+  cur = nxt; nxt = null; swap = null; hold = HOLD;   // 姿態不歸零＝新的接著轉
   pending = list[order[at = (at + 1) % order.length]]; load(pending);   // 下一個先抓
 }
 function advance() {
@@ -204,31 +226,43 @@ function frame(/** @type {number} */ now) {
   raf = requestAnimationFrame(frame);
   const dt = Math.min(64, now - last); last = now;
   if (!place()) return;
+  if (!inDialog && document.querySelector('#figure-dialog[open]')) return;   // 放大 dialog 開著：殼上的畫布糊在後面（chrome.css）＝停著不畫
   if (nxt) { prog += dt / SWAP; if (prog >= 1) endSwap(); }
   else if (!cur) advance();
-  else if (!reveal && !drag && !still()) { hold -= dt; if (hold <= 0) advance(); }
-  // 視角：預設停在正面、不動；在畫布上按住拖才轉，畫面慢一點點跟上＝還沒轉完的量每一幀轉掉一部分（剩一點點就一次轉完）
-  if (!nxt && (restX || restY)) {
-    const k = Math.abs(restX) + Math.abs(restY) < 1e-3 ? 1 : 1 - Math.exp(-dt / 100);
-    turn(restX * k, restY * k); restX -= restX * k; restY -= restY * k; drawn = '';
+  // 露出名字＝停住不換（PC 游標在 object 上）；手機的 dialog 裡例外＝露著名字照樣換，logo 跟著換名字（user 2026-11-27：「頂部的logo應該要一直改變長度，根據圖片的變化」）
+  else if ((!reveal || inDialog) && !drag && !still()) { hold -= dt; if (hold <= 0) advance(); }
+  // 視角（換的途中照轉，user 2026-11-27）：拖著＝照拖的轉，畫面慢一點點跟上（還沒轉完的量每一幀轉掉一部分，剩一點點就一次轉完）；
+  // 沒拖＝自己繞直軸轉，剛放開的那段從放開時的姿態轉回來（smoothstep）。減少動態＝不轉、放開直接回去
+  if (drag) {
+    if (restX || restY) { const k = Math.abs(restX) + Math.abs(restY) < 1e-3 ? 1 : 1 - Math.exp(-dt / 100); turn(restX * k, restY * k); restX -= restX * k; restY -= restY * k; }
+  } else {
+    if (!still()) spin = (spin + dt / SPIN * 2 * Math.PI) % (2 * Math.PI);
+    if (back && !still()) { const t = back.t = Math.min(1, back.t + dt / BACK); R = blend(back.q, quat(spun(spin)), t * t * (3 - 2 * t)); if (t >= 1) back = null; }
+    else { R = spun(spin); back = null; }
   }
-  const key = nxt ? '' : `${cur?.slug}|${dark()}`;
+  const key = nxt ? '' : `${cur?.slug}|${dark()}|${R.join()}`;
   if (key && key === drawn) return;   // 沒在換、視角也沒變：不重畫
-  drawn = key;
+  if (!drag && !nxt && now - drewAt < FRAME_MS) return;
+  drewAt = now; drawn = key;
   // 寬往下取整：DPR 1 的螢幕一格只有 2.6px，四捨五入成 2px 的話最密的地方（相距 1.97px）會連成一片黑
   const PX = W / COLS, PY = W / ROWS, w = Math.max(1, Math.floor(PX * SW)), h = Math.max(2, Math.round(PY * SH));
-  // 畫一組 stroke。at＝每一根從什麼時候開始淡（換的途中才給）：還沒輪到的照原樣、輪到的那一段照進度淡（out＝淡出，不然淡入）。
+  // 畫一組 stroke。at＝每一格從什麼時候開始淡（換的途中才給，go）：還沒輪到的照原樣、輪到的那一段照進度淡（out＝淡出，不然淡入）。
   // 不透明的併成一條路徑一次畫完，正在淡的那幾成才一根一根畫
   const draw = (/** @type {Strokes} */ s, /** @type {Float32Array | null} */ at = null, out = false) => {
     g.beginPath();
     for (let i = 0; i < s.n; i++) {
-      const t = at ? clamp((prog - at[i]) / FADE, 0, 1) : 1, a = out ? 1 - t : t, x = Math.round(s.x[i] * PX + (PX - w) / 2), y = Math.round(s.r[i] * PY + (PY - h) / 2);
+      const t = at ? clamp((prog - at[s.r[i] * COLS + clamp(Math.round(s.x[i]), 0, COLS - 1)]) / FADE, 0, 1) : 1, a = out ? 1 - t : t, x = Math.round(s.x[i] * PX + (PX - w) / 2), y = Math.round(s.r[i] * PY + (PY - h) / 2);
       if (a >= 1) g.rect(x, y, w, h); else if (a > 0) { g.globalAlpha = a; g.fillRect(x, y, w, h); }
     }
     g.globalAlpha = 1; g.fill();
   };
-  g.clearRect(0, 0, W, W); g.fillStyle = getComputedStyle(canvas).color;
-  if (nxt && swap) { draw(A, swap.a, true); draw(B, swap.b, false); }   // 換的途中視角不動：舊的一根一根淡出、新的同時一根一根淡入
+  if (inkDark !== dark()) { inkDark = dark(); ink = getComputedStyle(canvas).color; }   // .object-canvas 的 color＝var(--theme-fg)、沒有過場＝跟著深淺一次換
+  g.clearRect(0, 0, W, W); g.fillStyle = ink;
+  if (nxt && swap) {   // 換的途中：兩個都照當下的姿態排，舊的一根一根淡出、新的同時一根一根淡入
+    if (cur?.model) { shoot(cur.model, R); scatter(A); } else A.n = 0;
+    shoot(/** @type {Model} */ (nxt.model), R); scatter(B);
+    draw(A, swap.a, true); draw(B, swap.b, false);
+  }
   else if (cur?.model) { shoot(cur.model, R); scatter(A); draw(A); }
 }
 // 看得到才跑；看不到（首頁、手機沒打開）就停，並告訴 logo 現在沒有 object
@@ -256,24 +290,30 @@ export function initObject() {
   // 滑鼠：移上去＝露出名字、不換下一個；移開＝從頭等一輪
   c.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { reveal = true; report(); } });
   c.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { reveal = false; hold = HOLD; report(); } });
-  // 轉視角（user 2026-11-22：只有在這張圖上按住拖才轉，平常不跟游標）：拖一個畫布寬＝轉半圈，橫的直的都可以一直轉（turn）。
-  // 觸控沒拖就放開＝點一下，切換露不露名字。選單開著：第一下只收選單（chrome.js），不轉。
-  // 換的途中視角不動：這時按下去先不轉，換完（手還按著）就接著能轉——原本整次拖曳都不算，
-  // 每 4.2 秒裡有 1.6 秒在換＝常常拖了沒反應
-  const endDrag = () => { drag = null; c.classList.remove('is-dragging'); };
+  // 轉視角（user 2026-11-22：只有在這張圖上按住拖才轉，平常不跟游標）：拖一個畫布寬＝轉半圈，橫的直的都可以一直轉（turn）；放開＝轉回預設、接著自己轉。
+  // 觸控沒拖就放開＝點一下，切換露不露名字；拖著＝露出名字、放開回到拖之前。選單開著：第一下只收選單（chrome.js），不轉。
+  // 換的途中照樣拖得動（user 2026-11-27：換的時候不停下旋轉）；原本換的途中按下去先不轉、整次拖曳都不算＝常常拖了沒反應
+  // 放開＝轉回預設；觸控拖過＝名字回到拖之前的樣子
+  const endDrag = () => {
+    if (drag) { back = { q: quat(R), t: 0 }; if (drag.touch && drag.moved && reveal !== drag.was) { reveal = drag.was; if (!reveal) hold = HOLD; report(); } }
+    drag = null; restX = restY = 0; c.classList.remove('is-dragging');
+  };
   c.addEventListener('pointerdown', e => {
     if (root.classList.contains('menu-open')) return;
-    drag = { x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY, moved: false };
+    drag = { x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY, moved: false, touch: e.pointerType !== 'mouse', was: reveal };
     c.setPointerCapture(e.pointerId); c.classList.add('is-dragging');
     if (e.pointerType === 'mouse') e.preventDefault();   // 不要拖出選取範圍
   });
   c.addEventListener('pointermove', e => {
     if (!drag) return;
-    if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) drag.moved = true;
-    if (!nxt) { restX += (e.clientX - drag.px) / c.clientWidth * Math.PI; restY += (e.clientY - drag.py) / c.clientWidth * Math.PI; }
+    if (!drag.moved && Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) {
+      drag.moved = true;
+      if (drag.touch && !reveal) { reveal = true; report(); }   // 觸控拖著＝露出名字（user 2026-11-27：「手機上應該是drag的時候，要顯示它的名字」；滑鼠 hover 本來就露）
+    }
+    restX += (e.clientX - drag.px) / c.clientWidth * Math.PI; restY += (e.clientY - drag.py) / c.clientWidth * Math.PI;
     drag.px = e.clientX; drag.py = e.clientY;
   });
-  c.addEventListener('pointerup', e => { if (drag && e.pointerType !== 'mouse' && !drag.moved) { reveal = !reveal; if (!reveal) hold = HOLD; report(); } endDrag(); });
+  c.addEventListener('pointerup', () => { if (drag?.touch && !drag.moved) { reveal = !reveal; if (!reveal) hold = HOLD; report(); } endDrag(); });
   c.addEventListener('pointercancel', endDrag);
   wide.addEventListener('change', sync);   // 視窗跨過 768：右圖出／收
   new MutationObserver(() => { drawn = ''; report(); }).observe(root, { attributes: true, attributeFilter: ['lang', 'data-theme'] });   // 換語言＝名字換；換深淺色＝墨多的那一面反過來
@@ -292,7 +332,7 @@ export function openObject(box) {
   if (!canvas) return;
   canvas.style.cssText = placed = '';
   box.replaceChildren(canvas);
-  inDialog = true; sync();
+  inDialog = true; reveal = true; sync(); report();   // 打開就露出名字（user 2026-11-27：「打開時就是直接reveal這個圖的名字」）；點一下照舊收起來／再露
 }
 export function closeObject() {
   if (!canvas || !inDialog) return;

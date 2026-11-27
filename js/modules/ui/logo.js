@@ -87,7 +87,7 @@ function draw(/** @type {Look} */ a, /** @type {Look} */ b = a, type = '', e = 0
   set(parts.blocks[0], { x: xl, y: 0 }); set(parts.blocks[1], { x: xr, y: (VH - SH) * tall });
   parts.text.style.opacity = text && dept ? '1' : '0';
   parts.word.style.opacity = text && !dept ? '1' : '0';
-  if (text && !dept) { parts.word.textContent = c.text; parts.word.classList.toggle('is-zh', c.zh); set(parts.word, { x: xl + BLOCK + GAP }); }
+  if (text && !dept) { if (parts.word.textContent !== c.text) parts.word.textContent = c.text; parts.word.classList.toggle('is-zh', c.zh); set(parts.word, { x: xl + BLOCK + GAP }); }
   const strokes = !text && type !== 'resize' && type !== 'tall' && type !== 'short';                    // 帶蓋滿的那幾段不用畫 stroke
   const at = strokes ? bars(c.L / STROKE) : [];
   const h = SH + (VH - SH) * tall, w = span * side * .505;                                              // 多 0.5%／0.5 單位：兩塊在正中、帶跟骨牌之間不留細縫
@@ -178,7 +178,13 @@ export function initLogo() {
   // 進場：兩個骨牌貼在一起（長度＝負的兩個間隙）→ 拉開成帶 → 切成 stroke；首頁再停一下、展開成系名
   const to = { ...want(), mode: /** @type {'stroke'} */ ('stroke') }, from = { ...to, L: -2 * GAP };
   draw(from, to, 'resize', 0);
-  busy = play(from, to, true).finally(() => { busy = null; });
+  // 第一幀淡進來（user 2026-11-27：「首頁refresh的時候，我想要logo的動畫第一幀是fade 出來的」）＝網站的 fade（淡＋糊，--dur-fade／--ease-standard），淡完才拉開。
+  // 淡之前 CSS 藏著（chrome.css html.is-intro:not(.logo-in) .site-logo）
+  const cs = getComputedStyle(root);
+  root.classList.add('logo-in');
+  const fadeIn = el.animate([{ opacity: 0, filter: `blur(${cs.getPropertyValue('--blur').trim() || '4px'})` }, { opacity: 1, filter: 'blur(0px)' }],
+    { duration: DUR.fade * 1000, easing: cs.getPropertyValue('--ease-standard').trim() || 'ease' }).finished.catch(() => {});
+  busy = fadeIn.then(() => play(from, to, true)).finally(() => { busy = null; });
   busy.then(async () => {
     if (atHome()) { await pause(DUR.base * 1000); homeMode = 'text'; }
     await settle();

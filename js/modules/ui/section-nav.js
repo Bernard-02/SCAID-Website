@@ -9,7 +9,12 @@
  */
 import { registerPageCleanup } from './page-cleanup.js';
 
+// 同一頁會被叫好幾次（後台的內容每換一次、段落收掉）：上一次掛的 listener、observer 先收掉，不然一份份疊上去、抓著已經換掉的段落
+/** @type {AbortController | null} */
+let ctl = null;
 export function initSectionNav() {
+  ctl?.abort();
+  const c = ctl = new AbortController(), on = { signal: c.signal };
   const nav = /** @type {HTMLElement | null} */ (document.querySelector('#page-content .section-nav'));
   const titles = /** @type {HTMLElement[]} */ ([...document.querySelectorAll('#page-content .section-title')]);
   if (!nav) return;
@@ -21,7 +26,6 @@ export function initSectionNav() {
   // 報讀名稱＝標題本身（aria-labelledby；最上面那一格＝頁名，h1 看不到但還在）→ 換語言自動跟著。最上面那一格是第 -1 格，段落的矩形從 0 起
   nav.innerHTML = (h1 ? `<button type="button" class="section-nav-top" data-i="-1" aria-labelledby="${h1.id}"></button>` : '')
     + titles.map((t, i) => `<button type="button" class="section-nav-dot" data-i="${i}" aria-labelledby="${t.id}"></button>`).join('');
-  nav.style.setProperty('--n', String(titles.length));
   const dots = [...nav.querySelectorAll('.section-nav-dot')];
   const top = nav.querySelector('.section-nav-top');
   const first = top ? -1 : 0;   // 最前面那一格：有導言那一格就是它
@@ -53,29 +57,29 @@ export function initSectionNav() {
     reveal(i);
   };
 
-  // nav 在 main 裡、換頁整個換掉 → 它的 listener 不用收
   nav.addEventListener('click', (e) => {
     const b = e.target instanceof Element ? e.target.closest('button') : null;
     if (!(b instanceof HTMLElement)) return;
     const i = Number(b.dataset.i);
     if (Math.abs(target(i) - window.scrollY) >= 2) goal = i;   // 點目前這格不用捲
     window.scrollTo({ top: target(i) });   // 平滑與否看 html scroll-behavior（reduce-motion 關）
-  });
+  }, on);
   // 鍵盤 Tab 到被切掉的格子 → 把它帶進來才看得到；離開導覽就回到目前段落。滑鼠點的不算（點了本來就會捲過去）
   nav.addEventListener('focusin', (e) => {
     const b = /** @type {HTMLElement} */ (e.target);
     if (b.matches(':focus-visible')) reveal(Number(b.dataset.i));
-  });
-  nav.addEventListener('focusout', () => reveal(active));
-  window.addEventListener('scroll', update, { passive: true });
+  }, on);
+  nav.addEventListener('focusout', () => reveal(active), on);
+  window.addEventListener('scroll', update, { passive: true, signal: c.signal });
   // 捲到一半被使用者自己捲斷：停下來就回一般規則（沒 scrollend 的瀏覽器＝等捲到目標才回）
   const settle = () => { goal = -1; update(); };
-  window.addEventListener('scrollend', settle);
+  window.addEventListener('scrollend', settle, on);
   // 對齊線跟著版面變（換語言、視窗寬、字型載入）→ 重量給 CSS 撐最後一段（page.css --section-y0）。
   // 下一幀才寫：撐高最後一段會再觸發這個 observer，同一幀內改會報 ResizeObserver loop
   const grid = /** @type {HTMLElement} */ (nav.parentElement);
   const ro = new ResizeObserver(() => requestAnimationFrame(() => { grid.style.setProperty('--section-y0', docTop(anchor) + 'px'); update(); }));
   ro.observe(titles[0].closest('.page-body') || grid);
-  registerPageCleanup(() => { window.removeEventListener('scroll', update); window.removeEventListener('scrollend', settle); ro.disconnect(); });
+  c.signal.addEventListener('abort', () => ro.disconnect());
+  registerPageCleanup(() => c.abort());
   update();
 }

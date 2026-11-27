@@ -6,22 +6,21 @@
  * key 從哪來：scripts/seed-directus.cjs 掃 HTML 的 data-label 補進後台（只補缺的，不蓋後台改過的）。
  */
 import { CMS_API_BASE, fetchCmsJson } from '../../config/api.js';
-import { applyLang } from './lang.js';
+import { applyLang, getLang } from './lang.js';
 
 /** @type {Promise<Record<string, { zh?: string, en?: string }>> | null} */
 let cache = null;
+/** 抓到的那張表（syncTitle 要同步讀；還沒抓到＝空） @type {Record<string, { zh?: string, en?: string }>} */
+let map = {};
 
-export function loadUiLabels() {
+function loadUiLabels() {
   if (!cache) {
     cache = fetchCmsJson(`${CMS_API_BASE}/ui_labels?limit=-1&fields=key,zh,en`)
-      .then(rows => Object.fromEntries((rows || []).filter(r => r?.key).map(r => [r.key, r])))
+      .then(rows => map = Object.fromEntries((rows || []).filter(r => r?.key).map(r => [r.key, r])))
       .catch(e => { console.warn('[ui-labels] 後台抓不到，維持原本的字：', e instanceof Error ? e.message : e); cache = null; return {}; });
   }
   return cache;
 }
-
-/** 一個 key 的中英文（給 JS 自己組的元素用；後台沒有＝回 fallback） @param {Record<string, any>} map @param {string} key @param {string} zh @param {string} en */
-export const label = (map, key, zh, en) => ({ zh: map[key]?.zh || zh, en: map[key]?.en || map[key]?.zh || en });
 
 /** root 裡標了 data-label 的元素換成後台的字，再套一次語言 @param {ParentNode} [root] */
 export async function applyUiLabels(root = document) {
@@ -34,7 +33,17 @@ export async function applyUiLabels(root = document) {
     el.dataset.en = row.en || row.zh;
   });
   applyLang(root);
-  // 分頁標題跟頁名走（頁名＝nav.<slug>，同選單）
-  const h1 = document.querySelector('#page-content h1[data-label]');
-  if (h1 && root.contains?.(h1)) document.title = `${h1.textContent} - SCAID`;
+  syncTitle();
 }
+
+/** 分頁標題＝介面文字 title.<route 名>（user 2026-11-27：跟 slug、頁名分開，中英各寫一整串；英文空＝中文）。
+ * 沒填＝「頁名 - SCAID」（頁名＝nav.<slug>，同選單）；首頁、師資詳細頁沒填＝不動（HTML 的 <title>／cms-pages.js 設的老師名字）。
+ * 換頁（router）、換語言（scaid:lang）、後台的字到了（上面）都叫 */
+export function syncTitle() {
+  const row = map[`title.${document.body.dataset.page}`];
+  const custom = (getLang() === 'en' && row?.en) || row?.zh;
+  const h1 = /** @type {HTMLElement | null} */ (document.querySelector('#page-content h1'));
+  if (custom) document.title = custom;
+  else if (h1 && (h1.dataset.label || / - SCAID$/.test(document.title))) document.title = `${h1.textContent?.trim()} - SCAID`;
+}
+document.addEventListener('scaid:lang', syncTitle);

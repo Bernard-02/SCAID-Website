@@ -13,7 +13,7 @@ html::-webkit-scrollbar { display: none; }
   z-index: 35;            /* 蓋內容與 logo（30），在選單（40）／底列（60）下 */
   touch-action: none;
   user-select: none;
-  will-change: transform, height;
+  will-change: transform;
   display: none;          /* JS 偵測到可捲才顯示 */
   animation: fade-in var(--dur-fade) var(--ease-standard);   /* 出現＝淡入（user 2026-11-21）：display none → block 時 animation 會從頭跑；keyframes 在 chrome.css */
   transition: var(--transition-fade);   /* 淡出（首頁動態收起來，home.css）、進場與放大 dialog 的模糊疊白也跟著淡；位置、高度照樣馬上跟 */

@@ -1,7 +1,7 @@
 // 介面文字（ui_labels）← 掃前台各頁 HTML 的 data-label，後台沒有的 key 補上（後台改過的字不蓋）。
 // 新的固定文字＝HTML 標 data-label（中文內文＋data-en）再跑這支。
 // 原本也把各頁 HTML 的示意內容寫進後台（user 2026-11-21：全站接後台），2026-11-26 拿掉：各頁 HTML 不放示意了
-// （user：「我們不需要假資料」），內容一律在後台填。JS 自己組的介面文字（curriculum.year.N、records.type.*…）不在 HTML 裡、掃不到，
+// （user：「我們不需要假資料」），內容一律在後台填。JS 自己組的介面文字（curriculum.year.N、activities.type.*…）不在 HTML 裡、掃不到，
 // 那幾個 key 後台已經有了；要加新的就直接在後台「介面文字」加。
 //
 // 先看會寫什麼：node scripts/seed-directus.cjs --dry
@@ -47,7 +47,7 @@ const text = n => (n.text ?? n.children.map(text).join('')).replace(/\s+/g, ' ')
 
 // 介面文字：掃殼＋每頁的 data-label，一個 key 一筆（同 key 取第一次出現的字）；分類照 key 的開頭（setup-directus.cjs LABEL_CATS）
 const LABEL_CAT = k => k.startsWith('nav.') ? '選單與頁名' : /^(menu|bar|common|page)\./.test(k) ? '底列與共用' : k.startsWith('faculty.') ? '師資'
-  : k.startsWith('curriculum.') ? '課程' : k.startsWith('contact.') ? '聯絡' : k.startsWith('records.') ? '榮譽' : k.startsWith('error.') ? '404' : null;
+  : k.startsWith('curriculum.') ? '課程' : k.startsWith('contact.') ? '聯絡' : k.startsWith('activities.') ? '動態' : k.startsWith('error.') ? '404' : null;
 function labels() {
   const m = new Map();
   for (const f of ['pages/header.html', 'index.html', ...fs.readdirSync('pages').filter(f => f.endsWith('.html') && f !== 'header.html').map(f => 'pages/' + f)])

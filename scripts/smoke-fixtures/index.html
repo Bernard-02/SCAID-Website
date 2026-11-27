@@ -1,15 +1,63 @@
 <main id="page-content">
     <h1 class="sr-only" data-en="Bachelor Program in Advanced Integrated Design, Shih Chien University">實踐大學AI設計職人學位學程</h1>
-    <!-- 未展開＝空一屏（logo 是全站殼，置中由 home.css 控）。點底列動態「+」→ html.news-open 展開這份清單
-         （MOCK 示意；後台抓到＝換成首頁的 news（後台「首頁」資料夾）的，cms-pages.js homeNews()，user 2026-11-23 跟動態頁拆開）。背景先白底黑字（user 2026-11-03） -->
-    <section class="home-news-list site-container" aria-label="最新動態" data-en-label="News">
-      <ul>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-1/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-2/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-3/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-4/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-5/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Program website launched">學程網站上線</p></li>
-        <li><div class="home-news-box"><img src="https://picsum.photos/seed/scaid-home-6/900/600" alt="" loading="lazy"></div><p class="text-md" data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</p></li>
-      </ul>
+    <!-- 煙霧測試用的示意（index.html 的清單是空的、後台填）。一則一個摺疊＝cms-pages.js homeRow 的標記（入學 2026-11-27 併進來）；第一則是完整示意：說明 → 相簿 → 附件 -->
+    <section class="home-news-list" aria-label="最新動態" data-en-label="News">
+      <div class="site-container site-grid">
+        <div class="page-body col-span-full md:col-start-4 md:col-span-6"><ul class="item-list mt-0">
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-1/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="2026 admission info session, online on 22 Nov">115 學年度招生說明會，11 月 22 日線上舉行</h3><p data-en="22 Nov 2026">2026.11.22</p></div>
+            </summary>
+            <div class="fold-body">
+              <p class="whitespace-pre-line" data-en="This is a description. Bring your offer letter and ID on registration day; see the attachments for the procedure and required documents. Senior students will lead a studio tour on site.">這是一段說明文字。報到當天請攜帶錄取通知與身分證件，流程與應備文件見附件；現場另有學長姐帶領參觀工作室。</p>
+              <div class="album">
+                <button type="button"><img src="https://picsum.photos/seed/scaid-adm-1-1/1200/800" alt="" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-adm-1-2/1200/800" alt="" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+                <button type="button"><img src="https://picsum.photos/seed/scaid-adm-1-3/1200/800" alt="" loading="lazy"><span data-label="common.enlarge" class="sr-only" data-en="Enlarge image">放大圖片</span></button>
+              </div>
+              <ul class="link-list">
+                <li><a class="nav-link" href="https://example.com/handbook.pdf" download data-en="New student handbook (PDF)">新生入學手冊（PDF）</a></li>
+                <li><a class="nav-link" href="https://example.com/registration.pdf" download data-en="Registration procedure (PDF)">報到流程（PDF）</a></li>
+              </ul>
+            </div>
+          </details></li>
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-2/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="Partner visit: inside an animation studio pipeline">合作企業參訪：動畫工作室的製作流程</h3><p data-en="10 Nov 2026">2026.11.10</p></div>
+            </summary>
+            <div class="fold-body"><p class="whitespace-pre-line" data-en="Placeholder description for item 2.">第 2 則的示意說明。</p></div>
+          </details></li>
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-3/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="Registration open for the mentor talk Virtual Production 101">業師講座「虛擬製作入門」開放報名</h3><p data-en="5 Nov 2026">2026.11.05</p></div>
+            </summary>
+            <div class="fold-body"><p class="whitespace-pre-line" data-en="Placeholder description for item 3.">第 3 則的示意說明。</p></div>
+          </details></li>
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-4/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="End-of-term show opens on 20 Dec">期末成果展 12 月 20 日開幕</h3><p data-en="20 Dec 2026">2026.12.20</p></div>
+            </summary>
+            <div class="fold-body"><p class="whitespace-pre-line" data-en="Placeholder description for item 4.">第 4 則的示意說明。</p></div>
+          </details></li>
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-5/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="Program website launched">學程網站上線</h3><p data-en="1 Oct 2026">2026.10.01</p></div>
+            </summary>
+            <div class="fold-body"><p class="whitespace-pre-line" data-en="Placeholder description for item 5.">第 5 則的示意說明。</p></div>
+          </details></li>
+          <li><details>
+            <summary class="item-row">
+              <div class="item-thumb"><img src="https://picsum.photos/seed/scaid-home-6/900/600" alt="" loading="lazy"></div>
+              <div><h3 data-en="Recap of the first cohort orientation">第一屆新生說明會回顧</h3><p data-en="15 Sep 2026">2026.09.15</p></div>
+            </summary>
+            <div class="fold-body"><p class="whitespace-pre-line" data-en="Placeholder description for item 6.">第 6 則的示意說明。</p></div>
+          </details></li>
+        </ul></div>
+      </div>
     </section>
   </main>

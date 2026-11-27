@@ -8,8 +8,9 @@
  * 滑鼠在上面照走（user 2026-11-26：「hover marquee中的圖片不需要停止」）；鍵盤聚焦在裡面＝慢慢停下來、離開再慢慢走起來；減少動態＝不走、點了直接跳到正中。只有一張＝不走、在正中。
  * 位置每幀照「走了多遠」算（transform），不靠 CSS 過場。
  * 框的左右兩側＝淡出＋模糊（樣子全在 page.css「輪播兩側的淡出＋模糊」，跟相簿、作品頁放映共用）：這裡只插 .slide-blur 的那一層、把照片和它包進 .slide-strip。
- * 框高：兩張以上＝一律 16rem（CSS max-height），不看框寬、不看圖的比例＝每一個輪播一樣高、同「跨領域」那種小節的單圖（直圖 16rem；user 2026-11-26：
- * 「我想要這邊的輪播的高度都一樣，比照跨領域的那個，手機上好像沒調整」——原本最寬的那張要放得進框寬的 68%／手機 72%＝有橫圖的輪播在手機上矮到 180）；
+ * 框高：兩張以上＝一律同一個高（CSS max-height）：桌面（≥768）16rem＝同「跨領域」那種小節的單圖（user 2026-11-26），
+ * 手機＝相簿那排的高 6rem（page.css；user 2026-11-27：「about輪播的圖片應該要再小一點，跟accordion的gallery一樣大」「這個比例不要調整到pc的，pc還是要原本的scale」）；
+ * 不看框寬、不看圖的比例＝每一個輪播一樣高（再之前最寬的那張要放得進框寬的 68%／手機 72%＝有橫圖的輪播在手機上矮到 180）；
  * 比框寬的圖跑馬燈走過去就看得完。只有一張＝同小節圖：最高 16rem、橫圖照欄寬縮。
  * 元素都在 main 裡、換頁整個換掉 → 掛在它們身上的 listener 不用收；每幀的迴圈、window 的 resize 要收（registerPageCleanup）。
  */
@@ -49,11 +50,12 @@ export function initSlideshow() {
     strip.className = 'slide-strip';
     strip.append(...slides, blur);
     root.append(strip);
-    slides.forEach((s, i) => setLabel(s, `第 ${i + 1} 張圖片`, `Image ${i + 1}`));
+    // 報讀名稱＝圖的 alt（那一段／小節的標題，cms-pages.js imgAttrs）＋第幾張
+    slides.forEach((s, i) => { const a = s.querySelector('img')?.dataset; setLabel(s, `${a?.zhAlt ? `${a.zhAlt} ` : ''}第 ${i + 1} 張圖片`, `${a?.enAlt ? `${a.enAlt} ` : ''}Image ${i + 1}`); });
     const items = [...slides];   // 原本那幾張＋複製的
     /** @type {number[]} */ let w = [];   // 每張的寬
     /** @type {number[]} */ let b = [];   // 每張排在整圈的哪裡（第一張的左緣＝0）
-    let box = 0, M = 0, T = 1, o = NaN, v = 0, focus = false, last = 0, raf = 0;
+    let box = 0, M = 0, T = 1, o = NaN, v = 0, focus = false, last = 0, raf = 0, inView = false;
     /** @type {{ from: number, to: number, t0: number } | null} */ let glide = null;
     // 第 j 張的左緣在框的哪裡：整圈長 T、往左走了 o；左邊留 M（最寬一張＋gutter）＝走出框才繞到最後面
     const xOf = (/** @type {number} */ j) => n < 2 ? (box - w[j]) / 2 : mod(b[j] - o + M, T) - M;
@@ -65,6 +67,7 @@ export function initSlideshow() {
       if (prefersReducedMotion()) { o = to; v = 0; place(); return; }   // 速度也歸零：不然停下來前還會滑一小段
       glide = { from: o, to, t0: performance.now() };
       v = 0;   // 滑完從停著慢慢走起來
+      run();
     };
     const layout = () => {
       const cs = getComputedStyle(root), gap = parseFloat(cs.columnGap) || 0, r = slides.map(ratio);
@@ -87,8 +90,11 @@ export function initSlideshow() {
       if (Number.isNaN(o)) o = w[0] / 2 - box / 2;   // 一開始第一張在正中
       place();
     };
+    // 迴圈：看得到才跑、停住了（v 歸零）就不排下一幀；點了、鍵盤離開、捲回畫面再叫 run
+    const run = () => { if (!raf && inView && n > 1) { last = 0; raf = requestAnimationFrame(tick); } };
     const tick = (/** @type {number} */ now) => {
-      raf = requestAnimationFrame(tick);
+      raf = 0;
+      if (!inView) return;
       const dt = Math.min(0.1, (now - (last || now)) / 1000);   // 分頁切走再回來＝不一下子跳一大段
       last = now;
       if (glide) {
@@ -98,16 +104,18 @@ export function initSlideshow() {
       } else {
         const goal = focus || prefersReducedMotion() ? 0 : SPEED;
         v += (goal - v) * Math.min(1, dt * BRAKE);
-        if (!goal && v < 0.05) { v = 0; return; }   // 停住了＝不用每幀重排
+        if (!goal && v < 0.05) { v = 0; return; }   // 停住了＝不用每幀重排、也不排下一幀
         o += v * dt;
       }
       place();
+      raf = requestAnimationFrame(tick);
     };
-    // 被框切掉的圖瀏覽器當它看不到＝lazy 不載，走進框才冒出來 → 輪播快到畫面裡就整組一起載
+    // 快到畫面裡才跑；被框切掉的圖瀏覽器當它看不到＝lazy 不載，走進框才冒出來 → 第一次快到畫面裡就整組一起載
     const io = new IntersectionObserver((es) => {
-      if (!es.some(e => e.isIntersecting)) return;
-      root.querySelectorAll('img').forEach(i => { i.loading = 'eager'; });
-      io.disconnect();
+      inView = es.some(e => e.isIntersecting);
+      if (!inView) return;
+      root.querySelectorAll('img[loading="lazy"]').forEach(i => { /** @type {HTMLImageElement} */ (i).loading = 'eager'; });
+      run();
     }, { rootMargin: '100%' });
     io.observe(root);
     // 視窗寬變了＝欄寬變、框高跟每張的寬重算。不用 ResizeObserver 盯框：layout 會改框的高，在它的回呼裡改自己的大小＝「ResizeObserver loop」
@@ -119,12 +127,11 @@ export function initSlideshow() {
       focus = e.target instanceof Element && e.target.matches(':focus-visible');
       if (focus) center(items.indexOf(/** @type {HTMLButtonElement} */ (e.target)));
     });
-    root.addEventListener('focusout', () => { focus = false; });
+    root.addEventListener('focusout', () => { focus = false; run(); });
     strip.addEventListener('click', e => {
       const s = e.target instanceof Element ? e.target.closest('.slide') : null;
       center(items.indexOf(/** @type {HTMLButtonElement} */ (s)));
     });
     layout();
-    if (n > 1) raf = requestAnimationFrame(tick);
   });
 }

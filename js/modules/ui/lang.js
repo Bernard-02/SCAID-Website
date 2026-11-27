@@ -12,19 +12,47 @@ export function getLang() {
   try { return localStorage.getItem(KEY) === 'en' ? 'en' : 'zh'; } catch { return 'zh'; }
 }
 
+// 中文裡英數前後的空格（一邊是中文字、一邊是英數）＝中文字體的空格（Regular 0.447em，英數字體的空格是 0.642em）；英文詞中間的空格照舊
+// （user 2026-11-27：「在中文裏面，英文前後的空格，是用中文的空格，英文内的則維持原狀，比如vision base」「英文前或英文後若是中文的話」）。
+// 字體分不出前後文 → 那個空格包一個 span、指定中文字體（typography.css .cjk-sp）；字還是一般的空格（複製出來一樣）。中文字的範圍同 item-marquee.js CJK。
+// 不用 lookbehind（(?<=…)）：iOS 16.3 以前的 Safari 解析時就丟 SyntaxError＝整支程式不跑 → 空格前那個字放進比對、切的時候留下
+const GAP = /([⺀-鿿豈-﫿︰-﹏＀-￯]) +(?=[!-~])|([!-~]) +(?=[⺀-鿿豈-﫿︰-﹏＀-￯])/g;
+/** @param {HTMLElement} el @param {string} text */
+function setZh(el, text) {
+  /** @type {(string | Node)[]} */
+  const out = [];
+  let at = 0;
+  for (const m of text.matchAll(GAP)) {
+    const s = document.createElement('span'); s.className = 'cjk-sp'; s.textContent = ' ';
+    out.push(text.slice(at, /** @type {number} */ (m.index) + 1), s);
+    at = /** @type {number} */ (m.index) + m[0].length;
+  }
+  if (!at) { el.textContent = text; return; }
+  out.push(text.slice(at));
+  el.replaceChildren(...out);
+}
+// 每個元素上次寫進去的「語言＋字」：一樣就不重寫（換頁時 applyLang 會被叫好幾次，重寫＝item-marquee 的 MutationObserver 每次都整串重量）
+/** @type {WeakMap<Element, string>} */
+const shown = new WeakMap();
+
 /** @param {ParentNode} [root] */
 export function applyLang(root = document) {
   const lang = getLang();
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hant';
   /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll('[data-en]')).forEach(el => {
     if (el.dataset.zh == null) el.dataset.zh = el.textContent;
-    el.textContent = lang === 'en' ? el.dataset.en : el.dataset.zh;
+    const v = (lang === 'en' ? el.dataset.en : el.dataset.zh) || '';
+    if (shown.get(el) === lang + v) return;
+    shown.set(el, lang + v);
+    if (lang === 'en') el.textContent = v; else setZh(el, v);
   });
   // 報讀名稱（aria-label）也跟語言走（user 2026-11-25：「報讀要用英文」）：aria-label 寫中文、英文寫 data-en-label；JS 自己設的走下面 setLabel
   /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll('[data-en-label]')).forEach(el => {
     if (el.dataset.zhLabel == null) el.dataset.zhLabel = el.getAttribute('aria-label') || '';
     el.setAttribute('aria-label', (lang === 'en' ? el.dataset.enLabel : el.dataset.zhLabel) || '');
   });
+  // 後台的圖的 alt（cms-pages.js imgAttrs：那一則／那一段的標題）也跟語言走
+  /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll('[data-en-alt]')).forEach(el => el.setAttribute('alt', (lang === 'en' ? el.dataset.enAlt : el.dataset.zhAlt) || ''));
   // 切換鈕顯示「要切過去」的語言；報讀名稱也跟著換
   root.querySelectorAll('.lang-btn').forEach(b => {
     b.textContent = lang === 'en' ? '中文' : 'EN';
@@ -48,10 +76,7 @@ async function toggle() {
   html.classList.add('lang-swap');   // 底列的動態這次也跟著整個畫面淡（chrome.css）
   await fadeSwap(() => {
     applyLang();
-    // 分頁標題（報讀一進頁先念它）跟著換：內頁＝「頁標題 - SCAID」（ui-labels.js、師資詳細頁設的），首頁的標題中英並列、不動
-    const h1 = document.querySelector('#page-content h1')?.textContent?.trim();
-    if (h1 && / - SCAID$/.test(document.title)) document.title = `${h1} - SCAID`;
-    document.dispatchEvent(new Event('scaid:lang'));   // 底列的動態從頭跑（chrome.js restartNews）
+    document.dispatchEvent(new Event('scaid:lang'));   // 底列的動態從頭跑（chrome.js restartNews）、分頁標題跟著換（ui-labels.js syncTitle）
   });
   html.classList.remove('lang-swap');
   if (!still) { html.classList.replace('strokes-out', 'strokes-in'); await wait(); html.classList.remove('strokes-in'); }

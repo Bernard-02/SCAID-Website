@@ -30,11 +30,13 @@ const TRACK = 0.205;
 const pen = /** @type {CanvasRenderingContext2D} */ (document.createElement('canvas').getContext('2d'));
 // ponytail: 只認 BMP 的中日韓區段＝走中文字體的字（含中文標點）；fallback 到中文字體的其他符號（★…）不扣，真的看到再加區段
 const CJK = /[⺀-鿿豈-﫿︰-﹏＀-￯]/;
-// 蓋黑收圓點的列：整列連結、摺疊（清單列的摺疊：動態、課程、常見問題…；只有帶，圓點是 CSS 的）、選單的選項（user 2026-11-22：選單的 hover 比照清單；選中的那項 CSS 常駐圓點，strike 跳過）、
-// 首頁展開的動態（一則＝li、hover 整則；user 2026-11-23：「hover news title 時也要加上我們設定的 hover 效果」）、
-// 內頁的連結（連結清單＝網站地圖、姊妹系所、入學附件，404 的回首頁，聯絡頁的 email；user 2026-11-23，原本圓點）、
-// 首頁底列的動態（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」）
-const ROWS = 'a.item-row, .page-body summary, .site-menu :is(.nav-link, .lang-btn), .site-bar .bar-lang, .home-news-list li, .page-body :is(.nav-link, .footer-body a:not(.footer-social a)), .bar-news';
+// 蓋黑收圓點的列：整列連結、摺疊（清單列的摺疊：動態、課程、首頁展開的 news（2026-11-27 起一則一個摺疊、在 .page-body 裡）…；只有帶，圓點是 CSS 的）、選單的選項（user 2026-11-22：選單的 hover 比照清單；選中的那項 CSS 常駐圓點，strike 跳過）、
+// 內頁的連結（連結清單＝網站地圖、姊妹系所、首頁 news 的附件，404 的回首頁，聯絡頁的 email；user 2026-11-23，原本圓點）、
+// 首頁底列的動態（user 2026-11-23：「hover 外層的 news 時也有這個 hover 的效果」）、
+// 師資、合作企業清單裡不能點的列（沒有詳細內容的老師、沒填官網的企業：user 2026-11-27「但還是可以hover，只是沒有内頁而已」＝照樣蓋黑收圓點、不出 chevron）。
+// 只限 data-cms 那兩種清單：動態、課程「點開沒東西」的 div 列照舊不做；師資詳細頁頁頭那一列不在清單裡
+const LIST_DIV = '.item-list[data-cms] div.item-row';
+const ROWS = `a.item-row, ${LIST_DIV}, .page-body summary, .site-menu :is(.nav-link, .lang-btn), .site-bar .bar-lang, .page-body :is(.nav-link, .footer-body a:not(.footer-social a)), .bar-news`;
 // 深色模式鈕、聯絡頁的社群（只有 icon）不在這裡：icon 的 hover 不加遮罩（user 2026-11-25：「hover它們時不需要加上那個遮罩」）＝深色模式上下顛倒、社群 icon 下方一顆圓點（chrome.css）
 /** 帶／直條插在哪、照誰的框擺：底列的動態＝軌道（展開時跟它一起淡掉；放不下的字在軌道裡面那層切，欄外的直條才看得到，chrome.css），其他＝列本身
  * @param {Element} row */
@@ -74,14 +76,11 @@ export const remeasure = schedule;
 /** 列裡的字一行一段，相對列的框：左緣 x、字的上緣 y（字高 1em、對在字的正中）、字高 h、字尾 end、字級 fs；依元素分組（標題／問題、各個副標）。
  * 副標一行不折：跑馬燈的 text-indent 走到哪都只算框裡那段，放不下＝到框的右緣；會折行的內文（首頁動態的摘要、內頁的連結）＝一行一段、直條只在最後一行；
  * 標題折行也是一行一段＝一行一條帶（user 2026-11-24：「改成一行一個遮罩好了，不需要一起做一個大的遮罩」；11-23 是整塊一段）。
- * 給報讀的字（.sr-only）不算；沒有字的（選單的深色模式鈕只有圖示）＝那顆圖示當成一行、連圖示都沒有（社群方框）＝整個框
+ * 給報讀的字（.sr-only）不算
  * @param {Element} row @returns {{ x: number, y: number, h: number, end: number, fs: number, ink: number, top: number }[][]} */
 function textLines(row) {
   const o = hostOf(row).getBoundingClientRect(), range = document.createRange();
-  // 首頁的動態：標題、摘要各一組（有摘要＝p 裡兩個 span.block，cms-pages.js homeNews）、第一組是標題；摘要折行＝一行一段
-  const news = row.matches('.home-news-list li');
   const els = row.matches('.item-row') ? [...row.querySelectorAll(':is(h1, h3, p):not(.sr-only)')]
-    : news ? [...row.querySelectorAll('p')].flatMap(p => p.children.length ? [...p.children] : [p])
     : row.matches('.bar-news') ? [...row.querySelectorAll('.bar-news-copy > .is-current')]   // 底列：只有正在顯示的那則（其他則疊在同一格、藏著）
     : [row];
   return els.map((el) => {
@@ -119,9 +118,6 @@ function textLines(row) {
         b.top = Math.min(b.top, base - m.actualBoundingBoxAscent);
       }
     }
-    // 沒有字：圖示當那一行（選單的深色模式鈕）；連圖示都沒有＝整個框（聯絡頁的社群方框）
-    const icon = lines.length ? null : line.querySelector(':scope > .icon') ?? (line === row ? line : null);
-    if (icon) { const q = icon.getBoundingClientRect(); lines.push({ x: q.left, y: q.top - o.top, h: q.height, end: q.right, fs: q.height, ink: -Infinity, top: Infinity }); }
     return lines.filter(Boolean).map(b => ({ ...b, x: Math.max(b.x, left) - o.left, end: (clipped ? right : Math.min(b.end, right)) - o.left }));
   }).filter(ls => ls.length);
 }
@@ -136,9 +132,9 @@ function band(r) {
 /** 圓點貼在列的最右緣的：清單列、首頁展開的動態——右邊都讓出了 --row-pad（page.css；首頁動態 home.css），圓點落在那一段裡
  * （user 2026-11-24 直條那時定的：「stroke 的位置是這個 box 的最右緣」）。其他（選單——「stroke 的位置是跟在文字後面」、內頁的連結清單——「網站地圖的 stroke 位置，比照 menu 的」、
  * 底列的動態、聯絡頁的連結）在字尾後面 */
-// 入學的附件（摺疊展開裡的連結）：圓點也在最右邊、對齊上面摺疊那顆（details 的右緣；user 2026-11-25：「hover這兩個也要有」，同一天稍早是只做帶、不出點）
+// 附件（摺疊展開裡的連結；首頁 news，2026-11-27 前是入學頁）：圓點也在最右邊、對齊上面摺疊那顆（details 的右緣；user 2026-11-25：「hover這兩個也要有」，同一天稍早是只做帶、不出點）
 const FILE = '.fold-body .link-list .nav-link';
-const EDGE = `a.item-row, .home-news-list li, ${FILE}`;
+const EDGE = `a.item-row, ${LIST_DIV}, ${FILE}`;
 // 摺疊：圓點是 CSS 的（summary::after：平常空心、打開實心；user 2026-11-25）＝這裡只做帶、收完不留東西
 const FOLD = '.page-body summary';
 // 開內頁的清單列（師資 → 詳細頁）：收完的不是圓點、是 ai 的 next（chevron；user 2026-11-25：「如果是開啓裏面的頁面的話，在hover的時候，圓點會改成右邊的chevron」）。
@@ -175,7 +171,7 @@ const strokes = (row) => {
  * 每行字先被一條字高的帶蓋住（左 → 右長出來），長完一起往右收到字尾、沒有了——標題、每個副標；
  * 帶收完、游標還在，馬上在圓點自己的位置淡出來（不等；user 2026-11-25：「直接開始吧，不用delay」——同一天先改 0.1 秒，11-24 起是再等 0.2 秒）（網站的 fade；user 2026-11-25：「hover時的點改成fade出來」——11-24 起是 clip 從左到右切出來；位置見 strokes）（user 2026-11-24：「回到原本的設計，stroke 出來的 timing 改成 0.5s 之後出現，
  * 如果 cursor 有繼續留在 item 上的話」）；出場＝淡出（fadeOut；同一天，11-24 起是從左往右切出去）。
- * 程式叫的（always：首頁定位後閃一下 flash、入學頁 deep link 的 hover）同樣不等。選單同這一套、只是圓點在字尾後面（user 2026-11-24）。
+ * 程式叫的（always：首頁定位後閃一下 flash）同樣不等。選單同這一套、只是圓點在字尾後面（user 2026-11-24）。
  * 折行＝一行一條帶（標題也是，user 2026-11-24）；選單這類每組一根直條的，前幾行沒有直條。
  * 直條留著的時候（hover 著）不重做；離開＝unstrike 淡出。只有 PC（觸控沒有 hover）；減少動態＝直接出、直接拿掉。
  * 一 hover 到帶就整段做完（user 2026-11-22：不管游標有沒有一直停在上面）：帶收完或等完時游標已經走了＝不出直條（user 2026-11-22：
@@ -300,6 +296,7 @@ export function flash(row) {
     run.leave = true;
     if (prefersReducedMotion()) drop(row); else fadeOut(row, run);
   });
+  return done;   // 帶收完（首頁 news 接著打開那一則，chrome.js openNewsAt）
 }
 
 /** 首頁的動態正在升上來（chrome.js setNews 掛 html.news-rising）：還不能 hover，升完才可以（user 2026-11-24：「這個 news 出場時應該要 disable 掉 hover，只有在動畫結束才可以 hover」）。
@@ -311,11 +308,6 @@ const rising = (row) => document.documentElement.classList.contains('news-rising
  * 糊到 1px 以上才算：捲動框只比選項少幾 px 時，最後一項的糊只有零點幾 px＝看起來是清楚的、卻被擋掉（user 同一天：「捐款」要先往下捲才點得到，
  * 「沒有出現blur，但實際上應該是可以直接點擊的才對」；原本 > 0 就算） @param {Element} row */
 export const fogged = (row) => { const li = row.closest('.site-menu-nav li'); return !!li && parseFloat(getComputedStyle(li).filter.slice(5)) >= 1; };   // 'blur(1.2px)' → 1.2；'none' → NaN
-
-/** 程式叫的 hover：不管游標在不在都跑完整段（蓋 → 收 → 直條），回傳做完的 Promise；做完直條留著。
- * 入學頁的 deep link 先做完這個才打開那一則（cms-pages.js newsList；user 2026-11-24：「應該是先做完 hover，才打開 accordion，不是同時做」）
- * @param {Element} row */
-export function hover(row) { return strike(/** @type {HTMLElement} */ (row), wipe, true) || Promise.resolve(); }
 
 /** 開始跑（停到一半又進來＝從現在的位置接著跑） @param {HTMLElement} line */
 function start(line) {
@@ -354,13 +346,15 @@ export function initItemMarquee() {
     const row = e.target instanceof Element ? e.target.closest(sel) : null;
     return row && !(e.relatedTarget instanceof Node && row.contains(e.relatedTarget)) ? row : null;
   };
+  // 已經打開的摺疊：標題不再做蓋黑收（user 2026-11-27：「打開accordion之後的item，再hover title，就不需要再有hover了」）；收起來的途中（is-closing）、收好了照常
+  const opened = (/** @type {Element} */ hit) => hit.matches(FOLD) && !!hit.parentElement?.matches('details[open]:not(.is-closing)');
   document.addEventListener('pointerover', (e) => {
     const row = crossed(e, '.item-row'), hit = crossed(e, ROWS);
     if (row) clippedIn(row).forEach(start);
     const fog = !!hit && fogged(hit);
     // 選單糊掉那段裡的選項：游標也不是手指（user 2026-11-25：「cursor也是default的才對」）；清楚的＝照連結原本的
     if (hit instanceof HTMLElement && hit.matches('.site-menu-nav .nav-link')) hit.style.cursor = fog ? 'default' : '';
-    if (hit && !rising(hit) && !fog) strike(hit, wipe);
+    if (hit && !rising(hit) && !fog && !opened(hit)) strike(hit, wipe);
   });
   document.addEventListener('pointerout', (e) => {
     const row = crossed(e, '.item-row'), hit = crossed(e, ROWS);
@@ -371,7 +365,7 @@ export function initItemMarquee() {
   document.addEventListener('focusin', (e) => {
     const t = e.target instanceof Element ? e.target : null, hit = t?.matches(':focus-visible') ? t.closest(ROWS) : null;
     if (t?.matches('.item-row:focus-visible')) clippedIn(t).forEach(start);
-    if (hit) strike(hit, wipe);
+    if (hit && !opened(hit)) strike(hit, wipe);
   });
   document.addEventListener('focusout', (e) => {
     const t = e.target instanceof Element ? e.target : null, hit = t?.closest(ROWS);

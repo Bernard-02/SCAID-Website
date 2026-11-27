@@ -35,10 +35,10 @@
 - [ ] **教師詳細頁** `faculty-detail`：照片在上、名字＋副標；學歷、經歷…＝一筆一筆（年份一行、說明一行）。
 - [ ] **課程** `curriculum`：一個年級一段；一門課一個摺疊（課名＋必修／選修），點開＝課程說明。
 - [ ] **作品** `works`：整頁深色；放映（一列、左右兩側漸進模糊）／總覽（照比例的瀑布流）兩種排法，底列切換；每次進來順序打亂；YouTube 播放清單＋上傳的圖。
-- [ ] **動態** `activities`：一則一個摺疊（縮圖＋標題＋副標）；展開＝時間、地點（可以好幾個）、相簿（影片排在照片前面，點了在放大畫面播）。不分年份。
-- [ ] **紀錄** `records`（原本叫榮譽，user 2026-11-25 改名）：榮譽、報導列在同一串（user 2026-11-25：後台合成一個集合）；一筆一個摺疊＝動態那種列的變體（縮圖＝寬 2em 的小國旗＋標題＋類型）；展開＝內容（一筆一行）＋圖片。
+- [ ] **動態** `activities`（2026-11-27 起含原本紀錄頁的榮譽、報導）：一則一個摺疊（縮圖＋標題＋類別）；展開＝時間、地點（可以好幾個）、相簿（影片排在照片前面，點了在放大畫面播）。不分年份。
+- [x] ~~**紀錄** `records`~~：user 2026-11-27 拿掉這一頁、併進動態（後台 `records` 併進 `activities`＝類別「榮譽」「報導」，集合刪了；國旗不出、縮圖的 placeholder user 之後再定）。
 - [x] ~~**報導** `press`~~：user 2026-11-25 拿掉這一頁、併進榮譽（後台資料搬進 `records`；舊的「報導」集合刪了，媒體庫留著給報導選媒體）。
-- [ ] **入學** `admission`：一則一個摺疊（標題＋時間、沒縮圖）；展開＝說明、相簿、附件。首頁的 news 可以連到某一則（到了先做 hover 再打開）。
+- [x] ~~**入學** `admission`~~：user 2026-11-27 拿掉這一頁、併進首頁的 news（展開的清單＝一則一個摺疊：縮圖＋標題＋日期，點開＝說明、相簿、附件；寬＝內文 6 欄、畫面正中，比畫面矮＝上下置中；日期新到舊）。後台 `admission` 的資料搬進 `news`、集合刪了。
 - [x] ~~**常見問題** `qa`~~：user 2026-11-25 拿掉這一頁，後台的集合也刪了。
 - [ ] **捐款** `donate`：導言＋分段，段落同關於（輪播、說明、小節、年表；2026-11-24）。示意是用途、方式兩段。
 - [ ] **規章與政策** `regulations`：規章、表單（分段，一則一列、整列外連）＋使用條款、隱私權政策（段落同關於，2026-11-24）併成一頁。
@@ -81,7 +81,7 @@
 
 | 頁 | 集合 | 狀態 |
 |---|---|---|
-| 首頁展開清單、底列 | `news`（入學那則用 `admission_item` 連到 `admission`） | 已接 |
+| 首頁展開清單、底列（＝原本的入學，2026-11-27 併進來） | `news` | 已接 |
 | intro 影片 | `home_video`（單例） | 已接（暫用 SCCD 的影片） |
 | 關於、捐款 | `about`（段落 `about_sections`、小節 `about_subsections`）、`donate`（同一套：`donate_sections`、`donate_subsections`） | 已接 |
 | 合作企業 | `partners`＋`partners_page`＋單位庫 | 已接 |
@@ -89,9 +89,8 @@
 | 課程 | `courses` | 已接 |
 | 作品 | `works`（單例：YouTube 播放清單＋圖片） | 已接（播放清單暫用 SCCD 畢製、圖還沒傳） |
 | 動態 | `activities` | 已接 |
-| 紀錄（榮譽＋報導） | `records`（後台顯示名「紀錄」）＋單位庫（主辦方）、媒體庫（媒體） | 已接（2026-11-25 榮譽、報導合成一個集合、頁名改紀錄） |
-| ~~報導~~ | ~~`press`~~ | 2026-11-25 併進紀錄；舊集合刪了 |
-| 入學 | `admission` | 已接 |
+| ~~紀錄（榮譽＋報導）~~ | ~~`records`~~ | 2026-11-27 併進動態（`activities` 的類別 award／press；主辦方＝單位庫、媒體＝媒體庫）；集合刪了 |
+| ~~報導~~ | ~~`press`~~ | 2026-11-25 併進紀錄（11-27 又併進動態）；舊集合刪了 |
 | ~~常見問題~~ | ~~`qa`~~ | 2026-11-25 拿掉（含後台） |
 | 規章與政策 | `regulations`（規章、表單＝重複列 `items`；條款＝同關於的段落 `regulations_sections`、`regulations_subsections`） | 已接 |
 | 聯絡 | `footer`（含 Instagram、YouTube 網址） | 已接（IG、YT 網址是佔位） |
@@ -115,30 +114,41 @@
 
 - [ ] **正式網域**：`js/config/slugs.js CLEAN_URL_HOSTS` 填 `scaid.usc.edu.tw`（server 的 fallback 要先設好）。各頁的 canonical／og:url 2026-11-26 已經照 `scaid.usc.edu.tw/<slug>` 寫好（後台改了 slug 要跟著改）。
 - [ ] **YouTube Data API 的 key 白名單加正式網域**（`config/api.js YT_API_KEY` 沿用 SCCD 那支，靠 GCP 網域白名單；不加的話作品頁的播放清單抓不到）。
-- [ ] **主機＝S3＋CloudFront（同 SCCD）**：2026-11-26 實測 `scaid.usc.edu.tw` 已指過去、HTTPS 通、bucket 還是空的（每條路徑 403）＝`.htaccess` 在正式站用不到。請 IT 的事（bucket／distribution ID、上傳金鑰、403＋404 → `/index.html`、`Cache-Control: no-cache`）＝`docs/IT-請求-前台上線.txt`，等回覆；拿到後上傳第一版、照那份的三條 curl 驗。
+- [ ] **主機＝S3＋CloudFront（同 SCCD）**：2026-11-26 實測 `scaid.usc.edu.tw` 已指過去、HTTPS 通、bucket 還是空的（每條路徑 403）＝`.htaccess` 在正式站用不到。請 IT 的事（bucket／distribution ID、上傳金鑰、403＋404 → `/index.html`、`Cache-Control: no-cache`）＝原本的請求單 `docs/IT-請求-前台上線.txt`（2026-11-27 刪了、git 歷史有）；上傳＝`scripts/deploy.ps1`。
   - [ ] **開乾淨網址前要先補的 code**（讀 code 看到的、還沒實測）：①~~`router.js initRouter` 的初始路由假設「HTML 已經是那一頁」~~（2026-11-26 接網址 slug 時修了：拿到的是 index.html 就照 slug 抓那一頁，用模擬 fallback 的 server 測過）；②打錯的 `/pages/xxx.html` 拿到 index.html＝相對路徑全錯、整頁沒樣式（`.htaccess` 轉去 404.html 的那條 CloudFront 沒有）→ index.html 補一行轉去 404 頁。
-  - [ ] **上傳包**：只傳 `index.html`＋`pages`／`css`／`js`／`images`／`fonts`／`objects`／`website-icons`（約 13MB）；**不要整個資料夾同步**——`scripts/` 裡有後台的 token。可照 SCCD 的 `scripts/make-upload-package.ps1`。
+  - [x] **上傳包**（2026-11-27＝`scripts/deploy.ps1`，直接同步到 S3）：只傳 `index.html`＋`pages`／`css`／`js`／`images`／`fonts`／`objects`／`website-icons`（約 13MB）；**不要整個資料夾同步**——`scripts/` 裡有後台的 token。可照 SCCD 的 `scripts/make-upload-package.ps1`。
+- [ ] **圖片改走 CloudFront**（user 2026-11-27，比照 SCCD 的 `CMS_CDN_BASE`）：前台 E3CYJ5880KIXQ3 加 origin＝bucket `scaidcms.usc.edu.tw`、behavior `Directus11/*` → 圖片網址 `https://scaid.usc.edu.tw/Directus11/<filename_disk>`；請求單 `docs/IT-請求-圖片走CloudFront.txt`，等 IT。IT 好了＝前台各處讀圖改用即時的 filename_disk 組網址（不寫死副檔名，WebP 轉檔會換）、讀不到退回 `/assets`；PDF、下載附件照舊走 `/assets`。
 - [ ] `robots.txt`、`sitemap.xml`：現在都沒有。
-- [x] 各頁的 description、og、canonical：user 2026-11-26 填的 `docs/metadata.txt` 寫進各頁 `<head>`；router 換頁時跟著換 head（不然冷載入 index.html 的 canonical 會一直指首頁）。
-- [ ] og:image、apple-touch-icon：等圖（metadata.txt 那兩格空著；有圖之後 twitter:card 改 summary_large_image）。
+- [x] 各頁的 description、og、canonical：user 2026-11-26 給的 metadata（沒進 repo）寫進各頁 `<head>`；router 換頁時跟著換 head（不然冷載入 index.html 的 canonical 會一直指首頁）。
+- [ ] og:image、apple-touch-icon：等圖（user 給的 metadata 那兩格空著；有圖之後 twitter:card 改 summary_large_image）。
 - [ ] **LINE／FB 貼乾淨網址的預覽＝首頁的**：預覽的爬蟲不跑 JS，CloudFront 把 `/about` 回成 index.html＝看到的是首頁的 og（SCCD 也一樣）。Google 會跑 JS＝靠 router 換 head 沒問題。要修＝上傳時每一頁多傳一份沒有副檔名的（`about`＝`pages/about.html` 的內容、Content-Type `text/html`，檔名＝目前的 slug），S3 找得到就不會 fallback；pages 裡的相對路徑（`../css/`）在根目錄一層剛好對得上。後台改了 slug 要重傳那一份。
 - [ ] 示意內容清乾淨：各頁 HTML 註解標「內容為 MOCK 示意」的那幾份、人名日期後面的「（示意）」「(placeholder)」、公司名「示意○○公司」（`CLAUDE.md` 規範 11）。
 - [x] **正式上線＝只讀後台、接不上要有 coming soon 的保護**（user 2026-11-25：「正式上綫的時候，會去掉 placeholder 的内容，只讀後臺，接不上的話，需要做 coming soon 的保護，但這會在蠻後面決定」）：**做法還沒定、很後面才決定，現在不要動**。到時候要一起想的：現在前台在三種情況會安靜地退回 HTML 的示意、畫面上分不出來——那一支查詢失敗或逾時、查詢裡有任何一個欄位／集合後台沒有（Directus 整串回 403）、那個集合一筆都沒有（`cms-pages.js list()`）；拿掉示意之後這三種各要顯示什麼（coming soon、空的、上次成功的那份＝`config/api.js saveLKG／readLKG` 現在沒人用）、是整站一個 coming soon 還是一頁一頁。在那之前「HTML 的內容＝備援」照舊。
   **2026-11-26 定了、做完**（user：「我們不需要假資料，收不到後臺也不需要render假的，做法比照sccd的去設計」）：各頁 HTML 的示意全拿掉、只放空的容器；抓到＝畫＋存一份（`config/api.js cmsGet`）；查詢失敗、逾時、403（點名了後台沒有的欄位）＝退這個分頁上次抓到的那份、沒有＝那一塊不畫；集合一筆都沒有＝不畫（空的段落 `main.js settle` 收掉）；整個連不上＝一頁一頁都只剩「即將推出」（同 SCCD；網站地圖、404 照常）。煙霧測試的示意搬到 `scripts/smoke-fixtures/`。
 - [x] 桌面 Chrome 不能左右捲（煙霧測試跑 WebKit，重現不了）：2026-11-25 用 Edge（同 Chromium）自動掃過每一頁、選單開了再收，都沒有多出可捲的寬度。版型大改後要再掃一次。
-- [ ] 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。
-- [ ] 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做。
+- [x] 無障礙檢查一輪（可照 SCCD 的 `無障礙稽核與改進清單.md`）。**2026-11-27 跑過 AA**（axe-core＋鍵盤、目標大小、重排、文字間距、對比；修了什麼見 `CLAUDE.md`「無障礙」那條）。
+- [ ] **會自己動的東西沒有暫停的方法（WCAG 2.2.2）**：首頁 logo 來回、底列 news 跑馬燈、關於的輪播跑馬燈（hover 照走）、作品放映每 4 秒換、右圖 3D 一直轉、背景中空板的邊線、沒圖的縮圖佔位（直條跑馬燈）。現在只有 hover／鍵盤聚焦時停、或系統開了「減少動態」——兩個都不算頁面上的機制。**user 2026-11-27：先記著，送檢被擋再想辦法**。到時候的選項：①選單裡 EN 旁邊加一行字「暫停動態」（同 EN 的樣子，按了走 `prefersReducedMotion` 那條路、記住；佔位的跑馬燈＝`:is(.item-thumb, .profile-photo):not(:has(img))` 掛 `animation-play-state: paused`）②全部改成 5 秒內自己停（改設計）③全部 hover／聚焦就停（關於的輪播要改回會停；WCAG 沒承認這算機制，檢測員可能不收）。影片字幕（1.2.2）user 說不用改。
+- [ ] 跟 IT 確認後台的檔案儲存（S3 或主機本地）與備份有沒有照請求單做。**2026-11-27 解決**：IT 把後台改放 bucket `scaidcms.usc.edu.tw`（ap-northeast-2，資料夾 `Directus11/`），中間 IAM 政策打錯 bucket 名＝舊圖 403、上傳 503，改正後 98 個檔都讀得到、上傳正常（經過＝`docs/IT-請求-後台檔案搬bucket.txt`）。前台的 bucket `scaid.usc.edu.tw` 裡還有後台的舊副本 `Directus/`、`Directus11/`：前台上傳要排除這兩個（不刪），之後可請 IT 刪。user 拿到的上傳金鑰＝後台用的同一個 IAM 使用者 `scaid`，2026-11-27 還沒有前台 bucket 最外層的寫入、也沒有 CloudFront 的權限。
 
 ## 7. 等素材（不擋前面，可以同時收）
 
-- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、動態、紀錄（榮譽與報導）、入學、捐款、規章（PDF 或連結）、使用條款與隱私權政策。現在英文全是 placeholder。
+- [ ] **各頁真實內容，中文＋英文**：關於、合作企業、師資（含每位的學經歷）、動態（含榮譽與報導）、首頁 news（原本的入學）、捐款、規章（PDF 或連結）、使用條款與隱私權政策。現在英文全是 placeholder。
   - [x] 課程（含每門課說明）：user 2026-11-26 給的 `docs/SCAID Curriculum.xlsx`（32 門、中英）已寫進後台 `courses`（同一天起 HTML 不放備援）。
-- [ ] **圖片**：關於頁的段落輪播、動態與入學的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
+- [ ] **圖片**：關於頁的段落輪播、動態與首頁 news 的相簿現在是 Lorem Picsum 的 stock 圖；師資照片、企業 logo、動態封面是灰底。
 - [ ] **作品**：SCAID 自己的 YouTube 播放清單、作品圖。
 - [ ] **聯絡頁真實資料**：電話、傳真、地址、IG 帳號、YouTube 頻道（後台 `footer` 現在是示意值，直接在後台改）。
 - [ ] **intro 影片**：SCAID 自己的（後台「首頁影片」貼 YouTube 連結；現在暫用 SCCD 的介紹影片）。
-- [ ] **右圖的 3D 模型**：正式的來源與名字（現在暫用 Kenney／Quaternius 的 CC0 模型）。
+- [ ] **右圖的 3D 模型**：2026-11-27 換成 Poly Haven（CC0）的高面數模型 30 個（`scripts/build-objects.cjs`）；名字是先取的，之後要不要走後台（名字＋模型檔）再定。
 - [ ] **正式 favicon、apple-touch-icon、og-image**：現在只有矩形＋圓的 `images/favicon.svg`。
+
+## 之後再說（2026-11-27 全站代碼清理時找到、user：「四就都先記著，這次先不改」）
+
+- [ ] **背景引擎用不到的部分**（約 120 行：tex／line 模式、demo、dwell、OFF 那三支筆、gradient／iris、`prev` 畫布、`S.hue` 那段真的走到會 ReferenceError…）＋**自動降解析度只降不升**（`raw > 30` 就算慢＝30fps 的裝置、省電模式會一路降到 0.5 倍回不來）＋shader 在「整支筆」模式白算的那段：照規矩先改試驗場再重搬（`bg.js` 結尾那幾行網站自己的要留著，見 CLAUDE.md「全站代碼清理」）。另外記一個沒實測的：手機網址列伸縮會觸發 `.bg` 的 ResizeObserver → `fit()` 整套重建、光跡清空（可改 `height: 100lvh` 或忽略觸控裝置上小的高度變化）。
+- [ ] **`.fs-blur` 6 層毛玻璃減成 3 層**（作品頁底列常駐兩塊＝12 層 backdrop-filter）：比較省、樣子可能變一點，要 user 看。
+- [ ] **中文粗體字檔**（`fonts/glow-sans-tc-compressed/700-*`，105 片、3.3MB）：現在沒有元素用到粗體（瀏覽器不會抓，只佔 repo 和部署）；留著備用或從 `build-fonts.py WEIGHTS` 拿掉。
+- [ ] **GitHub Pages 上的舊版前台**：還要就留著、不要就關掉 Pages（＋刪 `.nojekyll`），免得公開一份舊站。
+- [ ] **沒圖的縮圖佔位（直條跑馬燈 `ph-marquee`）動的是 `mask-position`**＝每一幀主執行緒重繪，師資頁沒照片的人越多越重；可改成 `::before` 畫條紋、動 transform，或捲出畫面時暫停。
+- [ ] `:has(#figure-dialog[open]…)` 共 9 處：每次開合手風琴都會讓根元素的 `:has()` 重新比對，可改成 chrome.js 在 html 上切 class（中風險、要重跑測試）。
 
 ## 隨時
 

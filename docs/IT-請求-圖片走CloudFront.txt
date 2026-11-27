@@ -1,0 +1,123 @@
+【IT 協助請求】SCAID 前台的圖片改由 CloudFront 直接從 S3 讀取（比照 SCCD）
+提出單位：AI設計職人學位學程（SCAID）
+日期：2026-11-27
+
+前言：
+・現在前台網站的圖片都經過後台主機讀取（https://scaidcms.usc.edu.tw/assets/<檔案 id>），
+  主機要先去 S3 拿檔再轉給訪客：主機一忙就慢，主機有狀況時全站的圖都會壞。
+・媒傳系 SCCD 遇過一樣的問題，已改成 CloudFront 直接從 S3 讀圖（不經過後台主機），
+  SCAID 想比照辦理。
+・做法是在「前台網站現有的 CloudFront」多加一條規則，不需要新的網域、憑證、DNS：
+    網址開頭是 /Directus11/ 的請求 → 到後台的 bucket 拿檔
+  完成後圖片網址會是：https://scaid.usc.edu.tw/Directus11/<檔名>
+・後台的使用方式不變：照舊在 Directus 上傳，檔案照舊存在 S3；只改前台「讀圖」的路線。
+・文中 <…> 為待填值。
+
+
+════════════════════════════════════════════════
+現況（學程查到的）
+════════════════════════════════════════════════
+
+  ・前台網站：scaid.usc.edu.tw → CloudFront distribution E3CYJ5880KIXQ3 → S3 bucket「scaid.usc.edu.tw」
+  ・後台檔案：S3 bucket「scaidcms.usc.edu.tw」（region ap-northeast-2）的資料夾 Directus11/
+      例：Directus11/05d1232c-e990-45ca-86ec-fce41d4e8362.webp
+  ・現在打 https://scaid.usc.edu.tw/Directus11/05d1232c-e990-45ca-86ec-fce41d4e8362.webp
+    → 403（X-Cache: Error from cloudfront），因為這個 distribution 還沒有連到後台的 bucket。
+
+
+════════════════════════════════════════════════
+請求一：distribution E3CYJ5880KIXQ3 加一個 origin
+════════════════════════════════════════════════
+
+  ・Origin domain：scaidcms.usc.edu.tw 這個 S3 bucket
+      （REST endpoint：scaidcms.usc.edu.tw.s3.ap-northeast-2.amazonaws.com，不是 website endpoint）
+  ・Origin path：留空
+      （這樣 /Directus11/<檔名> 會對到 bucket 裡的 Directus11/<檔名>）
+  ・Origin access：Origin Access Control（OAC）；可以沿用前台那個 origin 已經在用的 OAC。
+
+
+════════════════════════════════════════════════
+請求二：加一條 cache behavior
+════════════════════════════════════════════════
+
+  ・Path pattern：Directus11/*
+  ・Origin：請求一加的那個 origin
+  ・Viewer protocol policy：Redirect HTTP to HTTPS
+  ・Allowed methods：GET, HEAD
+  ・Cache policy：CachingOptimized（長快取）
+      ⚠️ 請不要套前台網頁那條的 Cache-Control: no-cache。圖片的檔名換內容時會跟著換
+        （後台轉檔後 .jpg 會變成 .webp），所以可以長時間快取，這也是變快的主要原因。
+  ・Compress objects automatically：開或關都可以（圖片本身已經壓縮過）。
+
+
+════════════════════════════════════════════════
+請求三：bucket「scaidcms.usc.edu.tw」允許這個 CloudFront 讀取
+════════════════════════════════════════════════
+
+  bucket 維持私有（Block all public access 照開），只讓這個 distribution 讀 Directus11/ 底下的檔。
+  bucket policy 範例（僅供參考，以實際環境為準）：
+
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowScaidCloudFrontReadDirectus11",
+          "Effect": "Allow",
+          "Principal": { "Service": "cloudfront.amazonaws.com" },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::scaidcms.usc.edu.tw/Directus11/*",
+          "Condition": {
+            "StringEquals": {
+              "AWS:SourceArn": "arn:aws:cloudfront::<帳號ID>:distribution/E3CYJ5880KIXQ3"
+            }
+          }
+        }
+      ]
+    }
+
+  ・bucket 原本已有 policy 的話，把這一段加進 Statement，不要整份覆蓋。
+  ・Directus 寫檔用的 IAM 使用者 scaid 權限不用動。
+
+
+════════════════════════════════════════════════
+請求四（設好、驗證過之後）：清掉前台 bucket 裡的舊副本
+════════════════════════════════════════════════
+
+  前台的 bucket「scaid.usc.edu.tw」裡還有後台以前的檔：Directus/、Directus11/ 兩個資料夾。
+  ・後台 2026-11-27 已經改用 scaidcms.usc.edu.tw，這兩份是搬家前的舊副本（還是轉 WebP 之前的原圖）。
+  ・加了請求二之後，/Directus11/ 的網址都會到後台的 bucket 拿檔，前台 bucket 裡的這兩份就不會再被用到。
+  ・請在驗證通過後刪除這兩個資料夾。（學程上傳前台網站時本來就會避開它們，不刪也不影響網站。）
+
+
+════════════════════════════════════════════════
+驗證（設定狀態變成 Deployed 之後，學程或 IT 都可以做）
+════════════════════════════════════════════════
+
+    curl -sI https://scaid.usc.edu.tw/Directus11/05d1232c-e990-45ca-86ec-fce41d4e8362.webp
+        → HTTP 200、Content-Type: image/webp、帶 X-Cache（Miss 或 Hit from cloudfront）
+    再打一次同一個網址
+        → X-Cache: Hit from cloudfront（第二次起從快取拿）
+
+  補充：distribution 的錯誤頁設定（403／404 → /index.html）會套到整個 distribution，
+  所以不存在的圖片會回網頁而不是 404。這不影響使用：前台讀不到圖時會自動改從後台讀。
+
+
+════════════════════════════════════════════════
+學程這邊配合
+════════════════════════════════════════════════
+
+  ・IT 驗證通過後，學程改前台程式：圖片改讀 https://scaid.usc.edu.tw/Directus11/<檔名>，
+    讀不到時自動改回從後台（/assets）讀，再重新上傳前台網站。
+  ・後台編輯者的操作不變。要把某張圖換成另一張時，請上傳新檔、重新選，
+    不要在同一個檔上「替換檔案」（CloudFront 會快取，替換的話訪客可能很久都看到舊圖）。
+
+
+════════════════════════════════════════════════
+需要 IT 回覆
+════════════════════════════════════════════════
+
+  1. 請求一～三設定完成、distribution 狀態為 Deployed
+  2. 上面驗證那條的結果（或告知學程可以自行驗證）
+  3. 請求四：舊副本刪除後告知
+
+聯絡窗口：AI設計職人學位學程網站負責人（此文件由學程提供）。

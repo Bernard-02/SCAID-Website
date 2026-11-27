@@ -1,5 +1,5 @@
 /**
- * 摺疊的展開／收起動畫（原生 <details>，css/components/page.css「摺疊」；常見問題、動態、入學；user 2026-11-18）。
+ * 摺疊的展開／收起動畫（原生 <details>，css/components/page.css「摺疊」；動態、課程、首頁的 news；user 2026-11-18）。
  * 原生 <details> 的開合是瞬間的（內容直接出現／消失）→ 這裡接手 summary 的點擊，把整個 details 的高度補間：
  *   展開＝先標 open（內容才量得到高）、高度從收著的高長到全高；
  *   收起＝高度縮回 summary 的高，縮完才真的拿掉 open。收的時候一開始就標 .is-closing——CSS 看到它就當已經關了

@@ -61,6 +61,13 @@
   .works[data-mode="slideshow"] .works-items.is-dragging .work { transition: none; }   /* 拖著＝直接跟手指；放開才補間（彈回或換） */
   .works[data-mode="slideshow"] .work[data-pos="0"] .work-hit:disabled { pointer-events: none; }   /* 正中的圖片不放大：點了等於沒點 */
   .works:not([data-mode="slideshow"]) .slide-blur { display: none; }   /* 舞台兩側的模糊只有放映有 */
+  /* 放映：左右兩塊可以點的區域（works.js 插）＝舞台邊緣到正中那個作品的邊緣（--cw＝正中那個的寬），點了換上一個／下一個（user 2026-11-27：
+     「左右有個區塊是可以點擊，不是現在這樣以圖片為基準」）：蓋在旁邊的作品與兩側的模糊上面＝點圖、點空隙都算；正中那個不蓋（影片點了就地播）。總覽不出 */
+  .works-zone { display: none; }
+  .works[data-mode="slideshow"] .works-zone { display: block; position: absolute; top: 0; bottom: 0; z-index: 3; width: calc((100% - var(--cw, 0px)) / 2); padding: 0; border: 0; background: none; cursor: pointer; }
+  .works[data-mode="slideshow"] .works-zone[hidden] { display: none; }
+  .works-zone[data-step="-1"] { left: 0; }
+  .works-zone[data-step="1"] { right: 0; }
   /* 模糊那一層只蓋作品那一排（舞台比那一排高）：高＝上面 .work 的高、上下置中＝作品的上下緣是利的、模糊不往上下暈（user 2026-11-25 貼的那段 CSS 註明的） */
   .works[data-mode="slideshow"] .slide-blur { top: 50%; bottom: auto; height: min(100cqh, var(--work-max, 72cqw) * 9 / 16); transform: translateY(-50%); }
 

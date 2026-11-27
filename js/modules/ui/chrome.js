@@ -27,16 +27,22 @@ function lockScroll(ms) {
   html.classList.add('menu-closing');
   menuClosingTimer = setTimeout(() => html.classList.remove('menu-closing'), menuUnlockAt - performance.now());
 }
-function setMenu(open) {
-  const was = html.classList.contains('menu-open');
+/** @param {boolean} open @param {boolean} [keyboard] 用鍵盤打開的＝焦點移進選單 */
+function setMenu(open, keyboard = false) {
+  const was = html.classList.contains('menu-open'), menu = document.querySelector('.site-menu');
   html.classList.toggle('menu-open', open);
   setExpanded('.menu-btn', open);
-  if (was && !open) { menuUnlockAt = 0; lockScroll(prefersReducedMotion() ? 0 : DUR.medium * 1000); }
-  else if (open) {
+  if (was && !open) {
+    menuUnlockAt = 0; lockScroll(prefersReducedMotion() ? 0 : DUR.medium * 1000);
+    // 焦點在選單裡就收（Esc）＝還給 menu 鈕：選單收著是 visibility hidden，焦點留在裡面會掉到 body（WCAG 2.4.3）
+    if (menu?.contains(document.activeElement)) /** @type {HTMLElement | null} */ (document.querySelector('.site-bar .menu-btn'))?.focus({ preventScroll: true });
+  } else if (open) {
     clearTimeout(menuClosingTimer); html.classList.remove('menu-closing'); menuUnlockAt = 0;
     // 當前頁的選項捲到捲動框的正中（user 2026-11-25：「當前頁的選項應該要 center 這個 box」；捲不到那麼多＝捲到頭為止，固定的常見問題那組不在框裡）
     const box = document.querySelector('.site-menu-nav'), a = box?.querySelector('.nav-link.active');
     if (box && a) { const r = a.getBoundingClientRect(), b = box.getBoundingClientRect(); box.scrollTop += r.top + r.height / 2 - (b.top + b.height / 2); }
+    // 鍵盤打開＝焦點移到當前頁那一項（沒有＝第一項）：選單在 menu 鈕前面，不移的話下一個 Tab 走進內容、選單又收掉（WCAG 2.4.3）
+    if (keyboard) /** @type {HTMLElement | null} */ (a || menu?.querySelector('.nav-link'))?.focus({ preventScroll: true });
   }
   fitBar();
 }
@@ -48,7 +54,13 @@ function endNewsClosing() {
   clearTimeout(newsClosingTimer);
   if (!html.classList.contains('news-closing')) return;
   html.classList.remove('news-closing');
+  foldNews();
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+// 收起來＝下次打開回到預設（user 2026-11-27：「如果我打開accordion再收起news的話，再次打開news應該是保持預設狀態，不是還是打開的」）：
+// 清單藏起來的那一刻把打開的那則收掉（看不到了＝直接關、不補間）
+function foldNews() {
+  document.querySelectorAll('#page-content .home-news-list details[open]').forEach(d => { /** @type {HTMLDetailsElement} */ (d).open = false; d.classList.remove('is-closing'); });
 }
 let risingTimer = 0;
 function setNews(open) {
@@ -76,12 +88,17 @@ function setNews(open) {
   }
   html.classList.remove('news-open');
   if (slide) newsClosingTimer = setTimeout(endNewsClosing, DUR.slow * 1000);
-  else window.scrollTo(0, 0);
+  else { foldNews(); window.scrollTo(0, 0); }
 }
 
-// 深色模式（user 2026-11-21；variables.css :root[data-theme="dark"]）：選單 EN 上面那顆切、記 localStorage。
-// 一進頁的套用在各頁 <head> 的 inline script（CSS 之前，免得閃白）；這裡只管切換與鈕的 aria-pressed（header 注入後 main.js 也呼叫一次）
-const THEME_KEY = 'scaid:theme';
+// 深色模式（user 2026-11-21；variables.css :root[data-theme="dark"]）：選單 EN 上面那顆切。
+// 一進來照訪客的當地時間決定（user 2026-11-27：「根據使用者的time zone，決定它打開的是night還是day」「之後還可以切換，只是一進來會這樣決定」）：
+// 6:00～17:59＝白天、其他＝夜晚；決定的、切過的都記 sessionStorage（這次瀏覽：換頁、重新整理照舊，關掉分頁下次再照時間）。原本記 localStorage、預設淺色。
+// 一進頁的套用在各頁 <head> 的 inline script（CSS 之前，免得閃白；那邊也寫 THEME_KEY 與 -auto）；這裡管切換、鈕的 aria-pressed（header 注入後 main.js 也呼叫一次）、下面的 autoTheme
+const THEME_KEY = 'scaid:theme', AUTO_KEY = 'scaid:theme-auto';
+const byClock = () => { const h = new Date().getHours(); return h >= 6 && h < 18 ? 'light' : 'dark'; };
+/** @param {string} k */
+const sessionGet = (k) => { try { return sessionStorage.getItem(k) || ''; } catch { return ''; } };
 export function syncTheme() {
   document.querySelectorAll('.theme-btn').forEach(b => {
     b.setAttribute('aria-pressed', String(html.dataset.theme === 'dark'));
@@ -93,9 +110,7 @@ export function syncTheme() {
 let lightsOff = false;
 /** @param {string} page @param {boolean} [fade] false＝不整張交叉淡化（關燈：背景、logo 的顏色自己過場，見 lights） */
 export function syncPageTheme(page, fade = true) {
-  let saved = '';
-  try { saved = localStorage.getItem(THEME_KEY) || ''; } catch {}
-  const dark = lightsOff || page === 'works' || saved === 'dark';
+  const dark = lightsOff || page === 'works' || sessionGet(THEME_KEY) === 'dark';
   if (dark === (html.dataset.theme === 'dark')) { syncTheme(); return; }
   const apply = () => {
     if (dark) html.dataset.theme = 'dark'; else delete html.dataset.theme;
@@ -106,12 +121,30 @@ export function syncPageTheme(page, fade = true) {
 }
 function toggleTheme() {
   const dark = html.dataset.theme !== 'dark';
-  try { localStorage.setItem(THEME_KEY, dark ? 'dark' : ''); } catch {}
+  try { sessionStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); sessionStorage.removeItem(AUTO_KEY); } catch {}   // 自己切過＝不再自動換（autoTheme）
   // 切換＝整個畫面 fade 過去（user 2026-11-21；motion.js fadeSwap）
   fadeSwap(() => {
     if (dark) html.dataset.theme = 'dark'; else delete html.dataset.theme;
     syncTheme();
   });
+}
+
+// 開著的時候跨過 6:00／18:00＝自動淡到另一個模式，只做一次（user 2026-11-27：「如果我5：59打開網頁，會顯示白天，但如果到了6.，那麽畫面會fade成黑夜，只做第一次」）。
+// 還是一進來照時間決定的那個（-auto，inline script 設的）才換；自己切過、或已經自動換過一次＝不換。過場同切換（syncPageTheme：作品頁、放影片照舊暗，換的是記下來的那個）。
+// 睡眠／分頁在背景時 timer 會晚到＝回到前景再看一次；重新整理時已經跨過＝inline script 直接換（同樣只算這一次）
+let autoTimer = 0;
+function autoTheme() {
+  clearTimeout(autoTimer);
+  if (!sessionGet(AUTO_KEY)) return;
+  const now = byClock();
+  if (sessionGet(THEME_KEY) !== now) {
+    try { sessionStorage.setItem(THEME_KEY, now); sessionStorage.removeItem(AUTO_KEY); } catch {}
+    syncPageTheme(document.body.dataset.page || '');
+    return;
+  }
+  const next = new Date(), h = next.getHours();
+  next.setHours(h < 6 ? 6 : h < 18 ? 18 : 30, 0, 0, 0);   // 30＝明天 6:00
+  autoTimer = window.setTimeout(autoTheme, next.getTime() - Date.now() + 500);   // 多等 0.5 秒＝確定已經過了那一刻
 }
 
 // 換頁／Esc：選單、首頁展開全收（main.js initPageModules 每次換頁呼叫）。news＝false：只收選單、首頁展開先留著（router.js 換頁前用）
@@ -169,13 +202,13 @@ function openObjectDialog(e) {
   dialog.showModal();
   if (e.detail && document.activeElement instanceof HTMLElement) document.activeElement.blur();   // 同 openFigure：滑鼠／觸控點開的不亮焦點框
 }
-// 開放大 dialog：內容開的時候才放（那個節點的複本）——右緣縮圖鈕＝當頁右圖；動態那則（打開的）點封面縮圖或相簿哪張＝
+// 開放大 dialog：內容開的時候才放（那個節點的複本）——動態那則（打開的）點封面縮圖或相簿哪張＝
 // 同一組「封面（第一張）＋相簿」可左右切（user 2026-11-19；原本點封面只有那一張）。多於一張才出 ‹ ›（.has-nav）；到頭的那邊 disabled
-// 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕，關閉＝menu 鈕那顆）、開著＝關燈
+// 影片（作品頁總覽的 YouTube、首頁的 intro）用自己的控制列（user 2026-11-23：播放／暫停、音量、全螢幕；關閉＝‹ X › 正中那顆）、開著＝關燈
 let figureItems = /** @type {Element[]} */ ([]), figureIndex = 0;
 let figureStep = /** @type {((i: number) => void) | null} */ (null);   // 切到第幾個時叫（openFigure 給；作品總覽：背景跟著捲過去）
 // 多細長的圖才撐寬往下捲：高 ≥ 寬 × TALL（user 2026-11-25：「要決定一個適合的長寬比，才需要觸發scroll的行爲」→ 2＝比 1:2 還細長）。
-// 一般直式照片（4:5、3:4、2:3）整張塞進框、滾輪換圖；手機截圖（約 1:2.2）、報導的長截圖撐寬。原本只要是直式就撐寬＝桌面上直式照片也要捲
+// 一般直式照片（4:5、3:4、2:3）整張塞進框；手機截圖（約 1:2.2）、動態裡報導的長截圖撐寬。原本只要是直式就撐寬＝桌面上直式照片也要捲
 const TALL = 2;
 function renderFigure() {
   const dialog = figureDialog();
@@ -212,8 +245,7 @@ function renderFigure() {
  *  @param {Element} el 點的那一格（相簿的 button）或封面的 img @param {MouseEvent} e */
 function openGallery(el, e) {
   const box = el.closest('details') ?? el.closest('.album');
-  // 榮譽（.record）的縮圖是國旗、不是封面＝那一組只有相簿（user 2026-11-25）
-  const src = [...box?.querySelectorAll(box.matches('.record') ? '.album button' : ':scope > summary .item-thumb img, .album button') ?? []]
+  const src = [...box?.querySelectorAll(':scope > summary .item-thumb img, .album button') ?? []]
     // 影片排最前面（user 2026-11-25：「動態的slideshow，我想要讓video放在第一個，排序上」；原本封面第一張、影片接在後面）。sort 是穩定的＝其他照原本的順序
     .sort((a, b) => Number(b instanceof HTMLElement && !!b.dataset.video) - Number(a instanceof HTMLElement && !!a.dataset.video));
   const items = src.map(s => !(s instanceof HTMLButtonElement) ? s : s.dataset.video ? player(s.dataset.video, s.textContent?.trim() || '影片') : s.querySelector('img'));
@@ -385,16 +417,16 @@ function closeFigure() {
 }
 
 // 底列量測（chrome.css .site-bar）：兩側欄最小寬＝左欄內容寬（--side-min；右欄只有右圖的鈕、比左欄窄，user 2026-11-23）→ 兩側等寬＝動態永遠畫面正中。
-// 選單開著不量：menu 鈕撐成選單欄那格（chrome.css），量進去會把中欄擠掉；就讓它溢出側欄（動態那時是糊掉的內容）。
 // 順便：動態的標題整個換掉了（後台晚到：cms-pages.js loadBarNews 換完叫這裡）＝從第一則重來
 export function fitBar() {
   const bar = /** @type {HTMLElement | null} */ (document.querySelector('.site-bar'));
   if (!bar) return;
   if (!newsCur?.isConnected) startNews();
   const left = /** @type {HTMLElement} */ (bar.querySelector('.bar-left'));
-  if (html.classList.contains('menu-open')) return;
   bar.style.setProperty('--side-min', left.offsetWidth + 'px');
 }
+/** 元素上的 CSS 動畫（跑馬燈那種 keyframes、WAAPI）回到起點；過場（CSSTransition）照走 @param {Element | null | undefined} el */
+const stopRuns = (el) => el?.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });
 
 // 首頁底列的動態（user 2026-11-23：拿掉＋、一次只顯示一則；原本好幾則排成一排一直跑、兩份接力）：
 // 放得下＝停 NEWS_HOLD；放不下＝淡入完就從頭捲到尾、捲到尾停一下（跟開頭淡入一樣長）再換（user 2026-11-25；11-23 是前後都不停、再之前前後各停 1 秒）；
@@ -415,7 +447,7 @@ function startNews() { newsAt = 0; runNews(++newsGen); }
 /** 換語言（lang.js 發 scaid:lang）：同一則換成新的字、從頭跑（user 2026-11-25：「切換語言的時候，首頁marquee的切換應該是加上fade，且從頭開始run動畫」）；
  * 淡＝這次跟著整個畫面交叉淡化（chrome.css html.lang-swap） */
 function restartNews() {
-  newsCur?.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });
+  stopRuns(newsCur);
   runNews(++newsGen);
 }
 /** 動態看不到了（展開清單、離開首頁；setNews／closeOverlays 叫）：看到過的那則等淡完就換到下一則、停在那裡——
@@ -426,7 +458,7 @@ function awayNews() {
   const gen = ++newsGen, prev = newsCur;
   newsSleep(prefersReducedMotion() ? 0 : DUR.fade * 1000).then(() => {
     if (gen !== newsGen) return;
-    prev?.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });   // 跑到一半的跑馬燈回到起點（看不到了）
+    stopRuns(prev);   // 跑到一半的跑馬燈回到起點（看不到了）
     newsAt++;
     runNews(gen);
   });
@@ -458,7 +490,7 @@ async function runNews(gen) {
     if (!alive()) return;
     cur.classList.remove('is-current');   // 淡出，淡完才換下一則
     await newsSleep(fade);
-    cur.getAnimations().forEach(a => { if (!(a instanceof CSSTransition)) a.cancel(); });   // 捲過去的那則回到起點（已經淡掉、看不到了）
+    stopRuns(cur);   // 捲過去的那則回到起點（已經淡掉、看不到了）
     if (!alive()) return;
     newsAt++;
   }
@@ -468,27 +500,40 @@ let flashTimer = 0;
 /** @param {number} i */
 function openNewsAt(i) {
   setNews(true);
-  const li = /** @type {HTMLElement | undefined} */ (document.querySelectorAll('#page-content .home-news-list li')[i]);
+  const li = /** @type {HTMLElement | undefined} */ (document.querySelectorAll('#page-content .home-news-list .item-list > li')[i]);
   const list = /** @type {HTMLElement | null | undefined} */ (li?.closest('.home-news-list'));
   if (!li || !list) return;
   // 那則的中線對到畫面正中；捲不到（太上面、只有一則）＝捲到能捲的地方為止、不硬置中。清單這時還在畫面底下等著升上來
   // （home.css news-rise，有位移）→ 量的時候先拿掉動畫（還沒開始跑；拿掉再放回＝照常從頭跑）；先捲好，升上來就是定位好的樣子
   list.style.animation = 'none';
   const r = li.getBoundingClientRect(), y = r.top + scrollY + r.height / 2 - innerHeight / 2, max = document.documentElement.scrollHeight - innerHeight;
-  const top = Math.max(0, Math.min(max, y)), listTop = list.getBoundingClientRect().top + scrollY - top;   // 捲好之後清單上緣在畫面的哪裡
+  // 捲好之後清單看得到的頂在畫面的哪裡（量 ul：清單比畫面矮＝上下置中、上面空一段，home.css）
+  const top = Math.max(0, Math.min(max, y)), listTop = (list.querySelector('ul') || list).getBoundingClientRect().top + scrollY - top;
   list.style.animation = '';
   // 升上來的起點＝看得到的最上面那一點在畫面底緣（同收合的 --news-drop）：沒捲＝原本的 100svh − top-h，捲了就照捲完的位置算
   list.style.setProperty('--news-rise', `${innerHeight - Math.max(0, listTop)}px`);
   window.scrollTo({ top, behavior: 'instant' });
   // 升好了閃一下（同 SCCD 的 deep link）＝hover 的蓋黑收圓點、圓點停一下就切掉（item-marquee.js flash；user 2026-11-23：「highlight 是指我 hover 的效果」；2026-11-25 直條換成圓點）
   clearTimeout(flashTimer);
-  flashTimer = window.setTimeout(() => flash(li), prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);   // ＝home.css --news-wait（底列的動態淡出）＋清單升上來
+  // 閃的是那一列（摺疊的 summary／不能點的 div；2026-11-27 起一則一個摺疊，原本整則是一個連結＝閃 li）
+  const row = /** @type {HTMLElement} */ (li.querySelector('.item-row') || li);
+  // 閃的時候摺疊的空心圈一起填滿（＝hover 的樣子，page.css summary.is-lit）、帶收完打開那一則（accordion.js 接手：一次只開一個、捲到正中）
+  // （user 2026-11-27：「news在點擊之後，highlight應該也要包含圓圈的fill，然後也幫我打開這個accordion」；同原本入學頁的 deep link：先做完 hover 才打開）。
+  // 沒東西展開的那一列（div）只閃；收回去了＝不開
+  flashTimer = window.setTimeout(async () => {
+    row.classList.add('is-lit');
+    await flash(row);
+    if (row.matches('summary') && html.classList.contains('news-open') && !row.parentElement?.hasAttribute('open')) row.click();
+    row.classList.remove('is-lit');   // 開了之後＝打開的實心（click 當下就標 open），不閃
+  }, prefersReducedMotion() ? 0 : (DUR.fade + DUR.slow) * 1000);   // ＝home.css --news-wait（底列的動態淡出）＋清單升上來
 }
 
 export function initChrome() {
   // 圖片不能右鍵、不能拖出去存（user 2026-11-25：「要禁止右鍵存取圖片的功能，一律沒辦法右鍵對圖片進行操作。logo跟ASCII圖片也是」）：
-  // 圖（含 lightbox、縮圖、國旗）、影片、右圖 object 的畫布、logo（CSS mask 畫的、整個是連結）按右鍵＝沒有選單；拖到桌面＝存檔，也擋（Firefox 不認 CSS 的 user-drag）。
+  // 圖（含 lightbox、縮圖）、影片、右圖 object 的畫布、logo（CSS mask 畫的、整個是連結）按右鍵＝沒有選單；拖到桌面＝存檔，也擋（Firefox 不認 CSS 的 user-drag）。
   // 手機長按＝chrome.css -webkit-touch-callout。YouTube 的 iframe 是別人的頁、管不到
+  autoTheme();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) autoTheme(); });
   const PROTECT = 'img, canvas, video, .site-logo';
   for (const type of ['contextmenu', 'dragstart']) document.addEventListener(type, (e) => { if (e.target instanceof Element && e.target.closest(PROTECT)) e.preventDefault(); });
   let menuTap = false;   // 這一下的按下剛把選單收掉（下面 pointerdown）＝它的 click 不再做別的事（第一下只收選單）
@@ -496,7 +541,7 @@ export function initChrome() {
     const t = e.target instanceof Element ? e.target : null, tap = menuTap;
     menuTap = false;
     if (!t) return;
-    if (t.closest('.menu-btn')) { setMenu(!html.classList.contains('menu-open')); return; }
+    if (t.closest('.menu-btn')) { setMenu(!html.classList.contains('menu-open'), !e.detail); return; }   // detail 0＝鍵盤（Enter／空白鍵）
     if (t.closest('.theme-btn')) { toggleTheme(); return; }
     const play = t.closest('.play-btn');
     if (play instanceof HTMLElement) { openIntro(play, e); return; }
@@ -541,16 +586,15 @@ export function initChrome() {
   // （accordion.js 在 main 的冒泡 listener 會先把它標 open）；攔下來不往下傳＝不開合、也不走上面那個委派
   document.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
-    const cover = t?.closest('details[open]:not(.is-closing, .record) > summary .item-thumb');   // 榮譽（.record）的縮圖是國旗、不是封面＝點了照常收合
+    const cover = t?.closest('details[open]:not(.is-closing) > summary .item-thumb');
     const img = cover?.querySelector('img');   // 裡面有圖的才是封面（沒圖的灰底佔位不算）
     if (!cover || !img) return;
     e.preventDefault(); e.stopPropagation();
     openGallery(img, e);
   }, true);
-  // 放大 dialog 關了（X、點旁邊、Esc、換頁）：object 的畫布搬回殼上。close 不冒泡 → 用 capture 接
-  document.addEventListener('close', (e) => { if (e.target === figureDialog()) closeObject(); }, true);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeOverlays();
+    // 放大 dialog 開著（首頁展開的 news 裡的相簿，2026-11-27 起）：Esc 只關 dialog（原生），展開的清單留著
+    if (e.key === 'Escape' && !figureDialog()?.open) closeOverlays();
     // 放大 dialog 開著：左右鍵切上一張／下一張（焦點在音量拉桿上＝左右鍵是調音量，不切）
     if (!(e.target instanceof HTMLInputElement)) { if (e.key === 'ArrowLeft') stepFigure(-1); else if (e.key === 'ArrowRight') stepFigure(1); }
     // 長圖：上下鍵捲（焦點在關閉鈕上、不在圖裡＝原生的方向鍵捲不到它）
@@ -624,6 +668,7 @@ export function initChrome() {
   // 只拿影片——手機的右圖 object 也住在這裡、由 object.js 搬回去。close 不冒泡 → capture
   document.addEventListener('close', (e) => {
     if (e.target !== figureDialog()) return;
+    closeObject();   // 手機的右圖 object：畫布搬回殼上
     shownMedia()?.remove();
     figureDialog()?.classList.remove('is-waiting');   // logo 還在動就關了：別留著（下次開手機的右圖會整個藏著）
     lights(false);
@@ -658,23 +703,10 @@ export function initChrome() {
       typeof info?.volume === 'number' ? info.volume / 100 : volume);
   });
 
-  // 名字現／隱（hover、鍵盤聚焦）→ 側邊寬變 → 下一幀重量（等樣式套上）；視窗寬也是
-  const refit = (e) => { if (e.target instanceof Element && e.target.closest('.site-bar')) requestAnimationFrame(fitBar); };
-  ['mouseover', 'mouseout', 'focusin', 'focusout'].forEach(type => document.addEventListener(type, refit));
   window.addEventListener('resize', fitBar);
   document.addEventListener('scaid:lang', restartNews);
   // 頂部模糊帶：捲離頂端才疊半透明（chrome.css .top-blur）；換頁捲回頂也會觸發 scroll
   const onScroll = () => html.classList.toggle('is-scrolled', window.scrollY > 0);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-  // 鈕的名字寬是補間的（chrome.css .bar-label：旁邊的 play 滑過去，user 2026-11-21）→ 補間那段每幀重量底列：
-  // 側邊放不下名字時動態跟著一點一點縮／放回來，不會等名字長完才跳
-  let fitUntil = 0;
-  const fitLoop = () => { fitBar(); if (performance.now() < fitUntil) requestAnimationFrame(fitLoop); else fitUntil = 0; };
-  document.addEventListener('transitionrun', (e) => {
-    if (e.propertyName !== 'grid-template-columns' || !(e.target instanceof Element) || !e.target.matches('.bar-label')) return;
-    const looping = fitUntil > 0;
-    fitUntil = performance.now() + DUR.fade * 1000 + 100;   // 補間的時長（--dur-fade）＋一點餘裕，最後一幀量到定位後的寬
-    if (!looping) requestAnimationFrame(fitLoop);
-  });
 }

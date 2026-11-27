@@ -13,18 +13,11 @@ module.exports = {
       // pc:＝≥768 且有滑鼠（hover）：只有 PC 出右圖，PC 以外（手機、iPad…觸控）收成右緣那顆鈕（user 2026-11-23；版型照舊只分 md:）。JS 那份在 object.js
       screens: { 'pc': { raw: '(min-width: 768px) and (hover: hover)' } },
 
-      // 介面色：目前只有黑白＋灰階（網站本身是彩色的，user 2026-11-19）
+      // 介面色：前景／背景（跟深色模式反過來）＋淺灰（網站本身是彩色的，user 2026-11-19）
       colors: {
-        'black': '#000000',
-        'white': '#FFFFFF',
         'light-gray': 'var(--light-gray)',
-        'dark-gray': 'var(--dark-gray)',
-        'theme-fg': 'var(--theme-fg)',   // 跟深色模式反過來的實心底（捐款鈕：bg-theme-fg text-theme-bg）
+        'theme-fg': 'var(--theme-fg)',
         'theme-bg': 'var(--theme-bg)',
-        'gray': {
-          0: '#000000', 1: '#1A1A1A', 2: '#333333', 3: '#4D4D4D', 4: '#666666', 5: '#808080',
-          6: '#999999', 7: '#B3B3B3', 8: '#CCCCCC', 9: '#E6E6E6', 10: '#FFFFFF',
-        },
       },
 
       // 英文走 JetBrains Mono、中文字落到 Glow Sans TC Compressed（自架切片，fonts/glow-sans-tc-compressed/）；全站一個堆疊，不分中英元件
@@ -58,11 +51,6 @@ module.exports = {
         'xl': 'var(--spacing-xl)',
         '2xl': 'var(--spacing-2xl)',
         '3xl': 'var(--spacing-3xl)',
-        '4xl': 'var(--spacing-4xl)',
-        '5xl': 'var(--spacing-5xl)',
-        '6xl': 'var(--spacing-6xl)',
-        '7xl': 'var(--spacing-7xl)',
-        '8xl': 'var(--spacing-8xl)',
         'gutter': 'var(--spacing-gutter)',
         'container-padding': 'var(--container-padding)',
       },

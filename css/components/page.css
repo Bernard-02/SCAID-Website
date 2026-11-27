@@ -17,8 +17,10 @@
      有導言的頁第一個是導言（字級＝內文的 text-s，p 的預設），沒有的＝第一段。
      導言到第一段＝3xl、段跟段之間 2xl（user 2026-11-24：「這個 title 的區塊到下面的內容，gap 改成 3xl」「分開好了，不要合在一起」——那時是標題＋導言那塊） */
   .page-section { margin-top: var(--spacing-2xl); }
-  .page-body > .page-lead + .page-section { margin-top: var(--spacing-3xl); }
-  .page-body > h1 + .page-section { margin-top: 0; }
+  /* 第一段：沒導言（沒填被收掉）＝貼起始線、有導言＝隔 3xl。看「第一個 section」不看緊鄰的元素：中間夾著藏起來的「即將推出」（p.coming-soon，
+     合作企業、作品、動態、規章）也一樣（user 2026-11-27：規章頁「會有一個mt」——原本寫 h1 + .page-section，隔著 p.coming-soon 就對不上、吃到 2xl） */
+  .page-body > .page-section:first-of-type { margin-top: 0; }
+  .page-body > .page-lead:not(:empty) ~ .page-section:first-of-type { margin-top: var(--spacing-3xl); }   /* :not(:empty)：後台的導言還沒回來（或沒填、main.js settle 收掉之前）＝不先推 3xl（2026-11-27 網站地圖加 Hero 時改） */
   /* Subsection title 跟下面內文隔 sm，掛在標題上（user 2026-11-24：「subsection 下面的 mb 改成 sm 大小」＝同條列筆與筆之間的 gap；
      11-21 定的是 xs，原本貼著）。
      看起來的距離還含行距：試過用 text-box 把標題的行距切掉，user 2026-11-21 拿回——要調就直接調 spacing 的值 */
@@ -57,7 +59,7 @@
      原本按鈕上下各留 0.25em 內距、矩形之間看起來 0.5em）。
      只有矩形、沒有上下 chevron（user 2026-11-18）：全部排得進（起始線～底列上緣那一帶）＝不動；
      排不進＝整串往上移到目前那格剛好看得到，超出那一帶的切掉（也點不到）。
-     格數 --n、目前由上往下第幾格 --i 由 section-nav.js 給，其餘這裡算（視窗高怎麼變都不用 JS 重量） */
+     目前由上往下第幾格 --i 由 section-nav.js 給，其餘這裡算（視窗高怎麼變都不用 JS 重量） */
   /* 選單開著收起來（user 2026-11-21）：網站 fade，淡完才 hidden；收選單＝淡回來 */
   .section-nav { transition: var(--transition-fade), visibility 0s; }
   html.menu-open .section-nav { opacity: 0; visibility: hidden; filter: blur(var(--blur)); transition: var(--transition-fade), visibility 0s var(--dur-fade); }
@@ -85,7 +87,7 @@
   /* 沒輪到的格子＝淡、不模糊（user 2026-11-21：預設不需要模糊；先試過淡＋失焦），hover／目前那格＝全黑；深淺的過場走網站 fade */
   .section-nav-dot, .section-nav-top {
     padding: 0 0.6em;
-    opacity: 0.3;
+    opacity: 0.45;   /* 對底色 3.4:1＝過 WCAG 1.4.11 的 3:1（2026-11-27 無障礙稽核；原本 0.3＝2.2:1） */
     transform: translateY(var(--nav-shift));
     transition: transform var(--dur-fast) var(--ease-standard), var(--transition-fade);
   }
@@ -177,11 +179,16 @@
   /* 文字（標題＋副標）上下對在圖的正中（user 2026-11-21；原本對齊圖的上緣） */
   .page-body .item-row:has(> .item-thumb) { display: grid; grid-template-columns: var(--item-thumb-w) minmax(0, 1fr); gap: var(--spacing-gutter); align-items: center; padding-right: 0; }
   .item-row:has(> .item-thumb) > :last-child { padding-right: var(--dot-pad); }
-  /* 手機：圖在上、靠左，文字在圖下面（user 2026-11-24；先做過圖置中）。榮譽（.record，縮圖小一號的變體）照舊圖左字右 */
+  /* 手機：圖在上、靠左，文字在圖下面（user 2026-11-24；先做過圖置中） */
   @media (max-width: 767px) {
-    .page-body :not(.record) > .item-row:has(> .item-thumb) { grid-template-columns: minmax(0, 1fr); }
-    .page-body :not(.record) > .item-row > .item-thumb { width: var(--item-thumb-w); }
-    .page-body :not(.record) > .item-row > .item-thumb img { object-position: left bottom; }   /* 圖在上：貼框底＝緊接著下面的字 */
+    .page-body .item-row:has(> .item-thumb) { grid-template-columns: minmax(0, 1fr); }
+    .page-body .item-row > .item-thumb { width: var(--item-thumb-w); }
+    .page-body .item-row > .item-thumb img { object-position: left bottom; }   /* 圖在上：貼框底＝緊接著下面的字 */
+    /* 後台給了寬高（img 有 width／height）＝框照圖的比例（最高同框寬＝直圖照舊方框、圖 contain）：框的頂＝圖的頂＝右上角的 icon（top 0）對齊圖的頂
+       （user 2026-11-27：「右上角的圓圈看正不正常」——方框裡的橫圖貼框底＝點浮在圖上面）。比例在圖載入前就從屬性知道＝框不會在載入時變大小
+       （下面 .item-thumb:has(img) 那段：框跟著圖長＝Windows 的 WebKit 會當）；沒給寬高的照舊方框 */
+    .page-body .item-row > .item-thumb:has(img[width]) { height: auto; }
+    .page-body .item-row > .item-thumb img[width] { height: auto; max-height: var(--item-thumb-w); }
   }
   .item-row :is(h1, h3) { @apply text-md; }
   .item-row p { @apply text-s; }
@@ -195,25 +202,41 @@
     .item-row p { white-space: nowrap; overflow: hidden; }
     .item-row p.is-clipped { text-shadow: var(--loop) 0 currentColor; }
   }
-  .item-thumb { aspect-ratio: 1; background: var(--light-gray); }   /* 沒圖＝灰底方形佔位 */
+  .item-thumb { aspect-ratio: 1; }   /* 沒圖＝方形的佔位（直條跑馬燈，下面）；有圖＝照圖的比例，再下面 */
+  /* 沒圖的佔位（清單縮圖、師資詳細頁的照片）＝一排直條跑馬燈，不是灰底（user 2026-11-27：「用nav btn的那個stroke，將寬度固定，然後高度根據box的高度而撐滿，
+     生成距離不等的stroke，從這個box外左邊or右邊marquee，顔色是字的顔色，背景為透明」；問過＝清單縮圖、老師照片，聯絡頁的標章照舊灰底）：
+     直條＝段落導覽那一格的寬（.section-nav-dot 0.45em、字級 md）、高＝整個框；間距不等＝一段圖樣一直重複（寬見 --ph-mask）；字的顏色畫、其他透明；
+     清單一列往右、下一列往左，每三列錯開起點（不然上下列的直條對齊成一片）。減少動態＝typography.css 的 blanket 讓它停住 */
+  :is(.item-thumb, .profile-photo):not(:has(img)) {
+    --ph-w: calc(var(--font-size-md) * 0.45);
+    /* 直條之間的空隙放大 1.5 倍（user 2026-11-27：「placeholder的間隔也可以再大一點」；直條寬不變，一輪 13 → 17 個 --ph-w、動畫時間照比例拉長＝速度不變） */
+    --ph-mask: linear-gradient(90deg, #000 0 var(--ph-w), #0000 var(--ph-w) calc(var(--ph-w) * 3.4), #000 calc(var(--ph-w) * 3.4) calc(var(--ph-w) * 4.4),
+      #0000 calc(var(--ph-w) * 4.4) calc(var(--ph-w) * 5.6), #000 calc(var(--ph-w) * 5.6) calc(var(--ph-w) * 6.6), #0000 calc(var(--ph-w) * 6.6) calc(var(--ph-w) * 10.8),
+      #000 calc(var(--ph-w) * 10.8) calc(var(--ph-w) * 11.8), #0000 calc(var(--ph-w) * 11.8) calc(var(--ph-w) * 13), #000 calc(var(--ph-w) * 13) calc(var(--ph-w) * 14), #0000 calc(var(--ph-w) * 14))
+      0 0 / calc(var(--ph-w) * 17) 100% repeat-x;
+    background: currentColor;
+    -webkit-mask: var(--ph-mask);
+            mask: var(--ph-mask);
+    animation: ph-marquee 7.8s linear infinite;
+  }
+  .item-list > li:nth-child(even) .item-thumb:not(:has(img)) { animation-direction: reverse; }
+  .item-list > li:nth-child(3n + 2) .item-thumb:not(:has(img)) { animation-delay: -2s; }
+  .item-list > li:nth-child(3n) .item-thumb:not(:has(img)) { animation-delay: -4s; }
+  @keyframes ph-marquee { to { -webkit-mask-position: calc(var(--ph-w) * 17) 0; mask-position: calc(var(--ph-w) * 17) 0; } }
   /* 有圖＝照原比例（user 2026-11-24：「應該是這個圖的原始 ratio，然後寬的圖片跟窄的圖片各自有自己的 max width/max height」；原本裁成方形）：
-     框＝寬 --thumb-max-w × 高 --thumb-max-h（現在都＝1.5 欄＝方形），圖 contain 在框裡＝寬的圖撐到框寬、窄（直）的撐到框高；在框的正中
+     框＝--item-thumb-w 見方（1.5 欄），圖 contain 在框裡＝寬的圖撐到框寬、窄（直）的撐到框高；在框的正中
      （手機圖在上＝貼底，緊接著下面的字）。框的大小不跟著圖：圖載入時框變大小、又剛好在 View Transition 裡（離開作品頁淡回淺色），
      Windows 的 WebKit 整頁當掉（2026-11-24 實測：框跟著圖長＝當、圖寫死大小或關掉 View Transition＝不當） */
-  .item-thumb:has(img) { --thumb-max-w: var(--item-thumb-w); --thumb-max-h: var(--item-thumb-w); width: var(--thumb-max-w); height: var(--thumb-max-h); aspect-ratio: auto; background: none; }
-  /* 清單列 hover（整個 box，文字那邊也算；user 2026-11-22，PC）＝圖片上浮一塊流動的中空板（thumb-board.js 畫：條紋玻璃——圖切成直條、
-     每條各自錯開、格線一直在游移）。畫布疊在縮圖上（列裡絕對定位、JS 每幀對齊縮圖）；
-     進出場＝網站 fade：藏著＝透明＋--blur、現身＝毛玻璃那一點糊（--frost；user 2026-11-22「加上 blur」）；clip-path 把糊切在縮圖框裡 */
+  .item-thumb:has(img) { width: var(--item-thumb-w); height: var(--item-thumb-w); aspect-ratio: auto; }
+  /* 清單列的縮圖上一直有一片中空板在流（user 2026-11-27；thumb-board.js 用 WebGL 畫；先做的是 hover 才出，同一天：「預設一開始就是有這個效果，hover則不影響它」）。
+     畫布疊在縮圖裡真的看得到的那張圖上（列裡絕對定位、JS 每幀對齊）；貼圖載好、第一次畫出來＝淡出來（只淡、不糊） */
   .thumb-board {
-    --frost: 1.5px;   /* 毛玻璃多糊：同背景筆跡（bg.css .bg-ink） */
     position: absolute;
     pointer-events: none;
-    clip-path: inset(0);
     opacity: 0;
-    filter: blur(var(--blur));
-    transition: var(--transition-fade);
+    transition: opacity var(--dur-fade) var(--ease-standard);
   }
-  .thumb-board.is-on { opacity: 1; filter: blur(var(--frost)); }
+  .thumb-board.is-on { opacity: 1; }
   /* 清單列與摺疊 hover／鍵盤聚焦＝蓋黑收圓點（item-marquee.js strike；user 2026-11-22 定的是蓋黑收直條、取代更早的圓點）：每行字先被一條字高的帶蓋住（.item-cover，
      左 → 右長出來），再一起往右收到字尾、沒有了；帶收完、游標還在，再等一下才在這一列的最右緣、字那一塊的正中從左到右切出一顆圓點（.item-dot），
      hover 著就留著、離開從左往右切出去（進出場都是 clip、不淡，user 2026-11-24）。
@@ -270,32 +293,33 @@
   @media (max-width: 767px) {
     .page-body a.item-row[href][target="_blank"]::after, .page-body a.item-row[href]:not([target="_blank"])::after, .page-body summary::after { top: 0; transform: none; }
   }
-  /* 手機、字在最上面的列（沒有縮圖的列；紀錄的國旗在左邊＝字也在最上面）：icon 的頂再往下＝對齊標題第一行字的頂（字框 1em 的頂＝行高扣掉 1em 的一半）
-     （user 2026-11-25：「這個圓點的位置，應該是抓文字的頂部邊緣，所以位置上應該要再下來一點」）；圖在上的列（動態、師資）照舊對齊圖的頂 */
+  /* 手機、字在最上面的列（沒有縮圖的列）：標題第一行去掉上半個行距（user 2026-11-27：「去掉第一行的上半line height，讓圓圈自然對齊box好了」）
+     ＝列的頂就是標題第一行字的頂（字框 1em 的頂）：icon 照上面那條 top 0 就對齊字頂。PC 不去（同一天：「pc可以去掉這個邏輯，因爲pc的圓圈是center的」——
+     圓圈對在列高的正中、上下行距要對稱；中間一版 PC 也去，圓圈比字低約 2px）。11-25 的做法是列不動、icon 往下挪 (行高 − 1) × 字級 ÷ 2
+     （「這個圓點的位置，應該是抓文字的頂部邊緣」）。列（或後台渲染時包字的 div）是 flex column＝負的 margin 不會跟外面合併、只把標題往上拉；圖在上的列（動態、師資）照舊對齊圖的頂 */
   @media (max-width: 767px) {
-    .page-body :is(a.item-row[href], summary):not(:has(> .item-thumb))::after, .page-body .record > summary::after { top: calc((var(--line-height-md) - 1) * var(--font-size-md) / 2); }
+    .page-body .item-list .item-row:not(:has(> .item-thumb)) h3:first-child { margin-top: calc((1 - var(--line-height-md)) * var(--font-size-md) / 2); }
+    /* 英文：字的頂＝大寫的頂，比字框（＝中文字的頂）低一點 → 右上角那顆（圓點、chevron、share）往下同樣多（user 2026-11-27：「英文的圓點在手機上也要修位置」；
+       Edge 3 倍截圖量：原本圓點比 I 的頂高 1.3px、中文版只差 0.3px） */
+    html[lang="en"] .page-body :is(a.item-row[href], summary):not(:has(> .item-thumb))::after { top: calc(var(--font-size-md) * 0.0625); }
   }
   /* hover／鍵盤聚焦那一列（整列、圖片上也算）＝空心點先變實心（user 2026-11-25：「hover accordion 的 title 時，空心圈要改成實心」），離開、沒打開＝變回空心。
      觸控不算：點完 :hover 會黏著＝收起來了還是實心 */
   @media (hover: hover) { .page-body summary:hover::after { background: currentColor; } }
+  .page-body summary.is-lit::after { background: currentColor; }   /* 程式做的 hover（首頁 news 點底列定位後那一閃，chrome.js openNewsAt；user 2026-11-27） */
   .page-body summary:focus-visible::after { background: currentColor; }
   /* 內頁的連結清單（網站地圖、入學附件）：hover＝同選單蓋黑收圓點、圓點接在字後面（user 2026-11-24：「網站地圖的 stroke 位置，比照 menu 的」）。
      連結撐滿整列＝整列都點得到 */
   .page-body .link-list .nav-link { display: block; padding-right: var(--row-pad); }
 
-  /* 摺疊（原生 <details>：常見問題、課程、榮譽、動態、入學；user 2026-11-18）：原生箭頭拿掉，那一列最右邊一顆圓點（空心＝收著、實心＝開著；
+  /* 摺疊（原生 <details>：課程、動態（含榮譽、報導）、首頁 news；user 2026-11-18）：原生箭頭拿掉，那一列最右邊一顆圓點（空心＝收著、實心＝開著；
      上面「摺疊的圓點」那段，畫在 summary::after）——跟選單 hover／選中時出現的那顆同一種（--dot-size），右緣＝內文欄右緣，
      對在收著那一列的正中（問題折成兩行也是兩行的正中）。展開／收起有動畫（accordion.js 把 details 的高度補間；user 2026-11-18）。
      summary 的文字、展開的內容右邊都讓出 --dot-pad（圓點＋一個 gutter） */
   .page-body details { position: relative; }   /* 展開內容裡絕對定位的東西（報讀用的字…）以這一則為準 */
   .page-body summary { position: relative; display: block; padding-right: var(--dot-pad); cursor: pointer; }   /* 不是 list-item＝原生箭頭不出（Safari 另外要下面那條）；relative＝圓點、hover 的帶對它定位 */
   .page-body summary::-webkit-details-marker { display: none; }
-  /* 榮譽＝動態那種列的變體（user 2026-11-25：「改成跟動態一樣的設計。然後thumbnail改成國旗」→ 國旗放進 1.5 欄的縮圖框之後：「應該是這個list的變體吧，國旗不需要那麽大」）：
-     同一套列（縮圖在左、隔一個 gutter 右文字、文字對在圖的正中、展開的內容從縮圖的左緣排起、右邊的圓點），只有縮圖小＝寬 2em（text-s 的 2em × 3/4＝一行字高；
-     user 2026-11-25：「國旗的size改成跟一開始的一樣，比較小的版本」＝回到 11-19 的大小；中間一版是內文欄的 1 欄寬），框＝國旗的 4:3、不是方框；
-     手機照樣圖左字右（小國旗疊在字上面不像一列，下面手機那段的 :not(.record)）。details 上的 .record 也給 chrome.js 認「國旗不是封面」 */
-  .record { --item-thumb-w: 2em; }
-  .record .item-thumb:has(img) { --thumb-max-h: calc(var(--item-thumb-w) * 3 / 4); }
+  /* 紀錄（榮譽、報導）原本是自己一頁、縮圖＝小國旗（.record）：2026-11-27 併進動態、國旗拿掉（user：「獎項也不需要有國旗」），跟動態同一種列 */
 
   /* 動態／入學（user 2026-11-18）：每則＝一個摺疊，收著的樣子同師資那一列（縮圖＋標題＋分類，summary 掛 .item-row）；
      動態頁：外面＝標題＋分類，展開＝.fold-meta（時間／地點）→ 相簿。入學頁：外面＝標題＋時間，展開＝說明文字（p）→ 相簿 → 附件（.link-list 連結清單、名字右邊一顆 doc icon）。有才出。
@@ -340,8 +364,8 @@
      ＝框上下各多 1.5rem 讓模糊暈出去；2026-11-25 貼的那段 CSS 註明上下緣要利、不向外膨脹）。
      捲動時馬上開、馬上收、不補間（user 2026-11-24：「blur 的添加可以再及時一點…感覺有點 clip 的添加，能不能直接 blur 的添加」）＝開關是變數、不是 opacity；
      選單、放大 dialog 開關時模糊那層照舊跟著內容一起淡（下面那條） */
-  .album { --album-h: 6rem; }   /* 原本 8rem／12rem，user 2026-11-19 嫌大縮成 6rem／9rem */
-  @media (min-width: 768px) { .album { --album-h: 9rem; } }
+  .page-body { --album-h: 6rem; }   /* 原本 8rem／12rem，user 2026-11-19 嫌大縮成 6rem／9rem。寫在內文欄＝手機上關於的輪播也用這個高（下面 .slideshow；user 2026-11-27） */
+  @media (min-width: 768px) { .page-body { --album-h: 9rem; } }
   .album.is-ready { position: relative; --edge-start: 0; --edge-end: 0; }
   .album.more-start { --edge-start: 1; }   /* 還捲得過去的那一邊才淡＋糊 */
   .album.more-end { --edge-end: 1; }
@@ -350,9 +374,9 @@
   .fold-body > * + .album.is-ready { margin-top: calc(var(--spacing-sm) + var(--lead) - var(--spacing-md)); }
   /* 圖 ↔ 字補半個行距（--lead，variables.css；user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」）：
      上面那條＝字 → 相簿；這條＝相簿 → 下面的字（入學的附件）；PC 摘要的底是縮圖（有圖的列）→ 展開的第一行字。
-     手機圖在上、字在下＝摘要的底是字，不用補；榮譽的國旗是一行字高＝摘要的底是字 */
+     手機圖在上、字在下＝摘要的底是字，不用補 */
   .fold-body > .album.is-ready + * { margin-top: var(--lead); }
-  @media (min-width: 768px) { details:not(.record):has(> summary > .item-thumb img) > .fold-body { padding-top: calc(var(--spacing-sm) + var(--lead)); } }   /* 榮譽的國旗比字那一塊矮＝摘要的底是字、不用補 */
+  @media (min-width: 768px) { details:has(> summary > .item-thumb img) > .fold-body { padding-top: calc(var(--spacing-sm) + var(--lead)); } }
   /* 內容整片模糊＋疊白的時候（選單、放大 dialog 開著；條件同 chrome.css）：相簿、輪播（關於、作品放映）兩側的模糊那層淡掉——
      它是 backdrop-filter，包在有 filter／opacity 的內容裡，有的瀏覽器會畫成沒疊到白（user 2026-11-24：「點擊 gallery 的時候，這個 blur 會去掉白色的 overlay」）；
      整片都糊了也用不著 */
@@ -377,7 +401,7 @@
      水平位置（user 2026-11-19）＝「內容區右緣～畫面右緣（100vw）」那段空間的正中：wrapper 佔 col 8–12，左邊用負 margin 吃掉一個 gutter
      （＝從 col 7 右緣起）、右邊負 margin 吃掉容器內距（＝到 100vw），圖在 wrapper 裡 margin auto 置中；圖本身仍是 4 欄寬的方形 */
   .page-figure { position: sticky; top: 50%; height: 0; align-self: start; margin-left: calc(-1 * var(--spacing-gutter)); margin-right: calc(-1 * var(--container-padding)); }
-  .page-figure > *, .figure-dialog-body > * {
+  .figure-dialog-body > * {
     @apply text-s;
     aspect-ratio: 1;
     display: flex;
@@ -385,7 +409,7 @@
     justify-content: center;
     background: var(--light-gray);
   }
-  .page-figure > * { visibility: hidden; }   /* 只佔位置：畫的是殼上的 object 畫布 */
+  .page-figure > * { aspect-ratio: 1; visibility: hidden; }   /* 只佔位置（空的 div）：畫的是殼上的 object 畫布 */
   /* 選單開著內容整個右推 --shift（chrome.css #page-content）→ 剩餘空間（內容右緣～100vw）跟著少掉 shift，它的正中往右移 shift/2：
      右圖反向位移 −shift/2（抵銷一半的右推）＝中心跟著新空間重新置中，同時寬少掉 --shift（方形，高跟著縮）＝兩邊留白跟原本一樣寬
      （user 2026-11-19；原本是右緣不動）；位移與寬的過場跟右推同一組時長與曲線 → 全程都在當下那段空間的正中。
@@ -406,7 +430,7 @@
     display: block;
     aspect-ratio: auto;
     width: auto;
-    max-width: var(--body-w);
+    max-width: var(--fig-max);   /* 手機＝內文寬、桌面＝12 欄中間的 10 欄（user 2026-11-27；chrome.css .figure-dialog） */
     height: var(--fig-h);
     object-fit: contain;
     background: none;
@@ -416,7 +440,7 @@
      user：「要決定一個適合的長寬比，才需要觸發scroll的行爲」→ 比 1:2 還細長才撐寬）。撐寬了也放得下的（手機上的截圖）就整張、不用捲。捲軸藏起來（同全站，看得到圖在框底被切掉）；捲得動時滾輪是捲、不換圖（chrome.js longFigure） */
   .figure-dialog-body.is-tall { max-height: var(--fig-h); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   .figure-dialog-body.is-tall::-webkit-scrollbar { display: none; }
-  .figure-dialog-body.is-tall > img { width: var(--body-w); height: auto; max-width: none; }
+  .figure-dialog-body.is-tall > img { width: var(--fig-max); height: auto; max-width: none; }   /* 同上面的最寬 */
 
   /* 段落圖片輪播（user 2026-11-18 about 起；slideshow.js）：一列、每張一樣高（＝框高）、寬照後台檔案的比例、不裁
      （user 2026-11-23：「照片應該以後台的 size 為主，不要 crop 原本上傳的 size」「要一樣大的高度」）；隔一個 gutter 一張接一張（column-gap，slideshow.js 讀），
@@ -435,6 +459,9 @@
     margin-block: var(--spacing-md);
     column-gap: var(--spacing-gutter);   /* 張與張之間（slideshow.js 讀；框本身不是 flex／grid，這個值只給 JS 用） */
   }
+  /* 手機、兩張以上＝同相簿那排一樣高（--album-h 6rem；user 2026-11-27：「about輪播的圖片應該要再小一點，跟accordion的gallery一樣大」，
+     接著「這個比例不要調整到pc的，pc還是要原本的scale」＝桌面照舊 16rem）。只有一張＝照舊同小節圖（上面那條：最高 16rem）。slideshow.js 讀 max-height 當框高 */
+  @media (max-width: 767px) { .slideshow:has(.slide ~ .slide) { height: var(--album-h); max-height: var(--album-h); } }
   /* 照片＋兩側模糊那一層（slideshow.js 包）＝框本身、不伸出去；兩側的淡出＋模糊＝下面共用的那一套。只有一張＝兩側不淡（旁邊沒東西）。
      超出列的照片 overflow: clip 切掉：不用 hidden——hidden 的框程式還捲得動，點／聚焦到旁邊那張時瀏覽器會把整列捲歪（2026-11-23 煙霧測試踩過）。
      換掉的做法——2026-11-25 稍早：旁邊的圖橫向擠扁＋目前那張以外整段糊 2px、再之前框寬一成的平模糊；

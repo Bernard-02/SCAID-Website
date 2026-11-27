@@ -2,15 +2,15 @@
 
 /* 1. Global（必須最先） */
 @import 'variables.css';
-/* 字型不在這 @import（會卡到 output.css 下載完才開抓）：各頁 head 直接 link Google Fonts */
+/* 字型不在這 @import：英文的 @font-face 在 typography.css、中文切片的 font.css 由各頁 head 直接 link（自架，不連 Google Fonts） */
 
 /* 2. Layers */
 @import './base/typography.css';
 @import './base/scrollbar.css';      /* 藏原生捲軸、自製 thumb（js/modules/ui/custom-scrollbar.js） */
 @import './layout/grid.css';
 @import './components/icon.css';
-@import './components/bg.css';       /* 背景：畫布（筆跡）＜ 中空板 ＜ 內文 */
-@import './components/chrome.css';   /* 全站殼：logo／選單／底列／intro dialog */
+@import './components/bg.css';       /* 背景：WebGL 的光跡＋中空板（bg.js）＜ 內文 */
+@import './components/chrome.css';   /* 全站殼：logo／選單／底列／放大 dialog */
 @import './components/home.css';     /* 首頁：logo 置中、動態展開 */
 @import './components/page.css';     /* 內頁版型：段落導覽、內文、右圖 */
 @import './components/works.css';    /* 作品頁：放映／總覽兩種排法、底列那組鈕 */

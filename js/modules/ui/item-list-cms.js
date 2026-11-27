@@ -22,11 +22,19 @@ export const subLines = (r) => /** @type {[any, any][]} */ ([
   ...(Array.isArray(r.subtitles) ? r.subtitles : []).map((/** @type {any} */ x) => [x?.text_zh, x?.text_en]),
 ]).filter(([z, e]) => z || e);
 
+// 詳細頁有沒有比列表多的東西＝聯絡、清單（學歷、經歷…）至少一行字（同 cms-pages.js facultyDetail 會畫出來的：清單裡沒字的那筆不算）。
+// 照片、名字、校內職級、校外單位列表上就有，不算
+/** @param {any} r */
+const hasDetail = (r) => String(r.contact || '').trim() !== ''
+  || (Array.isArray(r.sections) ? r.sections : []).some((/** @type {any} */ s) => (Array.isArray(s?.entries) ? s.entries : []).some((/** @type {any} */ x) => x?.text_zh || x?.text_en));
+
 // 各集合：要抓的欄位（＋篩選）、縮圖欄位、標題（名字從人名庫／單位庫來，user 2026-11-21）、整列連到哪（回 '' ＝那列不可點、用 div）
 /** @type {Record<string, { fields: string, thumb: (r: any) => unknown, name: (r: any) => any, link: (r: any) => string }>} */
 const SPEC = {
-  // 師資的結構同 SCCD（user 2026-11-26）：只列在職的（status，離職的不出）；副標拿掉了（名字下面＝校內職級 → 校外單位）
-  faculty: { fields: `id,category,photo,person.name_zh,person.name_en,${FACULTY_LINES}&filter[status][_neq]=former`, thumb: r => r.photo, name: r => r.person, link: r => `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` },
+  // 師資的結構同 SCCD（user 2026-11-26）：只列在職的（status，離職的不出）；副標拿掉了（名字下面＝校內職級 → 校外單位）。
+  // 沒有詳細內容的老師＝那一列不能點（user 2026-11-27：「如果老師頁面沒有detail的話，就沒辦法被打開」；同合作企業沒填官網）
+  faculty: { fields: `id,category,photo,person.name_zh,person.name_en,${FACULTY_LINES},contact,sections.entries&filter[status][_neq]=former`, thumb: r => r.photo, name: r => r.person,
+    link: r => (hasDetail(r) ? `href="faculty-detail.html?id=${encodeURIComponent(r.id)}"` : '') },
   // 企業官網：另開新視窗；只放行 http(s)，空的或其他＝不可點
   partners: { fields: 'id,logo,url,organization.name_zh,organization.name_en,subtitles', thumb: r => r.logo, name: r => r.organization,
     link: r => (/^https?:\/\//i.test(r.url || '') ? `href="${escapeHtml(r.url)}" target="_blank" rel="noopener"` : '') },

@@ -5,7 +5,7 @@
  * 一律經 sitePath() 換算成「以站台根為基準」的絕對 URL，本地根目錄與子路徑部署都成立。
  *
  * 以本檔案 URL 推導：js/modules/ui/site-base.js → 上三層 = 站台根。
- * sitePath 本體在 helpers.js（classic script，每頁都比 module 先載入；generate-app 也用它），這裡只轉呼叫。
+ * sitePath 本體在 helpers.js（classic script，每頁都比 module 先載入），這裡只轉呼叫。
  */
 
 export const SITE_BASE = new URL('../../../', import.meta.url).href;

@@ -3,14 +3,14 @@
 // .ai 要是「建立 PDF 相容檔案」存的（Illustrator 預設）：讀檔裡那份 PDF 的頁面，只靠 Node 內建的 zlib（這台沒有 PDF 工具）。
 // 每個 icon 下面那行字＝名字 → 照 FILES 對到檔名（ai 裡多了新的名字要加進去，不然報錯）。
 // 框：高 70＝ai 裡每個 icon 的框（＝logo 骨牌的高，play、day… 跟骨牌一樣 45×70）、寬＝看得到的範圍（描邊算到平頭的角、尖角）；
-// back＝next 左右翻（ai 裡兩個上下差 0.94）；volume（音量拉桿那 9 根）自己的框。night 不出檔：＝day 轉半圈（chrome.css 深色時轉）。
+// back＝next 左右翻（ai 裡兩個上下差 0.94）；volume（音量拉桿那 9 根）自己的框。day、night 不出檔：user 2026-11-27 另外給了一對（website-icons/day.svg、night.svg），重跑不能蓋掉。
 // 站上 icon 的寬＝自己的寬（user 2026-11-24：不自帶方框）→ 印出來的寬高要抄進 css/components/icon.css 那個 icon 的 --ar
 const fs = require('fs'), zlib = require('zlib'), path = require('path');
 const [file, outDir] = process.argv.slice(2);
 if (!file || !outDir) { console.log('用法見檔頭'); process.exit(1); }
 const VOL_BARS = 20;   // 音量拉桿的根數＝一根 5%（user 2026-11-24：長度照一般播放器、不照 ai 那個 icon 的寬）；改了要跟著改 chrome.js BARS、header.html 那個 range 的 max、chrome.css --bars
 const FILES = { 'video&play': 'play', 'back&previous': null, next: 'next', close: 'close', 'full screen': 'fullscreen', pause: 'pause',
-  loud: 'loud', half: 'half', silence: 'silence', day: 'day', night: null, 'slide show': 'slideshow', grid: 'grid', volume: 'volume' };
+  loud: 'loud', half: 'half', silence: 'silence', day: null, night: null, 'slide show': 'slideshow', grid: 'grid', volume: 'volume' };
 const buf = fs.readFileSync(file);
 const src = buf.toString('latin1');
 

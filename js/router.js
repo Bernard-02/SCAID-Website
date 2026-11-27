@@ -10,6 +10,7 @@ import { syncObject } from './modules/ui/object.js';
 import { SITE_BASE_PATHNAME, sitePath } from './modules/ui/site-base.js';
 import { PAGE_FILES, pageOfSlug, pagePath, slugsFresh } from './config/slugs.js';
 import { DUR } from './modules/ui/motion.js';
+import { syncTitle } from './modules/ui/ui-labels.js';
 import { prefersReducedMotion } from './modules/ui/reduce-motion.js';
 
 // ── 路由表：頁面清單與對外 slug 都在 js/config/slugs.js（PAGE_FILES／SLUG_DEFAULTS＋後台 site_slugs；user 2026-11-26 照 SCCD）。
@@ -79,7 +80,7 @@ export function updateNavActive(page = document.body.dataset.page) {
   if (home) logo.setAttribute('aria-labelledby', 'nav-about'); else logo.removeAttribute('aria-labelledby');
 }
 
-// 各頁 <head> 的 metadata（description、canonical、og:*、twitter:*、robots；user 2026-11-26 填的 docs/metadata.txt）換頁時跟著換：
+// 各頁 <head> 的 metadata（description、canonical、og:*、twitter:*、robots；user 2026-11-26 給的那份，沒進 repo）換頁時跟著換：
 // Google 會跑 JS，不換的話 head 一直是第一次載入那頁的——正式站的乾淨網址冷載入都是 index.html＝每一頁的 canonical 都指向首頁
 const HEAD_META = 'meta[name="description"], meta[name="robots"], meta[name^="twitter:"], meta[property^="og:"], link[rel="canonical"]';
 /** @param {Document} doc 新頁的 HTML */
@@ -152,11 +153,10 @@ async function loadPage(route, search = '', fromUserNav = false) {
     document.body.dataset.page = route.page;
     current = { page: route.page, search };
     logoPage();   // logo：回首頁＝繼續在系名的 stroke 和文字之間來回；到內頁＝stroke 換成右圖 object 的長度（從首頁來＝移完才換，見上）
-    // 後台的內容換好才淡入（user 2026-11-22：沒資料的老師，HTML 示意的學歷會先閃一下再被收掉）；後台慢就最多等 1.5 秒、先顯示示意
-    const cmsReady = Promise.race([initPageModules(route.page, new URLSearchParams(search), fromUserNav), wait(1500)]);
-    // 分頁標題＝「頁名 - SCAID」（同 ui-labels.js；HTML 的 <title> 是給 Google、預覽看的「About 關於」）：報讀之前先換好，語言 initPageModules 已經套了
-    const h1 = main.querySelector('h1[data-label]');
-    if (h1) document.title = `${h1.textContent} - SCAID`;
+    // 後台的內容換好才淡入（user 2026-11-22）；後台慢就最多等 1.5 秒、先淡入（內容晚到再畫）
+    const cmsReady = Promise.race([initPageModules(route.page, new URLSearchParams(search)), wait(1500)]);
+    // 分頁標題（ui-labels.js syncTitle；HTML 的 <title> 是給 Google、預覽看的「About 關於」）：報讀之前先換好，語言 initPageModules 已經套了
+    syncTitle();
     if (fromUserNav) announceAndFocusMain(main);
     if (logoFirst) {
       void main.offsetWidth;          // 「直接藏起來」先生效，再把過場接回去（淡入要用）
@@ -178,7 +178,7 @@ async function loadPage(route, search = '', fromUserNav = false) {
   }
 }
 
-export function navigateTo(url) {
+function navigateTo(url) {
   const target = new URL(url, window.location.href);
   const route = resolveRoute(target.pathname) || NOT_FOUND_ROUTE;
   history.pushState(null, '', pushPath(route) + target.search + target.hash);
@@ -216,7 +216,7 @@ export function initRouter() {
     document.body.dataset.page = route.page;
     current = { page: route.page, search: window.location.search };
     if (served === 'index' && route.page !== 'index') loadPage(route, window.location.search);
-    else initPageModules(route.page, new URLSearchParams(window.location.search), false);
+    else initPageModules(route.page, new URLSearchParams(window.location.search));
   };
   // 後台的 slug 表晚到、而且改過：網址列收斂成最新寫法（這台存的是舊表、照舊 slug 開進來的）
   slugsFresh.then(() => { const r = resolveRoute(window.location.pathname); if (r && r.page === current.page) canonicalize(r); });

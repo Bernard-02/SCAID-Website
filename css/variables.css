@@ -1,6 +1,6 @@
 /* ========================================
    CSS Variables — Design System（手機優先：:root＝手機值，≥768 在下方放大）
-   token 架構沿用 SCCD（7 階字級／間距／motion／theme）；介面色目前只有黑白＋灰階（網站本身是彩色的）
+   token 架構沿用 SCCD（字級／間距／motion／theme）；介面色只有黑白＋淺灰（網站本身是彩色的）
    ⚠️ 改完任何 token 都要 `npm run build:css`（頁面吃的是 output.css）
    ======================================== */
 
@@ -13,27 +13,12 @@
   --color-black: #000000;
   --color-white: #FFFFFF;
 
-  --gray-0: #000000;
-  --gray-1: #1A1A1A;
-  --gray-2: #333333;
-  --gray-3: #4D4D4D;
-  --gray-4: #666666;
-  --gray-5: #808080;
-  --gray-6: #999999;
-  --gray-7: #B3B3B3;
-  --gray-8: #CCCCCC;
-  --gray-9: #E6E6E6;
-  --gray-10: #FFFFFF;
-
-  /* 淺灰／深灰底：灰底元件一律用這兩個（Tailwind bg-light-gray／bg-dark-gray），勿散用 gray-N */
+  /* 淺灰底：灰底元件一律用這個（Tailwind bg-light-gray） */
   --light-gray: #f2f2f2;
-  --dark-gray: #333333;
 
   /* ===== Typography ===== */
   /* 英文 JetBrains Mono（自架 fonts/jetbrains-mono/，@font-face 在 typography.css）、中文 Glow Sans TC Compressed（未來熒黑，自架切片 fonts/glow-sans-tc-compressed/font.css）；
      字串堆疊在 tailwind.config.js fontFamily.sans */
-  --font-mono: 'JetBrains Mono';
-  --font-zh: 'Glow Sans TC Compressed';
 
   /* 4 階字級（rem，base 16px）：Tailwind text-* 與 CSS var 都吃這裡。xl 以上 user 2026-11-21 先刪，要用再開 */
   --font-size-lg: 1.2rem;     /* 19.2px */
@@ -65,11 +50,6 @@
   --spacing-xl: 2rem;     /* 32px */
   --spacing-2xl: 3rem;    /* 48px */
   --spacing-3xl: 4rem;    /* 64px */
-  --spacing-4xl: 5rem;    /* 80px */
-  --spacing-5xl: 6rem;    /* 96px */
-  --spacing-6xl: 8rem;    /* 128px */
-  --spacing-7xl: 10rem;   /* 160px */
-  --spacing-8xl: 12rem;   /* 192px */
   /* 半個行距＝行高比字高多出來的一半（字的上下各一份）：在用到它的那個元素上算（1lh、1em 照那個元素的字級與行距）。
      圖 ↔ 字的間距要加上它，看起來才跟字 ↔ 字一樣——字 ↔ 字兩邊各有一份、圖 ↔ 字只有字那邊一份
      （user 2026-11-24：「是不是圖到文字之間要加上字的 line height，視覺上才會對齊」；text-s 1.5 行距 ≈ 4.6px） */
@@ -94,7 +74,7 @@
   --bar-h: 4rem;                /* 底列高（.site-bar）：#page-content padding-bottom */
   --bar-pad: 2rem;              /* 底列那條線離視窗底的距離 */
   --menu-w: 10rem;              /* 選單固定寬（user 2026-11-03）：開著時內容／play 鈕讓到它右邊。手機選單全螢幕（chrome.css，user 2026-11-22）＝這個手機值實際上沒用到 */
-  --col-w: 100%;                /* 動態欄寬（底列中欄最大寬＝首頁動態清單寬）；手機吃滿 */
+  --col-w: 100%;                /* logo 的寬（手機另算 --logo-w）、底列跑馬燈的基準；手機吃滿 */
   --news-w: var(--col-w);       /* 底列中欄最大寬（手機吃滿、被兩側的鈕擠）；桌面見 768 那段 */
   --logo-w: calc(100vw - 2 * var(--container-padding) - 2 * var(--rail-w));   /* 全站 logo 寬（chrome.css .site-logo）：手機＝內頁內文欄的寬＝第 1 欄正中 → 第 4 欄正中（user 2026-11-24） */
   /* 內頁內文欄的寬（絕對值）：手機＝扣內距、扣兩邊 rail；桌面＝12 欄裡的 6 欄（下面 768 那段；PC col 2–7、iPad col 4–9 都是）。
@@ -106,16 +86,14 @@
   --rail-w: calc((100vw - 2 * var(--container-padding) - 3 * var(--spacing-gutter)) / 8);   /* 手機內頁內文左右各讓出的寬＝半欄（user 2026-11-24：內文、logo 都從第 1 欄正中排到第 4 欄正中；原本固定 2rem＋gutter）。左＝段落導覽／返回鈕，右＝對稱留著；page.css .page-body；桌面走 grid＝0 */
 
   /* ===== Motion tokens（全站單一來源）=====
-     duration：GSAP 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS transition 與 GSAP tween 同步
-     階梯：micro hover · fast chevron／overlay · base 切換 fade · medium 手風琴／面板 · slow 大 layout · reveal 進場 */
-  --dur-micro: 0.2s;
+     duration：JS 端由 js/modules/ui/motion.js 讀 → 改這裡一處，CSS 與 JS 同步
+     階梯：fast hover 的帶／overlay · base 切換 fade · medium 手風琴／面板 · slow 大 layout */
   --dur-fast: 0.3s;
   --dur-base: 0.4s;
   --dur-medium: 0.5s;
   --dur-slow: 0.6s;
-  --dur-reveal: 1s;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-wipe: cubic-bezier(0.25, 0, 0, 1);   /* GSAP 端 'wipe' 由 helpers.js CustomEase 註冊同一組，改要同步 */
+  --ease-wipe: cubic-bezier(0.25, 0, 0, 1);
 
   /* 網站 transition＝fade in／fade out（user 2026-11-03）：換頁用（router.js 淡出等 DUR.fade、淡入走 CSS），
      之後其他進出場也吃這組。改時長只改 --dur-fade，JS 經 motion.js 讀同一個值。
@@ -133,7 +111,7 @@
 }
 
 /* ===== 深色模式（user 2026-11-21；選單 EN 上面那顆 .theme-btn 切，chrome.js）：黑底白字、灰底佔位換深灰。
-   data-theme 由各頁 <head> 那行 inline script 在 CSS 之前套上（記在 localStorage scaid:theme），不會先閃一下白 ===== */
+   data-theme 由各頁 <head> 那行 inline script 在 CSS 之前套上（一進來照時間決定、記在 sessionStorage scaid:theme），不會先閃一下白 ===== */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --theme-fg: var(--color-white);
@@ -159,11 +137,6 @@
     --spacing-xl: 3rem;
     --spacing-2xl: 4rem;
     --spacing-3xl: 6rem;
-    --spacing-4xl: 8rem;
-    --spacing-5xl: 10rem;
-    --spacing-6xl: 12rem;
-    --spacing-7xl: 14rem;
-    --spacing-8xl: 16rem;
 
     --spacing-gutter: 1.5rem;     /* 24px */
     --container-padding: 3.75rem; /* 60px */
@@ -173,7 +146,7 @@
     --menu-w: 18rem;
     --col-w: min(60vw, 32rem);
     --logo-w: var(--col-w);     /* 桌面 logo 同動態欄寬 */
-    /* 首頁 news（展開的清單、底列的跑馬燈）的寬＝logo 第一根直條的左緣到最後一根的右緣（user 2026-11-25 清單、11-26 跑馬燈「也改成跟内容的寬度一樣」）：
+    /* 底列跑馬燈的寬＝logo 第一根直條的左緣到最後一根的右緣（user 2026-11-26「也改成跟内容的寬度一樣」；展開的清單 2026-11-27 起是 .page-body 的 6 欄）：
        展開時 logo 停在系名那 17 根的 stroke 版，直條那一段＝logo 寬扣兩端各「骨牌 45＋間隙 20」個 viewBox 單位（logo.js BLOCK／GAP） */
     --news-w: calc(var(--col-w) * (var(--logo-vb-w) - 130) / var(--logo-vb-w));
     --rail-w: 0px;
@@ -194,6 +167,11 @@ html[lang="en"] { --logo-vb-h: 115.02; }
 /* 英文版的行距（中英分開，user 2026-11-24）：跟上面 :root 那組（中文）一階一階對，要調英文改這裡 */
 html[lang="en"] {
   --font-latin: 'JetBrains Mono';   /* 英文版沒有中文可對齊＝原本的基準線（:root 那條的說明） */
+  /* 英文版的 Regular、Medium＝中文版裡英數畫出來的粗細（user 2026-11-27：「英文的bold跟regular，去對中文底下的英文的字級」→ 問了之後「是那個480跟regular」）：
+     中文版的英數是 'JetBrains Mono ZH'，CSS 300／480 實際畫 150／350（scripts/shift-latin.py WEIGHTS）；英文版用原本那份（字重軸 100–800，typography.css）直接要 150／350。
+     Bold 照舊 700（中文版的英數 Bold 是 550）。英文版裡的中文字（很少）：150、350 都挑到中文的 400 字檔 */
+  --font-weight-regular: 150;
+  --font-weight-medium: 350;
   --line-height-lg: 1.3;
   --line-height-md: 1.4;
   --line-height-s: 1.4;   /* 同 xs 那一階（user 2026-11-25：「英文的 s 文字的 line height 我想改成 xs」「改成 1.4」；原本 1.5。中文照舊 1.5） */

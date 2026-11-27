@@ -1,11 +1,13 @@
 /* 背景（user 2026-11-26：背景試驗場那一份搬上網站，js/modules/ui/bg.js）：一張 WebGL 畫布 .bg，由 bg.js 放進 <body> 最前面：
    固定滿版、不吃指標、z -1＝在所有內容後面（背景 ＜ 內文）。畫布是不透明的（白天＝白紙上的粉彩光、夜晚＝暗底上的光），
-   濃度＝它的 opacity（--bg-dense，user 同一天：「濃度是70%」）＝底下 body 的底色透出三成。
+   濃度＝它的 opacity（--bg-dense，user 同一天：「濃度是70%」；2026-11-27 白天改 80%）＝底下 body 的底色透出兩、三成。
    取代原本的炭筆背景（畫布＜中空板兩層，2026-11-21～23；那時的 --ink-max、--board-max 都沒了） */
 
 @layer components {
   body { isolation: isolate; }   /* body 自己一個 stacking context：z -1 的畫布才會在 body 底色上面、不是掉到它後面 */
-  .bg { --bg-dense: 0.7; position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; opacity: var(--bg-dense); transition: var(--transition-fade); }
+  /* 白天 80%（user 2026-11-27：「白天的顔色濃度，我覺得可以調整多一點，目前是70%？可以改成80%」）、夜晚照舊 70% */
+  html[data-theme="dark"] .bg { --bg-dense: 0.7; }
+  .bg { --bg-dense: 0.8; position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; opacity: var(--bg-dense); transition: var(--transition-fade); }
   /* 選單或放大 dialog 開著：背景當內容處理（同 chrome.css #page-content 那兩條：模糊＋疊白；user 2026-11-21）。選單開著照樣可以畫（user 2026-11-22），
      dialog 開著 bg.js 不畫新的。selector 的寫法同 chrome.css .top-blur::after 那條 */
   html:is(.menu-open, :has(#figure-dialog[open]:not(.is-closing))) .bg { filter: blur(var(--blur)); opacity: calc(var(--bg-dense) * 0.4); }

@@ -11,26 +11,24 @@ export function assetUrl(v) {
   if (!id) return '';
   return /^(https?:)?\/\//.test(id) || id.startsWith('/') || id.startsWith('.') ? id : `${CMS_ASSETS_BASE}/${id}`;
 }
-// files M2M（每列 { directus_files_id: {...} }，相容直接檔物件）→ URL 陣列（濾掉空的）
-export function assetUrls(arr) {
-  if (!Array.isArray(arr)) return [];
-  return arr.map(x => assetUrl(x?.directus_files_id ?? x)).filter(Boolean);
-}
 
 // 抓 Directus JSON 回 .data。弱機的故障模式是「hang 而非拒絕」→ 統一逾時 abort 讓呼叫端走失敗鏈。
 // 逾時涵蓋到 body 讀完（headers 到了 body stream 照樣可能 hang）。
-// cmsDown：後台連不上（憑證／DNS／拒連＝fetch 丟 TypeError；逾時與 HTTP 錯誤不算）。live binding＝importer 讀到最新值
+// cmsDown：後台連不上（憑證／DNS／拒連＝fetch 丟 TypeError；逾時與 HTTP 錯誤不算）。live binding＝importer 讀到最新值。
+// 最近 DOWN_MS 內有一支抓到過＝後台是通的：同時在跑的好幾支裡剛好一支瞬斷、又是最後回來的，不算（不然已經畫好的頁整頁換成「即將推出」）
 export let cmsDown = false;
+let okAt = 0;
+const DOWN_MS = 10000;
 export async function fetchCmsJson(url, ms = 10000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
     const res = await fetch(url, { signal: ctrl.signal });
-    cmsDown = false;
+    cmsDown = false; okAt = Date.now();
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()).data;
   } catch (e) {
-    if (e instanceof TypeError) cmsDown = true;
+    if (e instanceof TypeError && Date.now() - okAt > DOWN_MS) cmsDown = true;
     throw e;
   } finally { clearTimeout(t); }
 }
@@ -41,8 +39,8 @@ export async function fetchCmsJson(url, ms = 10000) {
 export const YT_API_KEY = 'AIzaSyBU-muAPWSpX6hn4gKw4fec6yM1Yqd4lFA';
 
 // sessionStorage last-known-good：上次成功的真資料，後台失敗時退這份（存不進去／壞快取都當沒有）
-export function saveLKG(key, data) { try { sessionStorage.setItem(`scaid:${key}`, JSON.stringify(data)); } catch {} }
-export function readLKG(key) { try { const s = sessionStorage.getItem(`scaid:${key}`); return s ? JSON.parse(s) : null; } catch { return null; } }
+function saveLKG(key, data) { try { sessionStorage.setItem(`scaid:${key}`, JSON.stringify(data)); } catch {} }
+function readLKG(key) { try { const s = sessionStorage.getItem(`scaid:${key}`); return s ? JSON.parse(s) : null; } catch { return null; } }
 
 // 各頁內容一律走這支（照 SCCD，user 2026-11-26：「我們不需要假資料，收不到後臺也不需要render假的」）：
 // 抓到＝存一份；抓不到（逾時、HTTP 錯、連不上）＝退這個分頁上次抓到的那份；連那份都沒有＝丟錯（呼叫端那一塊就不畫）。

@@ -30,33 +30,31 @@
     <nav class="site-menu-links">
     <div class="site-menu-nav no-scrollbar">
       <ul class="menu-main">
-        <li><a data-label="nav.about" href="about.html" class="nav-link" id="nav-about" data-zh="關於" data-en="About">關於</a></li><!-- id＝首頁 logo 的報讀名稱（router.js updateNavActive） -->
-        <li><a data-label="nav.partners" href="partners.html" class="nav-link" data-zh="合作企業" data-en="Partners">合作企業</a></li>
-        <li><a data-label="nav.faculty" href="faculty.html" class="nav-link" data-zh="師資" data-en="Faculty">師資</a></li>
-        <li><a data-label="nav.curriculum" href="curriculum.html" class="nav-link" data-zh="課程" data-en="Curriculum">課程</a></li>
-        <li><a data-label="nav.works" href="works.html" class="nav-link" data-zh="作品" data-en="Works">作品</a></li><!-- user 2026-11-23：課程後面 -->
-        <li><a data-label="nav.activities" href="activities.html" class="nav-link" data-zh="動態" data-en="Activities">動態</a></li>
-        <li><a data-label="nav.records" href="records.html" class="nav-link" data-zh="紀錄" data-en="Records">紀錄</a></li>
-        <li><a data-label="nav.admission" href="admission.html" class="nav-link" data-zh="入學" data-en="Admission">入學</a></li>
+        <li><a data-label="nav.about" href="about.html" class="nav-link" id="nav-about" data-en="About">關於</a></li><!-- id＝首頁 logo 的報讀名稱（router.js updateNavActive） -->
+        <li><a data-label="nav.partners" href="partners.html" class="nav-link" data-en="Partners">合作企業</a></li>
+        <li><a data-label="nav.faculty" href="faculty.html" class="nav-link" data-en="Faculty">師資</a></li>
+        <li><a data-label="nav.curriculum" href="curriculum.html" class="nav-link" data-en="Curriculum">課程</a></li>
+        <li><a data-label="nav.works" href="works.html" class="nav-link" data-en="Works">作品</a></li><!-- user 2026-11-23：課程後面 -->
+        <li><a data-label="nav.activities" href="activities.html" class="nav-link" data-en="Activities">動態</a></li>
       </ul>
-      <!-- 次選單分兩區：規章、地圖、捐款一區在這裡（跟著主選單捲、直接接在入學下面＝第二組，user 2026-11-25；原本推到框底），聯絡在下面固定、跟語言鈕同一組（user 2026-11-25：「捐款移動到規章前面，然後聯絡放在en上面」；
+      <!-- 次選單分兩區：規章、地圖、捐款一區在這裡（跟著主選單捲、直接接在主選單下面＝第二組，user 2026-11-25；原本推到框底），聯絡在下面固定、跟語言鈕同一組（user 2026-11-25：「捐款移動到規章前面，然後聯絡放在en上面」；
            11-24 是規章、地圖｜常見問題、捐款、聯絡，註解裡的「常見問題那組」就是固定的這一組）；組跟組之間＝分區的 gap（xl，user 2026-11-24：「組跟組之間的 gap 改成 xl 吧」） -->
       <ul class="menu-sub">
-        <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-zh="規章與政策" data-en="Regulations & Policies">規章與政策</a></li>
-        <li><a data-label="nav.sitemap" href="sitemap.html" class="nav-link" data-zh="網站地圖" data-en="Site Map">網站地圖</a></li>
-        <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-zh="捐款" data-en="Donate">捐款</a></li><!-- user 2026-11-25：「捐款改在地圖之下吧」 -->
+        <li><a data-label="nav.regulations" href="regulations.html" class="nav-link" data-en="Regulations & Policies">規章與政策</a></li>
+        <li><a data-label="nav.sitemap" href="sitemap.html" class="nav-link" data-en="Site Map">網站地圖</a></li>
+        <li><a data-label="nav.donate" href="donate.html" class="nav-link" data-en="Donate">捐款</a></li><!-- user 2026-11-25：「捐款改在地圖之下吧」 -->
       </ul>
     </div>
     <ul class="menu-sub">
-      <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-zh="聯絡" data-en="Contact">聯絡</a></li><!-- 原本的 footer 覆蓋層（user 2026-11-21） -->
+      <li><a data-label="nav.contact" href="contact.html" class="nav-link" data-en="Contact">聯絡</a></li><!-- 原本的 footer 覆蓋層（user 2026-11-21） -->
     </ul>
     </nav>
     <!-- 語言切換＋深色模式（選單最下方）：不跟著選項捲（user 2026-11-24）；跟上面的聯絡＝同一組，聯絡 → EN → 深色模式 之間都是選項間距、不是分區的 gap
          （user 2026-11-25：「聯絡跟en是同一組、sticky」；同一天先「將mode放在en上面吧」、再「mode跟en的位置，兩者交換」——中間深色模式鈕搬到底列右下角過、又搬回來）。
-         深色模式鈕＝icon（ai 的 day；深色時轉半圈＝night），開關狀態走 aria-pressed（chrome.js）；語言鈕顯示「要切過去」的語言，文字由 lang.js 填 -->
+         深色模式鈕＝icon（user 2026-11-27 給的 day、night 兩張疊著、淡入淡出），開關狀態走 aria-pressed（chrome.js）；語言鈕顯示「要切過去」的語言，文字由 lang.js 填 -->
     <div class="menu-tools">
       <button type="button" class="lang-btn" aria-label="切換為英文">EN</button>
-      <button type="button" class="theme-btn" aria-pressed="false"><span class="icon icon-theme" aria-hidden="true"></span><span data-label="menu.dark-mode" class="sr-only" data-en="Dark mode">深色模式</span></button>
+      <button type="button" class="theme-btn" aria-pressed="false"><span class="icon icon-day" aria-hidden="true"></span><span class="icon icon-night" aria-hidden="true"></span><span data-label="menu.dark-mode" class="sr-only" data-en="Dark mode">深色模式</span></button>
     </div>
   </div>
 
@@ -70,13 +68,13 @@
       <button type="button" class="bar-btn menu-btn" aria-expanded="false" aria-controls="site-menu">
         <!-- .fs-blur＝作品頁鈕後面的毛玻璃（同 logo 背後那塊：貼著鈕、四邊羽化；user 2026-11-24，免得直接疊在作品上；別頁不出，chrome.css） -->
         <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
-        <span class="bar-rect"></span><span data-label="bar.menu" class="bar-label" data-zh="選單" data-en="menu">選單</span>
+        <span class="bar-rect"></span><span data-label="bar.menu" class="bar-label" data-en="menu">選單</span>
       </button>
       <!-- intro 影片：data-video＝後台「首頁影片」的連結（cms-pages.js loadIntroVideo 填；YouTube 連結或直連的影片檔），有網址才會開 dialog 播；
            空的＝這顆不出（chrome.css，user 2026-11-26）。
            名字（簡介）不出、只當報讀名稱（user 2026-11-23，同 menu 鈕） -->
       <button type="button" class="bar-btn play-btn" data-video="">
-        <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-zh="簡介" data-en="intro">簡介</span>
+        <span class="icon icon-play"></span><span data-label="bar.intro" class="bar-label" data-en="intro">簡介</span>
       </button>
     </div>
     <!-- 首頁的動態（後台首頁的 news、跟首頁清單同一個順序；cms-pages.js loadBarNews 填進空的 .bar-news-copy 再叫 fitBar；一則都沒有＝這塊不出，chrome.css）：
@@ -93,15 +91,15 @@
     <div class="bar-works">
       <span class="fs-blur" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i></span>
       <button type="button" data-works-mode="bento">
-        <span class="icon icon-grid" aria-hidden="true"></span><span data-label="bar.works.bento" class="sr-only" data-zh="總覽" data-en="Overview">總覽</span>
-        <span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-zh="放映" data-en="Slideshow">放映</span>
+        <span class="icon icon-grid" aria-hidden="true"></span><span data-label="bar.works.bento" class="sr-only" data-en="Overview">總覽</span>
+        <span class="icon icon-slideshow" aria-hidden="true"></span><span data-label="bar.works.slideshow" class="sr-only" data-en="Slideshow">放映</span>
       </button>
     </div>
     <!-- 右圖 object 的開關（PC 以外；user 2026-11-13 手機稿、2026-11-22 改成 object 可以打開、關閉）：右下角、長得跟 menu 鈕一樣（骨牌；user 2026-11-23，
          原本是內頁右緣中線上幾根 stroke 圍成的圓；2026-11-25 疊在右下角的深色模式鈕上面、搬到右緣中線過，同一天 user：「圖片在手機上回到右下角」）。
          名字不出、只當報讀名稱（同 menu 鈕）。點了開 #figure-dialog、把 object 搬進去（chrome.js／object.js）；該頁有右圖那一格才標 .has-figure 現身 -->
     <button type="button" class="bar-btn figure-btn pc:hidden" aria-haspopup="dialog">
-      <span data-label="common.view-image" class="bar-label" data-zh="看圖片" data-en="View image">看圖片</span><span class="bar-rect"></span>
+      <span data-label="common.view-image" class="bar-label" data-en="View image">看圖片</span><span class="bar-rect"></span>
     </button>
   </div>
   <!-- 不放在底列裡（user 2026-11-25：「這個news在手機上，應該是z index在play上面」）：展開時底列降到清單底下（chrome.css），這顆要留在清單上面＝自己一層 -->
@@ -113,7 +111,7 @@
     <span class="icon icon-news" aria-hidden="true"></span><span class="sr-only" data-en="Close">關閉</span>
   </button>
 
-  <!-- 放大 dialog（lightbox）：相簿／封面／報導截圖、作品頁總覽、手機的右圖 object、首頁的 intro 影片（user 2026-11-23 併進來，原本自己一個滿版黑底的 dialog）都開在這裡。
+  <!-- 放大 dialog（lightbox）：相簿／封面、作品頁總覽、手機的右圖 object、首頁的 intro 影片（user 2026-11-23 併進來，原本自己一個滿版黑底的 dialog）都開在這裡。
        原生 <dialog>、透明：後面的內容模糊＋疊白、底列收起來，logo 照常；內容的頂對齊各頁 title 那條線、下面留一樣多（user 2026-11-23）。
        在放影片＝關燈（整頁換深色，同作品頁）。點旁邊／Esc 關（fade in／out）。行為 chrome.js openFigure -->
   <dialog class="figure-dialog" id="figure-dialog" aria-label="圖片" data-en-label="Image">
