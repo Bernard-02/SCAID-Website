@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, email=no, address=no">   <!-- iOS Safari 會自動把電話／email 變成底線連結 -->
+  <!-- 正式站（CloudFront：找不到的路徑一律回這一頁）：這頁的 CSS／JS 寫的是相對路徑，只有在根目錄一層（/、/about）才找得到——
+       多一層的（打錯的 /pages/abc.html、/foo/bar）＝整頁沒樣式、程式不跑 → 轉去 404 頁；/about/ 這種只是多一條斜線＝拿掉斜線再開。
+       網域同 js/config/slugs.js CLEAN_URL_HOSTS（這裡跑在任何程式之前，import 不到，兩邊一起改）；本機、GitHub Pages 找不到的路徑不會回這一頁＝不用管 -->
+  <script>(function(l){var p=l.pathname;if(l.hostname!=='scaid.usc.edu.tw'||p.indexOf('/',1)<0)return;l.replace(/^\/[^/]+\/$/.test(p)?p.slice(0,-1)+l.search+l.hash:'/pages/404.html')})(location)</script>
   <script>(function(){var K='scaid:theme',S,t,a,h=new Date().getHours(),n=h>=6&&h<18?'light':'dark';try{S=sessionStorage;t=S.getItem(K);a=S.getItem(K+'-auto')}catch(e){}if(t!=='dark'&&t!=='light'){t=n;a='1'}else if(a&&t!==n){t=n;a=''}try{S.setItem(K,t);a?S.setItem(K+'-auto','1'):S.removeItem(K+'-auto')}catch(e){}t==='dark'&&(document.documentElement.dataset.theme='dark')})();document.documentElement.classList.add('is-intro');setTimeout(function(){document.documentElement.classList.remove('is-intro')},6000)</script>
   <link rel="icon" type="image/svg+xml" href="images/favicon.svg?v=3">   <!-- ?v＝換圖就加一（瀏覽器 favicon 快取很頑固）；先用矩形＋圓；TODO 正式 SVG、apple-touch-icon、og:image -->
   <meta name="description" content="SCAID - Bachelor Program in Advanced Integrated Design, Shih Chien University 實踐大學 AI 設計職人學士學位學程">   <!-- metadata：user 2026-11-26 給的那份（沒進 repo）；網址＝正式站的乾淨網址（js/config/slugs.js 的 slug，改了 slug 這裡要跟著改）。還沒有 og:image（沒有圖＝twitter:card 用 summary） -->

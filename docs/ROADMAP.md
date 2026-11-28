@@ -112,10 +112,10 @@
 
 ## 6. 上線
 
-- [ ] **正式網域**：`js/config/slugs.js CLEAN_URL_HOSTS` 填 `scaid.usc.edu.tw`（server 的 fallback 要先設好）。各頁的 canonical／og:url 2026-11-26 已經照 `scaid.usc.edu.tw/<slug>` 寫好（後台改了 slug 要跟著改）。
+- [x] **正式網域**：2026-11-28 IT 設好 CloudFront 的讀取權限與 fallback（403／404 → /index.html），`CLEAN_URL_HOSTS` 填了 `scaid.usc.edu.tw`＝正式站網址列是 `/about`。
 - [ ] **YouTube Data API 的 key 白名單加正式網域**（`config/api.js YT_API_KEY` 沿用 SCCD 那支，靠 GCP 網域白名單；不加的話作品頁的播放清單抓不到）。
 - [ ] **主機＝S3＋CloudFront（同 SCCD）**：2026-11-26 實測 `scaid.usc.edu.tw` 已指過去、HTTPS 通、bucket 還是空的（每條路徑 403）＝`.htaccess` 在正式站用不到。請 IT 的事（bucket／distribution ID、上傳金鑰、403＋404 → `/index.html`、`Cache-Control: no-cache`）＝原本的請求單 `docs/IT-請求-前台上線.txt`（2026-11-27 刪了、git 歷史有）；上傳＝`scripts/deploy.ps1`。
-  - [ ] **開乾淨網址前要先補的 code**（讀 code 看到的、還沒實測）：①~~`router.js initRouter` 的初始路由假設「HTML 已經是那一頁」~~（2026-11-26 接網址 slug 時修了：拿到的是 index.html 就照 slug 抓那一頁，用模擬 fallback 的 server 測過）；②打錯的 `/pages/xxx.html` 拿到 index.html＝相對路徑全錯、整頁沒樣式（`.htaccess` 轉去 404.html 的那條 CloudFront 沒有）→ index.html 補一行轉去 404 頁。
+  - [x] **開乾淨網址前要先補的 code**：①冷載入照 slug 抓那一頁（2026-11-26）；②打錯的多一層路徑（`/pages/abc.html`、`/foo/bar`）拿到 index.html＝相對路徑全錯 → 2026-11-28 index.html 開頭一段 inline script 轉 404、`/about/` 拿掉斜線（只在正式網域）。本機模擬 CloudFront 走過 17 種網址都對。
   - [x] **上傳包**（2026-11-27＝`scripts/deploy.ps1`，直接同步到 S3）：只傳 `index.html`＋`pages`／`css`／`js`／`images`／`fonts`／`objects`／`website-icons`（約 13MB）；**不要整個資料夾同步**——`scripts/` 裡有後台的 token。可照 SCCD 的 `scripts/make-upload-package.ps1`。
 - [ ] **圖片改走 CloudFront**（user 2026-11-27，比照 SCCD 的 `CMS_CDN_BASE`）：前台 E3CYJ5880KIXQ3 加 origin＝bucket `scaidcms.usc.edu.tw`、behavior `Directus11/*` → 圖片網址 `https://scaid.usc.edu.tw/Directus11/<filename_disk>`；請求單 `docs/IT-請求-圖片走CloudFront.txt`，等 IT。IT 好了＝前台各處讀圖改用即時的 filename_disk 組網址（不寫死副檔名，WebP 轉檔會換）、讀不到退回 `/assets`；PDF、下載附件照舊走 `/assets`。
 - [ ] `robots.txt`、`sitemap.xml`：現在都沒有。

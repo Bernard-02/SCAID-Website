@@ -94,8 +94,9 @@ export const pageSlug = (page) => (page === 'index' ? '' : page === '404' ? '404
 export const pageOfSlug = (slug) => (slug === '404' ? '404' : reverse[slug] || null);
 
 // 正式站（已設 SPA fallback：CloudFront 403/404→index.html）網址列才用乾淨 slug；其餘（本機、預覽）用真實檔案路徑，
-// 任何 server 都找得到實體檔、refresh 不 404。⚠️ 把網域加進來「之前」該站的 fallback 必須先設好（CloudFront 的 403／404 → /index.html；ROADMAP「上線」）
-export const CLEAN_URL_HOSTS = [];
+// 任何 server 都找得到實體檔、refresh 不 404。⚠️ 新加網域「之前」該站的 fallback 必須先設好（CloudFront 的 403／404 → /index.html）；
+// index.html 開頭那段「多一層的路徑轉 404」也寫著同一個網域，兩邊一起改。2026-11-28 IT 設好 fallback、user：「我們要做乾净的url」
+export const CLEAN_URL_HOSTS = ['scaid.usc.edu.tw'];
 /** route 名 → 寫進網址列的 pathname @param {string} page */
 export function pagePath(page) {
   if (page === 'index') return SITE_BASE_PATHNAME;
