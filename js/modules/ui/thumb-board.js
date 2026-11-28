@@ -8,7 +8,7 @@
  * →（3 條、一輪一輪寬窄不同、分割線斷斷續續之後，user：「這個效果是一直在畫面上，但預設隱藏。hover的話，則是fade出來，所以它不是從畫面外進來的」
  * 「再慢一點，然後每張圖的hover可以不一樣的方向。這個分割綫本身可以上下移動」）
  * →（之後，user：「如果這個圖片hover的中空板，分割綫帶有一點blur呢？且預設一開始就是有這個效果，hover則不影響它」）
- * 現在＝每張縮圖上一直有一整片中空板在流（照全站的時鐘），縮圖一出現就淡出來（貼圖載好才淡、CSS）、hover 不影響；沒有 hover 的裝置也有；
+ * 現在＝每張縮圖上一直有一整片中空板在流（照全站的時鐘），原圖先藏著、貼圖載好板子第一次畫出來才出現（QUICK／WAIT）、hover 不影響；沒有 hover 的裝置也有；
  * 系統減少動態＝板子還在、停住不流。只畫捲進畫面裡的（IntersectionObserver）。
  * 流的方向每張圖不一樣（建板子時隨機往左或往右，之後固定），每 PERIOD 秒流過一個圖寬；一輪 3 條、一輪 LOOP 個圖寬長，每一輪三條的寬各自隨機（WMIN～WMIN＋1 的比例、
  * 合起來一輪＝有寬有窄），兩邊各讓出 GAP 當空隙，每一條裡的圖往旁邊錯開＝那一條寬的 SHIFT 倍、相鄰兩條方向相反（同背景的 direction），空隙照原樣。
@@ -26,6 +26,7 @@
  * 2026-11-22～23 的版本（2D 畫布切直條、每條擠 1.5 倍寬、毛玻璃 1.5px）被這版取代；2026-11-23～27 整個關著（main.js DECOR）。
  */
 import { prefersReducedMotion } from './reduce-motion.js';
+import { DUR } from './motion.js';
 
 // 有板子的縮圖：清單列（整列連結、摺疊、師資／合作企業不能點的那種列）裡有圖的縮圖；沒圖的佔位不做
 const THUMBS = ':is(a.item-row, .page-body summary.item-row, .item-list[data-cms] div.item-row) > .item-thumb:has(img), .profile-photo:has(img)';   // 老師詳細頁的照片也有（user 2026-11-27）
@@ -39,6 +40,9 @@ const PERIOD = 8;      // 流過一個圖寬幾秒（user 2026-11-27：「速度
 const LINE_SPEED = 0.3;   // 分割線的線段上下滑多快（每秒幾段；一段＝圖高的 1／LINE_RES）
 const LINE_BLUR = 2.2;    // 分割線糊開多寬（裝置 px；原本亮線 0.8、暗線 1.2＝利的）
 const TEX_MAX = 512;      // 貼圖的長邊最多幾 px（後台的原圖長邊 2000，縮圖只顯示一兩百 px＝上傳原圖白佔 GPU 記憶體）
+// 原圖先藏著（.has-board，page.css）、板子第一次畫出來才出現（user 2026-11-28：「師資照片進場還是先會閃一下原圖再疊filter…能不能先loading filter 後再進照片」）：
+// 建板子到畫出來超過 QUICK＝網站的 fade 淡進來（同 img-fade.js：快取裡的直接出）；貼圖 WAIT 內還沒到（網路慢）／載不到＝照常露出原圖，之後到了＝直接蓋上、不淡（淡的話會跟露著的原圖疊在一起）
+const QUICK = 100, WAIT = 3000;
 
 const VERT = 'attribute vec2 p; varying vec2 vUv; void main() { vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }';
 // uFlow＝板條流到哪（圖寬的幾成；往左流＝負的）：位置照 x − uFlow 算、一個圖寬一輪，第 k 輪的三條寬照 hash(k＋uSeed) 抽（同一輪一直是同樣的寬＝流的時候不會跳）。
@@ -102,15 +106,16 @@ function gl() {
   return (GL = { gl: g, canvas, u: (n) => (n in locs ? locs[n] : (locs[n] = g.getUniformLocation(prog, n))) });
 }
 
-/** 圖的貼圖（同一個網址共用；載好才有 tex） @type {Map<string, { tex: WebGLTexture | null }>} */
+/** 圖的貼圖（同一個網址共用；載好才有 tex、載不到＝failed） @type {Map<string, { tex: WebGLTexture | null, failed: boolean }>} */
 const textures = new Map();
 function textureOf(/** @type {string} */ src) {
   let t = textures.get(src);
   if (t) return t;
-  textures.set(src, t = { tex: null });
+  textures.set(src, t = { tex: null, failed: false });
   const G = GL, im = new Image(), entry = t;
   if (!G) return t;
   im.crossOrigin = 'anonymous';
+  im.onerror = () => { entry.failed = true; if (!raf && shown.size) raf = requestAnimationFrame(frame); };
   im.onload = () => {
     // 先縮到長邊 TEX_MAX 再上傳
     const k = Math.min(1, TEX_MAX / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
@@ -120,7 +125,7 @@ function textureOf(/** @type {string} */ src) {
     g.bindTexture(g.TEXTURE_2D, tex);
     // 寬高不是 2 的次方（WebGL 1）＝不能 repeat、不能 mipmap
     for (const [k, v] of [[g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE], [g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE], [g.TEXTURE_MIN_FILTER, g.LINEAR], [g.TEXTURE_MAG_FILTER, g.LINEAR]]) g.texParameteri(g.TEXTURE_2D, k, v);
-    try { g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, c); entry.tex = tex; } catch (e) { console.warn('[thumb-board] 貼圖', e); }
+    try { g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, c); entry.tex = tex; } catch (e) { entry.failed = true; console.warn('[thumb-board] 貼圖', e); }
     if (!raf && shown.size) raf = requestAnimationFrame(frame);   // 減少動態時迴圈停著＝貼圖到了再畫一次
   };
   im.src = src;
@@ -128,7 +133,7 @@ function textureOf(/** @type {string} */ src) {
 }
 
 /** 一張縮圖的板子（縮圖一出現就建）
- *  @typedef {{ img: HTMLImageElement, row: HTMLElement, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, dir: number, seed: number, at: string }} Board */
+ *  @typedef {{ thumb: HTMLElement, img: HTMLImageElement, row: HTMLElement, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, dir: number, seed: number, at: string, t0: number, timer: number }} Board */
 /** @type {WeakMap<Element, Board>} */
 const boards = new WeakMap();
 /** 捲進畫面裡的（要畫的） @type {Set<Board>} */
@@ -145,19 +150,18 @@ function placeOf(b) {
     const [px, py] = cs.objectPosition.split(' ').map(v => (parseFloat(v) || 0) / 100);   // ponytail: 只認 %（全站都是 %／left、bottom 這種關鍵字＝算成 %）
     x = (r.width - w) * px; y = (r.height - h) * py;
   }
-  // 圖自己的淡入（img-fade.js：透明＋糊）照抄過來：板子蓋在圖上、不跟的話圖還在淡、板子已經整片冒出來
-  return { left: r.left - o.left + x, top: r.top - o.top + y, width: w, height: h, opacity: cs.opacity, filter: cs.filter };
+  return { left: r.left - o.left + x, top: r.top - o.top + y, width: w, height: h };
 }
 
-/** 隔著板子畫一次（t 秒）；回傳畫出來了沒（貼圖還沒到＝沒有） @param {Board} b @param {number} t @param {{ left: number, top: number, width: number, height: number, opacity: string, filter: string }} at 這一幀先量好的位置與圖的淡入 */
+/** 隔著板子畫一次（t 秒）；回傳畫出來了沒（貼圖還沒到＝沒有） @param {Board} b @param {number} t @param {{ left: number, top: number, width: number, height: number }} at 這一幀先量好的位置 */
 function draw(b, t, at) {
   const G = gl(), dpr = devicePixelRatio || 1;
-  const key = `left:${at.left}px;top:${at.top}px;width:${at.width}px;height:${at.height}px;opacity:${at.opacity};filter:${at.filter}`;
-  if (key !== b.at) { b.canvas.style.cssText = b.at = key; }   // 位置、淡入沒變不寫
+  const key = `left:${at.left}px;top:${at.top}px;width:${at.width}px;height:${at.height}px`;
+  if (key !== b.at) { b.canvas.style.cssText = b.at = key; }   // 位置沒變不寫
   const cw = Math.max(1, Math.round(at.width * dpr)), ch = Math.max(1, Math.round(at.height * dpr));
   if (b.canvas.width !== cw || b.canvas.height !== ch) { b.canvas.width = cw; b.canvas.height = ch; }
-  const tex = G && textureOf(b.img.currentSrc || b.img.src).tex;
-  if (!G || !tex) { b.ctx.clearRect(0, 0, cw, ch); return false; }   // 貼圖還沒載好（或載不到）＝透明＝看得到底下的原圖
+  const tx = textureOf(b.img.currentSrc || b.img.src), tex = G && tx.tex;
+  if (!G || !tex) { b.ctx.clearRect(0, 0, cw, ch); if (tx.failed) { clearTimeout(b.timer); b.thumb.classList.remove('has-board'); } return tx.failed; }   // 貼圖還沒載好＝透明（原圖藏著）；載不到＝露出原圖
   const g = G.gl;
   // 共用的畫布只長不縮（每張縮圖比例不同，照每張改大小＝每畫一張就重配一次）：畫在左下角那一塊（GL 的原點在左下）、貼的時候切那一塊
   if (G.canvas.width < cw || G.canvas.height < ch) { G.canvas.width = Math.max(G.canvas.width, cw); G.canvas.height = Math.max(G.canvas.height, ch); }
@@ -167,7 +171,15 @@ function draw(b, t, at) {
   g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
   b.ctx.clearRect(0, 0, cw, ch);
   b.ctx.drawImage(G.canvas, 0, G.canvas.height - ch, cw, ch, 0, 0, cw, ch);
-  b.canvas.classList.add('is-on');   // 第一次畫出來了（煙霧測試看這個）
+  if (!b.canvas.classList.contains('is-on')) {   // 第一次畫出來
+    b.canvas.classList.add('is-on');
+    clearTimeout(b.timer);
+    if (b.thumb.classList.contains('has-board') && !prefersReducedMotion() && performance.now() - b.t0 > QUICK) {
+      const cs = getComputedStyle(b.canvas);
+      b.canvas.animate([{ opacity: 0, filter: `blur(${cs.getPropertyValue('--blur').trim() || '4px'})` }, { opacity: 1, filter: 'blur(0px)' }],
+        { duration: DUR.fade * 1000, easing: cs.getPropertyValue('--ease-standard').trim() || 'ease' });
+    }
+  }
   return true;
 }
 
@@ -192,7 +204,9 @@ function build(thumb, io) {
   canvas.setAttribute('aria-hidden', 'true');
   // 放列裡最前面、絕對定位：.item-row:has(> .item-thumb) > :last-child 那條要的還是文字那欄
   row.prepend(canvas);
-  boards.set(thumb, { img, row, canvas, ctx, dir: Math.random() < 0.5 ? -1 : 1, seed: Math.random() * 1000, at: '' });   // 這張圖的板子往哪流、寬窄怎麼抽：之後固定
+  thumb.classList.add('has-board');
+  boards.set(thumb, { thumb, img, row, canvas, ctx, dir: Math.random() < 0.5 ? -1 : 1, seed: Math.random() * 1000, at: '', t0: performance.now(),
+    timer: window.setTimeout(() => { if (!canvas.classList.contains('is-on')) thumb.classList.remove('has-board'); }, WAIT) });   // 這張圖的板子往哪流、寬窄怎麼抽：之後固定
   textureOf(img.currentSrc || img.src);
   io.observe(thumb);
 }

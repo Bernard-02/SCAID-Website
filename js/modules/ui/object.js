@@ -26,7 +26,7 @@ import { logoObject } from './logo.js';
 import { DUR } from './motion.js';
 
 const COLS = 144, ROWS = 64;          // 排幾列；橫向的解析度（一格＝1.7 根 stroke 寬）。要更細／更粗＝兩個一起乘（比例 9:4＝stroke 的形狀）
-const SPIN = 6000, HOLD = SPIN;       // 自己轉一圈多久＝一個停多久（ms；原本停 2.6 秒）
+const SPIN = 9000, HOLD = SPIN;       // 自己轉一圈多久＝一個停多久（ms；user 2026-11-28：「3d的旋轉再慢一點」，原本 6 秒；更早停 2.6 秒）
 const SWAP = 1600, BACK = DUR.slow * 1000;   // 換一次多久、放開之後轉回預設多久（ms）
 const FADE = DUR.fade * 1000 / SWAP;  // 換的時候一根淡多久（佔整段的幾成）＝網站 fade 的時長
 const VIEW = [-.35, .5];              // 正面的視角（左右、上下，弧度）：稍微從左上方看
@@ -220,7 +220,8 @@ function place() {
   }
   const px = Math.round(w * Math.min(window.devicePixelRatio || 1, 2.5));
   if (px < 16) return false;
-  if (px !== W) { W = canvas.width = canvas.height = px; drawn = ''; }
+  // 改大小＝畫布被清空 → 這一幀一定要畫（不等 FRAME_MS）：PC 開選單時那一格每一幀都在縮，原本隔一幀才畫＝一閃一閃（user 2026-11-28）
+  if (px !== W) { W = canvas.width = canvas.height = px; drawn = ''; drewAt = 0; }
   return true;
 }
 function frame(/** @type {number} */ now) {

@@ -250,16 +250,20 @@ async function newsList() {
 // 日期新到舊（user 2026-11-27：「排列順序是倒敘排列，最新會在最上面」；原本照拖曳順序）：同一天＝後建的在上面。兩支同一個排法＝底列第 i 則＝清單第 i 則（chrome.js openNewsAt） ──
 const NEWEST = 'sort=-date,-id';
 /** 首頁那串的一則＝原本入學頁那一列（user 2026-11-27：「我想要將入學跟news頁面結合，入學頁面可以刪掉，然後news就是入學頁面…可以打開，是個accordion」）：
- *  外面＝縮圖（沒圖＝直條跑馬燈的佔位框，2026-11-27）＋標題＋日期；點開＝說明 → 相簿 → 附件，都有才出；點開的東西都沒有＝不能點的一列（fold）。
+ *  外面＝縮圖（沒圖＝直條跑馬燈的佔位框，2026-11-27）＋標題＋日期；點開＝說明 → 相簿 → 連結 → 附件，都有才出；點開的東西都沒有＝不能點的一列（fold）。
  *  原本整則是連結（入學頁的那一則／外部網址），後台那兩格同一天刪了 @param {any} n */
 const homeRow = (n) => {
   // 附件點了＝下載、不開新頁（user 2026-11-25：「點擊admission的檔案應該是下載，不是開新的page」）：檔在後台的網域＝跨網域，a 的 download 屬性瀏覽器不理，
   // 要 Directus 自己回 attachment（assets 網址加 ?download）；download 屬性留著＝同網域時也是下載
   const files = filesOf(n.attachments);
-  const links = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(`${assetUrl(f)}?download`)}" download>${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
+  const downloads = files.length ? `<ul class="link-list">${files.map(f => `<li><a class="nav-link" href="${esc(`${assetUrl(f)}?download`)}" download>${esc(f.title || f.filename_download || '')}</a></li>`).join('')}</ul>` : '';
+  // 連結（user 2026-11-28：「news需要加一類叫連結，style和附件一樣…前台順序排在附件和相簿之間」）：後台重複列 links（標題中英＋網址，只收 http(s)），另開新視窗；
+  // 樣子＝附件那一套，只有 icon 換成 link（page.css .link-list.is-links）
+  const urls = (Array.isArray(n.links) ? n.links : []).filter((/** @type {any} */ l) => /^https?:\/\//i.test(String(l?.url || '').trim()) && (l.title_zh || l.title_en));
+  const links = urls.length ? `<ul class="link-list is-links">${urls.map((/** @type {any} */ l) => `<li>${bi('a', l.title_zh, l.title_en, ` class="nav-link" href="${esc(String(l.url).trim())}" target="_blank" rel="noopener"`)}</li>`).join('')}</ul>` : '';
   // 沒圖＝放空的縮圖框＝直條跑馬燈的佔位（page.css；user 2026-11-27：「我發現news的圖片沒有」；原本 11-24 定的是沒圖不放框）
   const t = [n.title_zh, n.title_en], head = `${thumb(n.image, t)}<div>${bi('h3', t[0], t[1])}${timeOf(n)}</div>`;
-  return fold(head, text(n.summary_zh, n.summary_en) + album(filesOf(n.album), t) + links);
+  return fold(head, text(n.summary_zh, n.summary_en) + album(filesOf(n.album), t) + links + downloads);
 };
 async function homeNews() {
   // 全部（底列的跑馬燈只跑最新的 8 則）。抓之前先記住這一頁的清單（同 newsList）：抓完已經換到別頁又回首頁＝不畫到新的那份去

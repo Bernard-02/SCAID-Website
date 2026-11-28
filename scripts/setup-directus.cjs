@@ -289,7 +289,11 @@ const SPEC = {
       { ...date('date', '日期'), schema: { is_nullable: false } }, date('end_date', '結束日期（選填，跨天才填）'),
       image('image', '圖片（那一列的縮圖，選填）'),
       multi('summary_zh', '說明（中，選填，點開的第一段）'), multi('summary_en', '說明（英，選填）', { note: EN_NOTE }),
-      files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序'), files('attachments', '附件', '點開的附件，一個檔一個連結、連結文字＝檔案標題；點了＝下載')],
+      files('album', '相簿', '點開那則的照片，一排橫捲；可拖曳排序'),
+      // 連結（user 2026-11-28：「news需要加一類叫連結，style和附件一樣…內容和附件一樣可以加多個，裡面設定可以填：中標題、英標題、link」）：前台排在相簿和附件之間
+      repeater('links', '連結（選填）', [['title_zh', '標題（中）'], ['title_en', '標題（英）'], ['url', '網址']], '{{title_zh}}',
+        '點開後排在相簿和附件之間，一筆一個連結、另開新視窗；網址要 http(s) 開頭；' + EN_NOTE),
+      files('attachments', '附件', '點開的附件，一個檔一個連結、連結文字＝檔案標題；點了＝下載')],
   },
   news_album: junction('news', 'album'),
   news_attachments: junction('news', 'attachments'),
@@ -462,7 +466,7 @@ const ICON_FOLDER = '網頁 icon';   // 網頁 icon 的檔放這個資料夾
 const ICON_NOTES = { play: '播放（底列 play 鈕、作品影片）', back: '返回鈕、上一個', next: '下一個', pause: '暫停', loud: '音量鈕（大聲）', half: '音量鈕（一半以下）',
   silence: '音量鈕（靜音）', fullscreen: '全螢幕', close: '關閉（放影片時）', day: '深色模式鈕：淺色時（hover＝淡成 night）', night: '深色模式鈕：深色時（hover＝淡成 day）', slideshow: '作品頁的排法：放映', grid: '作品頁的排法：總覽',
   volume: '音量拉桿那排直條', ig: '聯絡頁的 Instagram', yt: '聯絡頁的 YouTube（IG 右邊）',
-  news: '首頁展開動態時底部正中那顆（點了收回去）', shrink: '全螢幕中的全螢幕鈕（離開全螢幕）', share: '外部連結的清單列 hover 收完那一顆', doc: '首頁 news 點開後附件名字左邊那顆' };
+  news: '首頁展開動態時底部正中那顆（點了收回去）', shrink: '全螢幕中的全螢幕鈕（離開全螢幕）', share: '外部連結的清單列 hover 收完那一顆', doc: '首頁 news 點開後附件名字左邊那顆', link: '首頁 news 點開後連結名字左邊那顆（先放 share 當佔位）' };
 // 後台清單的預設檢視（照 SCCD）：介面文字照分類排＝同一類聚在一起；網頁 icon 看得到縮圖
 const PRESETS = {
   ui_labels: { tabular: { sort: ['category', 'sort'], fields: ['category', 'key', 'zh', 'en'] } },

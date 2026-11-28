@@ -122,6 +122,7 @@ user 2026-11-23：「影片在後台也要有，首頁一個資料夾，裡面�
 | `image` | Image | 那一列的縮圖（選填；沒圖＝不放圖框） |
 | `summary_zh` / `summary_en` | Text／Multiline | 說明文字（選填；點開的第一段；換行照留）。2026-11-24 刪過一次（那時只有標題），入學併進來又加回來 |
 | `album` | Files（多張，junction `news_album`） | 相簿 |
+| `links` | JSON 重複列（`title_zh`／`title_en`／`url`） | 連結（選填；user 2026-11-28）：點開後排在相簿和附件之間、樣子同附件（icon＝後台「網頁 icon」的 `link`，先放 share 當佔位），一筆一個、另開新視窗；網址不是 http(s) 開頭的不出、標題中英都空的不出 |
 | `attachments` | Files（多個，junction `news_attachments`） | 附件（點開的連結清單，一個檔一個連結、連結文字＝檔案標題；點了＝下載：前台網址加 `?download`，user 2026-11-25） |
 
 `home_video`（單例，只有一筆）：首頁底列 ▶ 鈕點了播的那一支（`cms-pages.js loadIntroVideo()` 殼載完抓、填進 `.play-btn` 的 `data-video`；播放器＝chrome.js `openIntro`：開在放大 dialog，頂對齊各頁 title、自己的控制列（播放／暫停、音量、全螢幕）、關燈，只有一支）。沒填／抓不到＝照 `header.html` 的 `data-video`（目前空的＝點了不開）。

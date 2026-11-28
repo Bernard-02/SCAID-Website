@@ -872,7 +872,7 @@ void main() {
   // 水彩、噴漆最多 1.2 倍（Edge 比過 1／1.2／1.6）：水彩的雲紋跟著粗細放大＝邊上的鋸齒變大顆；噴漆 1.6 倍糊成一大團、霧點看不到。
   // 其他筆放大不會更顆粒：紙紋是固定的大小、刷毛跟著變多根（炭筆、蠟筆那顆印放大只是軟一點）
   // 本來就細的筆（鉛筆 3.5、鋼筆 5、白板筆 10px）最細＝原本設定的粗細、不縮（user 2026-11-27：「原本就比較細的筆觸，我想最細就是我們一開始設定的base」）
-  const PENS = BR.map((b) => b.id).filter((id) => !OFF.has(id)), PEN_MS = 5000, SIZE = [0.5, 1.6], TOP = { watercolor: 1.2, spray: 1.2 }, LOW = { pencil: 1, fountain: 1, marker: 1 };
+  const PENS = BR.map((b) => b.id).filter((id) => !OFF.has(id)), PEN_MS = 8000, SIZE = [0.5, 1.6], TOP = { watercolor: 1.2, spray: 1.2 }, LOW = { pencil: 1, fountain: 1, marker: 1 };
   const BASE = Object.fromEntries(PENS.map((id) => [id, cfgs[id].size]));
   let penTimer = setTimeout(nextPen, PEN_MS);
   function nextPen(cut) {
