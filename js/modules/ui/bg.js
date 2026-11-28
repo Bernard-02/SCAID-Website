@@ -1,20 +1,18 @@
-// @ts-nocheck —— 照背景試驗場原文搬的（筆刷引擎＋WebGL），型別檢查略過：要改去試驗場改好再重搬
+// @ts-nocheck —— 從試驗場抽出來的筆刷引擎＋WebGL，型別檢查略過
 /**
- * 背景（user 2026-11-26：「我想要你幫我將背景apply在現在的網站上」）＝背景試驗場 https://claude.ai/artifact/YJ4JpmdDhwZsArffEnphKX 的那一份：
- * 游標一動就畫出光（WebGL 的光跡「光有 movement」＋從筆觸試驗場搬來的筆刷），光自己會淡掉；隔著看得見的中空板（板條錯位、反光、邊線）。
- * 設定（user 同一天選的）：中空板＝看得見、筆刷＝整支筆（開站那支：炭筆、圓頭；換頁隨機換一支）、錯位 1.5、深淺 100%、濃度 70%（bg.css 畫布的 opacity）；
- * 光的顏色：白天＝粉彩，夜晚＝每次換成夜晚隨機抽「原來的光」或「粉彩」。其他照試驗場的預設。
- * 跟試驗頁不同的只有：沒有介面、游標聽整頁（觸控不畫、放大的 dialog 開著不畫）、白天／夜晚跟網站的 data-theme。
- * 引擎（筆刷、光跡、畫面）照原文：要改去試驗場改好再重搬（scratchpad 的 port-bg.cjs：抽 IIFE、照記號換掉介面那幾段）。
- * 取代原本的炭筆背景（2026-11-21～23 那一套：畫布＜中空板、筆跡留 1 秒再 3 秒消失；2026-11-23 起關著）。
+ * 背景＝從背景試驗場（https://claude.ai/artifact/YJ4JpmdDhwZsArffEnphKX）抽出網站用得到的部分，只刪不改；試驗場保留完整的內容。
+ * 要調整＝先改試驗場、再把改到的那幾段照原文抽過來。標「網站自己的（試驗場沒有）」或註解寫「網站：」的那幾段，試驗場沒有。
+ * 游標一動就畫出光（WebGL 的光跡「光有 movement」＋筆觸試驗場的筆刷），光自己會淡掉；隔著看得見的中空板（板條錯位、反光、邊線）。
+ * 網站用的設定（user 2026-11-26 選的）：中空板＝看得見、筆刷＝整支筆（開站那支：炭筆；換頁、定時隨機換一支）、錯位 1.5、深淺 100%、
+ * 濃度＝bg.css 畫布的 opacity；光的顏色：白天＝粉彩，夜晚＝隨機抽「原來的光」或「粉彩」。
  * main.js 開機叫一次（BG 開關）；畫布在 <main> 外面＝換頁不重來。減少動態、強制色彩＝不放（列印 bg.css 藏）
  */
 import { SHADERS } from './bg-shaders.js';
 
 export function initBg() {
+  // ── 網站自己的（試驗場沒有）──
   if (matchMedia('(prefers-reduced-motion: reduce), (forced-colors: active)').matches) return;
   'use strict';
-  const say = () => {};   // 試驗頁的狀態列；網站上不出字
 
   // ═══ 筆刷：從筆觸試驗場原封不動搬來的那幾段（筆頭、紋路、每支筆怎麼畫）。標「舊試驗場」的區塊不要改，要改去那一頁改了再搬 ═══
   // ── 舊試驗場：亂數與小工具 ──
@@ -104,8 +102,6 @@ export function initBg() {
 
   // 舊試驗場的程式會用到的名字：S＝正在畫的這一筆、cur＝選了哪支筆、speedForce＝畫越慢越重（整支筆才看，open 設）
   let S = null, cur = 'charcoal', speedForce = true;
-  const kick = () => {};
-  const drip = () => {};   // ponytail: 噴漆積漆往下流的那一道沒搬（光停著不會一直加），要再從舊試驗場的 drip／stepDrips 搬
 
   // ── 舊試驗場：筆頭的方向、蓋印 ──
   // A＝筆頭寬的方向（鋼筆、麥克筆、白板筆的斜口＝固定角度，其他＝垂直前進方向）、D＝前進方向
@@ -118,7 +114,6 @@ export function initBg() {
     return Array.from({ length: n }, (_, i) => {
       let u, v;
       if (shape === 'round') { const r = Math.sqrt(rnd()) * 0.5, t = rnd() * 6.283; u = r * Math.cos(t); v = r * Math.sin(t); }
-      else if (shape === 'fan') { u = (Math.floor(rnd() * 7) - 3) / 3 * 0.5 + gauss() * 0.035; v = 0.5 * u * u - 0.06; }   // 七撮、排成弧
       else { u = (i + 0.5) / n - 0.5 + R(-0.2, 0.2) / n; v = R(-0.03, 0.03); }                                             // 排成一條
       return { u, v, load: rnd(), g: rnd() };
     });
@@ -132,8 +127,6 @@ export function initBg() {
   function foot(S, x, y, size, q) {
     const im = S.stamp, shape = S.cfg.shape;
     if (shape === 'round') lx.drawImage(im, x - size / 2, y - size / 2, size, size);
-    else if (shape === 'fan') for (let i = -3; i <= 3; i++) { const u = i / 3 * 0.5 * size, v = (0.5 * (i / 3 * 0.5) ** 2 - 0.06) * size, r = size * 0.2;
-      lx.drawImage(im, x + q.ax * u + q.dx * v - r / 2, y + q.ay * u + q.dy * v - r / 2, r, r); }
     else { lx.save(); lx.translate(x, y); lx.rotate(Math.atan2(q.ay, q.ax)); lx.drawImage(im, -size / 2, -size * 0.17, size, size * 0.34); lx.restore(); }
   }
   // 蓋一條刷毛（中心 x, y、轉 ang、寬 w、厚 th）
@@ -185,7 +178,6 @@ export function initBg() {
         t.x = x; t.y = y;
       }
     },
-    dwell(S, dt) { S.still = (S.still || 0) + dt; dot(S.last.x, S.last.y, S.cfg.size * (0.2 + 0.95 * S.p) / 2 * (1 + Math.min(0.45, S.still / 1400)), gray(lerp(0.95, 0.5, (1 - S.cfg.density) ** 1.4))); },   // 停著：墨暈開
   };
 
   // 線（原子筆、水性筆、鋼筆的圓尖）：一段一段等寬（或跟力度）的線
@@ -193,14 +185,9 @@ export function initBg() {
     begin(S) { S.b.start?.(S); },
     seg(S, a, b, p0, p1) {
       const B = S.b;
-      if (B.skip) {   // 斷墨：空幾段，接回來時積一小點
-        if (S.gap > 0) { if (--S.gap === 0) dot(b.x, b.y, B.width(S, p1) * 0.7, B.ink(S, 1)); return; }
-        if (rnd() < B.skip * (1.6 - p1)) { S.gap = 2 + (rnd() * 4 | 0); return; }
-      }
       lx.lineCap = lx.lineJoin = 'round';
       seg1(a.x, a.y, b.x, b.y, B.width(S, p1), B.ink(S, p1));
     },
-    dwell(S, dt) { const B = S.b; if (!B.pool) return; S.still = (S.still || 0) + dt; dot(S.last.x, S.last.y, B.width(S, S.p) / 2 * (1 + Math.min(B.pool, S.still / 900)), B.ink(S, 1)); },
   };
 
   // 帶子（水性筆、鋼筆的斜口）：筆尖是一條邊，前後兩條邊之間填成面＝粗細跟著方向
@@ -283,9 +270,7 @@ export function initBg() {
   function paintStop(S) { if (S.ang != null) { home(hx); const q = S.span * 0.9; hx.save(); hx.translate(S.last.x, S.last.y); hx.rotate(S.ang); hx.fillStyle = '#fff'; hx.fillRect(-q / 2, -1.5, q, 3); hx.restore(); } }
 
   // 噴漆：照時間噴（停著也一直噴）。中心是一團越噴越實的量、外圍是飛出去的漆點，疊到紙上時照細顆粒打散成霧點；
-  // 同一個地方噴太久就積漆、往下流
   const spray = {
-    begin(S) { S.pool = 0; },
     puff(S, x, y, ms, p) {
       const { size, density, shape } = S.cfg, q = axes(S), r = size / 2 * (1.25 - 0.5 * p);
       lx.globalAlpha = clamp(ms * 0.008 * (0.35 + density) * (0.45 + p), 0, 0.9);
@@ -300,18 +285,10 @@ export function initBg() {
     seg(S, a, b, p0, p1, dist) {
       const n = Math.max(1, Math.ceil(dist / 5));
       for (let i = 1; i <= n; i++) this.puff(S, lerp(a.x, b.x, i / n), lerp(a.y, b.y, i / n), S.dt / n, p1);
-      S.pool = Math.max(0, S.pool - dist * 4);
-    },
-    dwell(S, dt) {
-      this.puff(S, S.last.x, S.last.y, dt, S.p); S.pool += dt * (0.4 + S.cfg.density) * (0.5 + S.p);
-      if (S.pool > 480) { S.pool -= R(160, 340); const r = S.cfg.size / 4;   // 積太多：從下半部流下來一道，粗細、長短、歪的程度都不一樣
-        drip({ x: S.last.x + R(-r, r), y: S.last.y + R(0.1, 1) * r, v: R(45, 120), len: 0, max: R(25, 170) * (0.5 + S.cfg.density), w: R(1.8, 4.6), sway: R(0.3, 1.2), ph: R(0, 6.283), a: 0.55 + 0.4 * S.cfg.density, c: S.cfg.color }); }
     },
   };
 
   // ── 14 支筆。def＝預設；max＝粗細上限；media＝疊到紙上的方式（dry 照紋路的顆粒、wash 水彩、paint 厚塗，其餘直接疊）；cover＝蓋得住底下 ──
-  const startDot = (S) => dot(S.last.x, S.last.y, S.b.width(S, S.p) * 0.55, S.b.ink(S, 1));
-  const flat = (S) => S.b.ink(S, S.p);
   const BR = [
     { id: 'crayon', name: '蠟筆', say: '蠟質、顆粒粗。用力就把紙的凹處填滿，輕輕畫只沾到凸的地方。',
       shapes: ['round', 'flat'], def: { shape: 'round', size: 16, force: 0.7, density: 0.8 }, max: 60,
@@ -319,13 +296,6 @@ export function initBg() {
     { id: 'pencil', name: '鉛筆', say: '細、淡、顆粒細。力度決定深淺；扁＝筆芯側著塗一片。',
       shapes: ['round', 'flat'], def: { shape: 'round', size: 3.5, force: 0.55, density: 0.7 }, max: 40,
       eng: dry, media: 'dry', core: 0.5, tex: 0.15, gap: 0.14, flow: 1.25, grain: 1.1, bite: 0.22, grit: 0.55, lift: true },
-    { id: 'ballpoint', name: '原子筆', say: '等寬的細線，力度只影響深淺；偶爾斷墨、積一小點墨。',
-      shapes: ['round'], def: { shape: 'round', size: 1.8, force: 0.6, density: 0.9 }, max: 6,
-      eng: line, skip: 0.012, width: (S, p) => S.cfg.size * (0.8 + 0.35 * p), ink: (S, p) => gray(S.cfg.density * (0.45 + 0.55 * p)),
-      start: (S) => rnd() < 0.5 && dot(S.last.x, S.last.y, S.cfg.size * 0.75, gray(S.cfg.density)) },
-    { id: 'felt', name: '水性筆', say: '等寬的實線、邊緣乾淨，停著會積墨。斜口＝麥克筆的斜頭，橫豎粗細不同。',
-      shapes: ['round', 'chisel'], def: { shape: 'round', size: 4, force: 0.6, density: 1 }, max: 30, nib: true,
-      eng: (shape) => shape === 'chisel' ? ribbon : line, pool: 0.5, width: (S, p) => S.cfg.size * (0.95 + 0.1 * p), ink: (S) => gray(0.93 * S.cfg.density), start: startDot },
     { id: 'fountain', name: '鋼筆', say: '圓＝粗細跟著力度，起收筆是尖的；斜口＝平尖，粗細跟著方向。畫快墨色淡一點。',
       shapes: ['round', 'chisel'], def: { shape: 'round', size: 5, force: 0.6, density: 1 }, max: 30, nib: true, taper: true,
       eng: (shape) => shape === 'chisel' ? ribbon : line, pool: 0.9,
@@ -368,10 +338,6 @@ export function initBg() {
     { id: 'spray', name: '噴漆', say: '一團霧點：中間越噴越實、外圍是散開的細點，按著不動也一直噴；同一處噴太久會積漆、往下流。力度＝離牆多近（近＝集中）。扇形＝扁的噴嘴。',
       shapes: ['round', 'fan'], def: { shape: 'round', size: 70, force: 0.6, density: 0.6 }, max: 200,
       eng: spray, media: 'dry', cover: true, pat: 'fine', grain: 1, bite: 0.1, grit: 0.5, quick: 0.3 },
-    { id: 'acrylic', name: '壓克力顏料', say: '厚、不透明、蓋得住底下。一筆裡有幾道寬寬的顏色混到白、色相也偏一點，每根刷毛留下一道稜、受光的那面亮；兩邊進進出出不是直線，刷到後面顏料少了會斷。濃度＝沾多少顏料。',
-      shapes: ['flat', 'round', 'fan'], def: { shape: 'flat', size: 56, force: 0.7, density: 0.9, color: '#2f9e5a' }, max: 160,
-      eng: sweep, media: 'paint', taper: true, hair: 1.3, reach: 2400, every: 150, depth: 1.2, relief: 0.55, form: 0.8, gloss: 0.25, bite: 0.4, grit: 0.3,
-      strips: (S, f) => paintStrips(S, f, { streak: 0.7, mid: 0, deep: 0.2, rim: 0.05, hue: 30, ridge: 0.75 }), lay: paintLay, stop: paintStop },
     { id: 'oil', name: '油畫', say: '更厚、有油亮的反光：下筆一坨，筆的中間混著白、兩邊是濃的本色，邊緣堆得高、顏色最深，刷痕立體；拖到後面顏料用完會斷。濃度＝沾多少顏料。',
       shapes: ['flat', 'round', 'fan'], def: { shape: 'flat', size: 60, force: 0.8, density: 0.9, color: '#7a2a78' }, max: 160,
       eng: sweep, media: 'paint', taper: true, hair: 1.5, reach: 1200, every: 110, depth: 1.8, relief: 0.75, form: 1, gloss: 0.55, bite: 0.4, grit: 0.3,
@@ -384,7 +350,6 @@ export function initBg() {
   ];
   for (const b of BR) if (b.core) b.img = disc(b.core, b.tex);   // 筆頭的紋理先做好：不佔每一筆自己的亂數
   const BY = Object.fromEntries(BR.map((b) => [b.id, b]));
-  const SHAPE = { round: '圓', flat: '扁', fan: '扇形', chisel: '斜口' };
 
   // ── 舊試驗場：力度、走一段 ──
   const target = (S, pt) => { let p = S.cfg.force * pt.pen * S.fade; if (speedForce) p *= clamp(1.15 - S.speed / 2600, 0.45, 1.15); return clamp(p, 0.02, 1); };
@@ -395,15 +360,8 @@ export function initBg() {
     if (S.dx == null) { S.dx = ux; S.dy = uy; } else { const nx = S.dx + (ux - S.dx) * 0.35, ny = S.dy + (uy - S.dy) * 0.35, n = Math.hypot(nx, ny) || 1; S.dx = nx / n; S.dy = ny / n; }
     S.speed += (dist / dt * 1000 - S.speed) * 0.3;
     const p0 = S.p; S.p += (target(S, pt) - S.p) * 0.35; S.dt = dt;
-    if (S.hue) {   // 這一段的顏色（起筆的後面也鋪一段：光暈在筆的兩頭也照左右分色）
-      if (!S.capped) { S.capped = true; hueCap(S, a.x, a.y, -1); }
-      for (let d = 0; d < dist; d += 2) { const k = d / dist; hueAt(S, lerp(a.x, pt.x, k), lerp(a.y, pt.y, k), S.run + d); }
-      home(kx);
-    }
     S.eng.seg(S, a, pt, p0, S.p, dist);
-    const B = S.box; B[0] = Math.min(B[0], pt.x); B[1] = Math.min(B[1], pt.y); B[2] = Math.max(B[2], pt.x); B[3] = Math.max(B[3], pt.y);
     S.run += dist; S.last = pt; S.still = 0; S.movedAt = performance.now();
-    kick();
   }
 
   // ── 舊試驗場：縮小再放大＝糊 ──
@@ -446,7 +404,6 @@ export function initBg() {
     // 貼質感：筆只出質感，其他照代碼那條光。粗細＝蓋得住那條光的寬（畫布高的 6%：那條光的寬是照畫布高算的）、不帶鋒、顏料刷不完、
     // 不看畫多快（draw 給的時間是假的）——這些是那支筆自己的走法，不是質感
     const b = tex ? Object.assign(Object.create(base), { reach: 1e9, taper: false }) : base;
-    if (tex) cfg.size = Math.max(6, H * 0.06);
     speedForce = !tex;
     rs = (Math.random() * 2 ** 31) | 0;
     for (const c of [lx, hx, mx]) { home(c); c.globalCompositeOperation = 'source-over'; }
@@ -493,9 +450,7 @@ export function initBg() {
         at(PAT.cloud, 0.6); fill('screen', PAT.cloud, 0.35);
         at(PAT.paper, 1.2); fill('screen', PAT.paper, 0.4);
         // 濃度：水彩是半透明的＝光只有兩三成（畫面那支 shader 會把光往上推、再加光暈：這裡給到五成，隔著中空板看就是一條實心的深色）。
-        // 貼質感的時候它是遮罩、不是光量＝拉回到接近全滿，不然代碼那條光會被壓到只剩兩成
         fill('screen', lum(0.42 - 0.3 * d));
-        if (mode.id === 'tex') fill('color-burn', lum(0.45));
         shine();
       } else if (b.media === 'paint') {
         const fineD = Math.max(1, Math.round(DPR)), bigD = Math.max(2, Math.round(b.depth * 2 * DPR));
@@ -513,6 +468,7 @@ export function initBg() {
 
   // ═══ WebGL：光跡（Buffer A，自己接自己）＋畫面 ═══
   const gl = view.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' });
+  // ── 網站自己的（試驗場沒有）──
   if (!gl) { view.remove(); return; }   // 開不了 WebGL 2＝不放背景
   // 光跡要存小數（每一幀只淡一點點，8 位元存不住）
   const FLOAT = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
@@ -561,6 +517,7 @@ void main() {
     if (gl_FragCoord.x < 1.0 && gl_FragCoord.y < 1.0) s = 0.0;
     gl_FragColor = vec4(s * 0.25, 0.0, 0.0, 1.0);
 }`;
+  // ── 網站自己的（試驗場沒有）──
   function program(id, frag = SHADERS[id].trim().replace('//@brush', BRUSH)) {
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(id + '：' + gl.getShaderInfoLog(s)); return s; };
     const prog = gl.createProgram();
@@ -596,6 +553,7 @@ void main() {
   // ═══ shader 只有一組（「光有 movement」那一份）；下面的開關是加在它上面的 ═══
   let IMG, BUF, BLUR;
   try { IMG = program('img-move'); BUF = program('buf-move'); BLUR = program('soft', SOFT); }
+  // ── 網站自己的（試驗場沒有）──
   catch (err) { console.warn('[bg] shader 編不過', err); view.remove(); return; }   // 編不過＝不放背景
   // 中空板的樣子（uLook）：代碼原樣＝看不見；另外兩種是在它算好的畫面上多疊幾項
   const LOOKS = [
@@ -633,10 +591,10 @@ void main() {
   // 停著也一直畫、點一下＝漆往下流（user 2026-11-27：「預設這個brush會一直在繪製，不是只有移動的時候才有。然後如果是click的話，就是會有drip在畫布上的感覺」）
   let here = null, creepK = 0;          // here＝游標現在在哪（CSS px；不在畫面上＝null）
   const drips = [];                     // 往下流的漆（splash 放進來、flow 每一幀往下流一段）
+  // ── 網站自己的（試驗場沒有）──
   let press = null;                     // 點下去那一下（stamp 放進來、draw 那一幀把那一塊拉到最亮）
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;   // 減少動態：時間不走（板條不游移、風不變），游標畫的照常
   let mouse = { x: 0, y: 0 }, time = 0, last = 0, raf = 0, active = 0, fadedAt = 0, drewAt = 0, stained = false;   // stained＝live 上還有東西
-  let demo = null;                      // 試驗頁一打開會自己畫一筆；網站不要
 
   // live 慢慢忘：筆頭蓋上去的量跟著時間淡掉（約半秒剩兩成）。光自己會消失——蓋過的量不忘的話，光淡了之後再畫過同一個地方不會有新的光
   // （繞圈壓到上一圈會缺一塊、在同一個地方來回畫，蓋滿之後就越畫越暗）。一次淡一大步：8 位元一點一點淡會卡在最後幾階淡不完；
@@ -672,6 +630,7 @@ void main() {
     for (let i = 1 + ((Math.random() * 3) | 0); i--;) drips.push({ x: x + U(-r, r), y: y + U(0, r / 2), v: U(70, 150), len: 0, max: U(50, 220), w: U(2, 4.5) + size * 0.05, sway: U(0.3, 1.4), ph: U(0, 6.283), fresh: true });
     wake();
   }
+  // ── 網站自己的（試驗場沒有）──
   // 點下去＝拿現在那支筆重重按一下（user 2026-11-27：「是那個墨水點擊的當下是最亮的」「不是滴下來，是我點下去，有點像是用筆刷重重的點在畫面上」）：
   // 那一點蓋一筆壓力最大（1.3，同筆的上限）的筆跡，那一幀把那一塊的光直接拉到最亮（draw 裡；形狀、質感照那支筆），之後照常淡掉。滴下去的漆（splash）照舊
   function stamp(x, y, t) {
@@ -716,7 +675,6 @@ void main() {
     const seen = box[2] > 0 && box[3] > 0;
     if (fresh) S.eng.begin?.(S);
     for (const p of pts) {
-      if (tex) p.t = S.last.t + Math.hypot(p.x - S.last.x, p.y - S.last.y) / 0.4;   // 貼質感：一律當成每秒 400px 在畫——飛白、墨色不跟著快慢變
       extend(p);
     }
     if (segs.length) flowDraw(segs);
@@ -735,6 +693,7 @@ void main() {
       }
       ox.globalAlpha = 1;   // 往下流的那幾段：沿著流過的路描一條比漆寬的
       for (const { d, from: a, to: b } of segs) { const p = dripAt(d, a), q = dripAt(d, b); ox.lineWidth = d.w * 4; ox.beginPath(); ox.moveTo(p.x, p.y); ox.lineTo(q.x + 0.01, q.y); ox.stroke(); }
+      // ── 網站自己的（試驗場沒有）──
       // 點下去那一下：筆頭那一塊（紅＝筆跡、綠＝範圍）自己疊自己 3 次＝乘 8、到頂＝shader 把光補到最亮；沒筆跡的地方乘了還是 0＝形狀照那支筆
       // （不用 ctx.filter：Safari 的畫布沒有）
       if (press) {
@@ -743,6 +702,7 @@ void main() {
         for (let i = 0; i < 3; i++) ox.drawImage(out, x, y, 2 * r, 2 * r, x, y, 2 * r, 2 * r);
       }
     });
+    // ── 網站自己的（試驗場沒有）──
     press = null;
     if (crop.width !== box[2] || crop.height !== box[3]) { crop.width = box[2]; crop.height = box[3]; }
     cx.globalCompositeOperation = 'copy'; cx.drawImage(out, X, Y, box[2], box[3], 0, 0, box[2], box[3]);
@@ -751,19 +711,19 @@ void main() {
     return box;
   }
 
-  // 畫面跟不上就降內部解析度（畫面每個點要讀幾百次光跡，內顯會吃力）：一秒半裡大半的幀都慢＝降一級
+  // 畫面跟不上就降內部解析度（畫面每個點要讀幾百次光跡，內顯會吃力）：90 幀裡超過 60 幀掉到 25fps 以下（> 40ms）＝降一級。
+  // 降過之後順了（90 幀裡慢的不到 5 幀）、離上次降已經 upWait＝可以升回一級（canUp），等到重配畫布看不出來的時候才升：換頁、或游標不在畫面上（重配會清掉光跡；
+  // 游標在畫面上時一直在畫＝等不到「沒在畫」）；升上去 10 秒內又慢＝再降、下次等兩倍久（最多 5 分鐘）。
+  // 2026-11-28 改：原本 > 30ms 就算慢＝30Hz 的螢幕、省電模式本來就是 33ms → 一路降到 0.5 倍；而且只降不升＝開頁時剛好卡一下，之後整段都是糊的
   const SCALES = [Math.min(1.5, devicePixelRatio || 1), 1, 0.75, 0.5].filter((s, i, a) => !i || s < a[0]);
-  let level = 0, counted = 0, slow = 0;
+  let level = 0, counted = 0, slow = 0, downAt = 0, upAt = -Infinity, upWait = 20000, canUp = false;
+  const up = () => { canUp = false; level--; upAt = performance.now(); fit(true); };
 
   function frame(ts) {
     raf = 0;
     if (!bufs.length) return;
     const raw = last ? ts - last : 16, dt = Math.min(raw, 50) / 1000, now = performance.now(); last = ts;
     if (!still) time += dt;
-    if (demo) {
-      demo.t0 ??= ts; const u = (ts - demo.t0) / 1600;
-      if (u >= 1) { demo = null; leave(); } else point(W * (0.1 + 0.8 * u), H * (0.5 - 0.24 * Math.sin(u * 6.283)), ts);
-    }
     let box = null;
     if (mode.id === 'line') pend.length = drips.length = 0;
     // 放大的 dialog 開著＝不畫：這一幀的筆跡、還在流的漆都清掉（手機點右圖鈕、點相簿放大那一下，放開時 dialog 還沒開＝已經滴下去的漆會在 dialog 底下一直流；
@@ -795,8 +755,13 @@ void main() {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     frames++;
     if (raw < 250) {   // 更久的＝分頁切走又回來，不算
-      if (raw > 30) slow++;
-      if (++counted >= 90) { if (slow > 60 && level < SCALES.length - 1) { level++; fit(true); } counted = slow = 0; }
+      if (raw > 40) slow++;
+      if (++counted >= 90) {
+        if (slow > 60 && level < SCALES.length - 1) { if (now - upAt < 10000) upWait = Math.min(upWait * 2, 300000); level++; downAt = now; canUp = false; fit(true); }
+        else canUp = slow < 5 && level > 0 && now - downAt > upWait;
+        counted = slow = 0;
+      }
+      if (canUp && !here && !drips.length) up();
     }
     // 光都淡完了、畫面不會再變就停（畫出邊線的那兩種樣子，邊線一直在動＝不停）；游標一動再開始。
     // 網站：放大 dialog 開著（背景是糊的）、全螢幕（看不到）也停，關了／退出全螢幕叫回來（檔尾）——重搬引擎時要留著
@@ -813,7 +778,6 @@ void main() {
     for (const c of [pa, pb]) { c.width = Math.ceil(cw / 2) + 2; c.height = Math.ceil(ch / 2) + 2; }
     home(lx, hx, mx);
     alloc(cw, ch);
-    say(`畫布 ${cw} × ${ch}` + (level ? '（畫面跟不上，內部解析度降過）' : '') + (FLOAT ? '' : '・這台存不了小數的光跡，光淡掉的樣子會不準'));
     wake();
   }
 
@@ -853,6 +817,7 @@ void main() {
   addEventListener('touchend', (e) => { const tapped = !!tap && e.timeStamp - tap.at < 500 && !hold(); if (tapped) { stamp(tap.x, tap.y, e.timeStamp); splash(tap.x, tap.y); } tap = null; if (!e.touches.length) { if (tapped) requestAnimationFrame(leave); else leave(); } }, { passive: true });
   addEventListener('touchcancel', () => { tap = null; leave(); }, { passive: true });
 
+  // ── 網站自己的（試驗場沒有）──
   // 白天／夜晚＝網站的 <html data-theme="dark">（預設淺色、不跟系統設定）。配色（user 2026-11-26：「如果是切換成黑色模式的話，會隨機抽到原來的光或者是粉彩，
   // 但白天只有粉彩」）：白天＝粉彩；每次換成夜晚（含開頁就是夜晚）抽一次＝原來的光或粉彩。「原來的光」的白天是試驗頁套在畫布上的濾鏡——網站白天不會用到它
   const root = document.documentElement, isDay = () => root.dataset.theme !== 'dark';
@@ -866,7 +831,7 @@ void main() {
   };
   new MutationObserver(showMode).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   showMode();
-  // 換頁、每 10 秒（user 2026-11-27 從 15 秒改）＝隨機換一支筆（user 2026-11-26：「背景換頁面的時候，會隨機切換不同的筆刷」「隔大概15s就換下一個brush」）：
+  // 換頁、每 8 秒（PEN_MS；user 2026-11-28，原本 15 → 10 → 5 秒）＝隨機換一支筆（user 2026-11-26：「背景換頁面的時候，會隨機切換不同的筆刷」「隔大概15s就換下一個brush」）：
   // 不抽到同一支、不抽清單上不列的（OFF）；開站照預設的炭筆；換頁從頭計時。網站自己的介面（同 showMode），重搬引擎時要留著
   // 粗細（user 同一天：「brush的粗細也幫我做random，在一個range裏面」）＝那支筆設定的粗細 × SIZE 之間（等比地抽、不超過那支筆的 max），換筆時抽
   // 水彩、噴漆最多 1.2 倍（Edge 比過 1／1.2／1.6）：水彩的雲紋跟著粗細放大＝邊上的鋸齒變大顆；噴漆 1.6 倍糊成一大團、霧點看不到。
@@ -882,7 +847,7 @@ void main() {
     if (cut) S = null;   // 換頁：下一筆就用新的。定時換的不切斷正在畫的那一筆＝停一下、重新沾的時候才換（draw 開頭）
     clearTimeout(penTimer); penTimer = setTimeout(nextPen, PEN_MS);
   }
-  new MutationObserver(([m]) => { if (m.oldValue !== document.body.dataset.page) nextPen(true); })   // 同一頁只換 hash＝不算
+  new MutationObserver(([m]) => { if (m.oldValue !== document.body.dataset.page) { nextPen(true); if (canUp) up(); } })   // 同一頁只換 hash＝不算；換頁＝解析度要升回去的好時機（上面 canUp）
     .observe(document.body, { attributes: true, attributeFilter: ['data-page'], attributeOldValue: true });
   new ResizeObserver(() => fit()).observe(view);
   fit();

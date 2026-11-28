@@ -143,11 +143,11 @@
 
 ## 之後再說（2026-11-27 全站代碼清理時找到、user：「四就都先記著，這次先不改」）
 
-- [ ] **背景引擎用不到的部分**（約 120 行：tex／line 模式、demo、dwell、OFF 那三支筆、gradient／iris、`prev` 畫布、`S.hue` 那段真的走到會 ReferenceError…）＋**自動降解析度只降不升**（`raw > 30` 就算慢＝30fps 的裝置、省電模式會一路降到 0.5 倍回不來）＋shader 在「整支筆」模式白算的那段：照規矩先改試驗場再重搬（`bg.js` 結尾那幾行網站自己的要留著，見 CLAUDE.md「全站代碼清理」）。另外記一個沒實測的：手機網址列伸縮會觸發 `.bg` 的 ResizeObserver → `fit()` 整套重建、光跡清空（可改 `height: 100lvh` 或忽略觸控裝置上小的高度變化）。
+- [x] **背景引擎用不到的部分**：2026-11-28 清了一輪（user：「應該是兩者都保留，但你只需要確保bg js裏面的内容是從試驗場拿出來的，但試驗場還是需要完整的内容」＝試驗場完整保留、bg.js 只刪不改，見 CLAUDE.md「背景」）：bg.js 898 → 854 行、bg-shaders.js 1294 → 1281 行——只刪得掉整行、整塊的（試驗頁的 say／kick／drip、dwell、關掉的 3 支筆、扇形筆頭、示範筆、貼質感那幾行、`S.hue` 那段、只有邊緣那種中空板的內容）；跟還在用的程式寫在同一行的（`prev` 畫布、漸層／幻彩、LOOKS／MODES／PALS、一些模式判斷）照規矩留著。11 支筆 × 白天／夜晚兩種配色在 Edge 跟原本並排比過一樣、沒有錯誤。自動降解析度只降不升同一天修了（會升回來，試驗場第 17 版同一份）。
 - [ ] **`.fs-blur` 6 層毛玻璃減成 3 層**（作品頁底列常駐兩塊＝12 層 backdrop-filter）：比較省、樣子可能變一點，要 user 看。
 - [ ] **中文粗體字檔**（`fonts/glow-sans-tc-compressed/700-*`，105 片、3.3MB）：現在沒有元素用到粗體（瀏覽器不會抓，只佔 repo 和部署）；留著備用或從 `build-fonts.py WEIGHTS` 拿掉。
-- [ ] **GitHub Pages 上的舊版前台**：還要就留著、不要就關掉 Pages（＋刪 `.nojekyll`），免得公開一份舊站。
-- [ ] **沒圖的縮圖佔位（直條跑馬燈 `ph-marquee`）動的是 `mask-position`**＝每一幀主執行緒重繪，師資頁沒照片的人越多越重；可改成 `::before` 畫條紋、動 transform，或捲出畫面時暫停。
+- [ ] **GitHub Pages**（https://bernard-02.github.io/SCAID-Website/）：不是舊版——每次 push 都會更新成最新的一份（2026-11-28 查：當天 push 的 link.svg、筆刷 8 秒都在上面）。正式站能開之後：要當預覽站就留著（canonical 指正式站，不會跟正式站搶搜尋）、不要就關掉 Pages（＋刪 `.nojekyll`）。
+- [x] **沒圖的縮圖佔位（直條跑馬燈 `ph-marquee`）動的是 `mask-position`**＝每一幀主執行緒重繪，師資頁沒照片的人越多越重 → 2026-11-28 改成 `::before` 畫直條、動 transform（Edge：18 個佔位、1 秒重繪 0 次）。
 - [ ] `:has(#figure-dialog[open]…)` 共 9 處：每次開合手風琴都會讓根元素的 `:has()` 重新比對，可改成 chrome.js 在 html 上切 class（中風險、要重跑測試）。
 
 ## 隨時

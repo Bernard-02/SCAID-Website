@@ -1,5 +1,5 @@
-// 背景的兩支 fragment shader（「光有 movement」那一份；user 2026-11-26 在背景試驗場 https://claude.ai/artifact/YJ4JpmdDhwZsArffEnphKX 定的）。
-// 照試驗場原文搬、不要在這裡改：要改去試驗場改好再重搬（scratchpad 的 port-bg.cjs 那種做法：抽 <script type="x-shader/x-fragment"> 的內容）。
+// 背景的兩支 fragment shader＝從背景試驗場（https://claude.ai/artifact/YJ4JpmdDhwZsArffEnphKX）的 <script type="x-shader/x-fragment"> 抽出網站用得到的部分，只刪不改；
+// 試驗場保留完整的內容。要調整＝先改試驗場、再把改到的那幾段照原文抽過來（「光有 movement」那一份；user 2026-11-26 定的）。
 // img-move＝畫面（光跡＋中空板＋配色）、buf-move＝光跡（自己接自己，筆刷的 //@brush 在 bg.js 換進去）
 export const SHADERS = {
   'img-move': String.raw`#ifdef GL_ES
@@ -527,17 +527,6 @@ void main() {
         float activation = smoothstep(0.008, 0.30, around);
 
         if (uLook < 1.5) {
-            // EDGES ONLY: a line on every edge the light already reacts to (edgeDistance),
-            // so a line always sits where the light peaks.
-            float edgeLine = exp(-pow(edgeDistance / 0.0016, 2.0));
-
-            // Persistent glass edge structure
-            finalColor += vec3(0.012, 0.025, 0.042) * edgeLine;
-
-            // Activated specular highlights
-            finalColor += vec3(0.30, 0.43, 0.56)
-                * edgeLine * activation * 0.55;
-
         } else if (opticalMask < 0.5) {
             // VISIBLE BOARD, gaps: the light with nothing in front of it. Same light, same
             // colours as on a board (opticalColor: off the boards its shift and dispersion
@@ -1162,8 +1151,6 @@ void main() {
             brushLight(uv) * brushCover(uv) - oldLight,
             0.0
         );
-    } else if (uBrush > 0.5) {
-        newLight *= brushLight(uv);
     }
 
     // --------------------------------------------------

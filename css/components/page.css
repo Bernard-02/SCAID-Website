@@ -206,23 +206,30 @@
   /* 沒圖的佔位（清單縮圖、師資詳細頁的照片）＝一排直條跑馬燈，不是灰底（user 2026-11-27：「用nav btn的那個stroke，將寬度固定，然後高度根據box的高度而撐滿，
      生成距離不等的stroke，從這個box外左邊or右邊marquee，顔色是字的顔色，背景為透明」；問過＝清單縮圖、老師照片，聯絡頁的標章照舊灰底）：
      直條＝段落導覽那一格的寬（.section-nav-dot 0.45em、字級 md）、高＝整個框；間距不等＝一段圖樣一直重複（寬見 --ph-mask）；字的顏色畫、其他透明；
-     清單一列往右、下一列往左，每三列錯開起點（不然上下列的直條對齊成一片）。減少動態＝typography.css 的 blanket 讓它停住 */
-  :is(.item-thumb, .profile-photo):not(:has(img)) {
+     清單一列往右、下一列往左，每三列錯開起點（不然上下列的直條對齊成一片）。減少動態＝typography.css 的 blanket 讓它停住。
+     動的是 ::before 的 transform（2026-11-28 改寫；原本動框自己的 mask-position＝每一幀主執行緒整塊重繪，沒照片的人越多越重）：
+     ::before 比框往左多一段圖樣寬、畫好不動的直條，整片往右移一段圖樣寬再從頭＝接得起來；transform 交給合成器、不用每幀重畫。框切掉超出的部分 */
+  :is(.item-thumb, .profile-photo):not(:has(img)) { position: relative; overflow: hidden; background: none; }
+  :is(.item-thumb, .profile-photo):not(:has(img))::before {
     --ph-w: calc(var(--font-size-md) * 0.45);
+    --ph-tile: calc(var(--ph-w) * 17);
     /* 直條之間的空隙放大 1.5 倍（user 2026-11-27：「placeholder的間隔也可以再大一點」；直條寬不變，一輪 13 → 17 個 --ph-w、動畫時間照比例拉長＝速度不變） */
     --ph-mask: linear-gradient(90deg, #000 0 var(--ph-w), #0000 var(--ph-w) calc(var(--ph-w) * 3.4), #000 calc(var(--ph-w) * 3.4) calc(var(--ph-w) * 4.4),
       #0000 calc(var(--ph-w) * 4.4) calc(var(--ph-w) * 5.6), #000 calc(var(--ph-w) * 5.6) calc(var(--ph-w) * 6.6), #0000 calc(var(--ph-w) * 6.6) calc(var(--ph-w) * 10.8),
       #000 calc(var(--ph-w) * 10.8) calc(var(--ph-w) * 11.8), #0000 calc(var(--ph-w) * 11.8) calc(var(--ph-w) * 13), #000 calc(var(--ph-w) * 13) calc(var(--ph-w) * 14), #0000 calc(var(--ph-w) * 14))
-      0 0 / calc(var(--ph-w) * 17) 100% repeat-x;
+      0 0 / var(--ph-tile) 100% repeat-x;
+    content: '';
+    position: absolute;
+    inset: 0 0 0 calc(var(--ph-tile) * -1);
     background: currentColor;
     -webkit-mask: var(--ph-mask);
             mask: var(--ph-mask);
     animation: ph-marquee 7.8s linear infinite;
   }
-  .item-list > li:nth-child(even) .item-thumb:not(:has(img)) { animation-direction: reverse; }
-  .item-list > li:nth-child(3n + 2) .item-thumb:not(:has(img)) { animation-delay: -2s; }
-  .item-list > li:nth-child(3n) .item-thumb:not(:has(img)) { animation-delay: -4s; }
-  @keyframes ph-marquee { to { -webkit-mask-position: calc(var(--ph-w) * 17) 0; mask-position: calc(var(--ph-w) * 17) 0; } }
+  .item-list > li:nth-child(even) .item-thumb:not(:has(img))::before { animation-direction: reverse; }
+  .item-list > li:nth-child(3n + 2) .item-thumb:not(:has(img))::before { animation-delay: -2s; }
+  .item-list > li:nth-child(3n) .item-thumb:not(:has(img))::before { animation-delay: -4s; }
+  @keyframes ph-marquee { to { transform: translateX(var(--ph-tile)); } }
   /* 有圖＝照原比例（user 2026-11-24：「應該是這個圖的原始 ratio，然後寬的圖片跟窄的圖片各自有自己的 max width/max height」；原本裁成方形）：
      框＝--item-thumb-w 見方（1.5 欄），圖 contain 在框裡＝寬的圖撐到框寬、窄（直）的撐到框高；在框的正中
      （手機圖在上＝貼底，緊接著下面的字）。框的大小不跟著圖：圖載入時框變大小、又剛好在 View Transition 裡（離開作品頁淡回淺色），
